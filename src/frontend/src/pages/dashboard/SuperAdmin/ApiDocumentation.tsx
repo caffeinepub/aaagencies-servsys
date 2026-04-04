@@ -1,0 +1,299 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { ChevronDown, ChevronRight, Code2 } from "lucide-react";
+import { useState } from "react";
+
+type ApiEndpoint = {
+  method: "GET" | "POST" | "PUT" | "DELETE";
+  path: string;
+  description: string;
+  example?: string;
+};
+
+type ApiSection = {
+  title: string;
+  description: string;
+  endpoints: ApiEndpoint[];
+};
+
+const API_SECTIONS: ApiSection[] = [
+  {
+    title: "Organizations",
+    description: "Manage platform organizations and their configurations",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/organizations",
+        description: "List all organizations (super_admin)",
+      },
+      {
+        method: "POST",
+        path: "/api/organizations",
+        description: "Create a new organization",
+        example:
+          '{"name": "Acme Corp", "planTier": "professional", "primaryLanguage": "en"}',
+      },
+      {
+        method: "GET",
+        path: "/api/organizations/{id}",
+        description: "Get organization by ID",
+      },
+      {
+        method: "GET",
+        path: "/api/organizations/me",
+        description: "Get caller's organization",
+      },
+    ],
+  },
+  {
+    title: "Users",
+    description: "User registration, profiles, and role management",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/users/register",
+        description: "Register a new user",
+        example:
+          '{"displayName": "Jane Doe", "email": "jane@example.com", "preferredLanguage": "en"}',
+      },
+      {
+        method: "GET",
+        path: "/api/users/me",
+        description: "Get current user profile",
+      },
+      {
+        method: "GET",
+        path: "/api/users/{principal}",
+        description: "Get user by principal",
+      },
+      {
+        method: "GET",
+        path: "/api/users",
+        description: "List all users (super_admin/org_admin)",
+      },
+    ],
+  },
+  {
+    title: "Wallets",
+    description: "FinFracFran multi-wallet and transaction management",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/wallets",
+        description: "Create a new wallet account",
+      },
+      {
+        method: "GET",
+        path: "/api/wallets/{id}",
+        description: "Get wallet by ID",
+      },
+      {
+        method: "GET",
+        path: "/api/wallets/org/{orgId}",
+        description: "Get all wallets for an organization",
+      },
+      {
+        method: "POST",
+        path: "/api/wallets/{id}/deposit",
+        description: "Deposit funds into wallet",
+        example:
+          '{"amount": 1000, "currency": "USD", "description": "Q2 payment"}',
+      },
+      {
+        method: "POST",
+        path: "/api/wallets/transfer",
+        description: "Transfer between wallets",
+      },
+      {
+        method: "POST",
+        path: "/api/wallets/{id}/fractionalize",
+        description: "FinFracFran distribution to recipients",
+      },
+    ],
+  },
+  {
+    title: "AI Agents",
+    description: "Register and manage AI agents in the swarm",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/agents",
+        description: "Register a new AI agent",
+        example:
+          '{"name": "SupportBot", "capabilities": ["ticket-routing"], "modelType": "GPT-4"}',
+      },
+      {
+        method: "GET",
+        path: "/api/agents/{id}",
+        description: "Get agent by ID",
+      },
+      {
+        method: "GET",
+        path: "/api/agents/org/{orgId}",
+        description: "List all agents for an org",
+      },
+      {
+        method: "PUT",
+        path: "/api/agents/{id}/status",
+        description: "Update agent status (active/inactive/training)",
+      },
+    ],
+  },
+  {
+    title: "Tasks",
+    description: "Multi-agent task routing and management",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/tasks",
+        description: "Create a new task",
+        example:
+          '{"title": "Process tickets", "priority": "high", "assignedAgentId": "agent-001"}',
+      },
+      { method: "GET", path: "/api/tasks/{id}", description: "Get task by ID" },
+      {
+        method: "GET",
+        path: "/api/tasks/me",
+        description: "Get tasks assigned to caller",
+      },
+      {
+        method: "PUT",
+        path: "/api/tasks/{id}/status",
+        description: "Update task status",
+      },
+      {
+        method: "PUT",
+        path: "/api/tasks/{id}/assign",
+        description: "Assign task to agent",
+      },
+    ],
+  },
+  {
+    title: "Invite Links",
+    description: "Role-scoped invite link management",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/invites",
+        description: "Create an invite link",
+        example:
+          '{"orgId": "org-001", "role": "team_member", "maxRedemptions": 5}',
+      },
+      {
+        method: "GET",
+        path: "/api/invites/{id}",
+        description: "Get invite link details",
+      },
+      {
+        method: "POST",
+        path: "/api/invites/{id}/redeem",
+        description: "Redeem an invite link",
+      },
+    ],
+  },
+];
+
+const METHOD_COLORS: Record<string, string> = {
+  GET: "bg-teal-500/15 text-teal-400 border-teal-500/30",
+  POST: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  PUT: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  DELETE: "bg-destructive/15 text-destructive border-destructive/30",
+};
+
+function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="border-t border-border/30 first:border-t-0">
+      <button
+        type="button"
+        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors text-left"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <Badge
+          variant="outline"
+          className={cn(
+            "font-mono text-xs w-14 justify-center shrink-0",
+            METHOD_COLORS[endpoint.method],
+          )}
+        >
+          {endpoint.method}
+        </Badge>
+        <code className="text-xs font-mono text-foreground/80 flex-1 truncate">
+          {endpoint.path}
+        </code>
+        <span className="text-xs text-muted-foreground hidden sm:block flex-1 text-right truncate">
+          {endpoint.description}
+        </span>
+        {endpoint.example &&
+          (expanded ? (
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          ))}
+      </button>
+      {expanded && endpoint.example && (
+        <div className="px-4 pb-3">
+          <pre className="bg-muted/50 rounded p-3 text-xs font-mono overflow-x-auto text-muted-foreground">
+            {JSON.stringify(JSON.parse(endpoint.example), null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ApiDocumentation() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-display font-semibold">
+            API Documentation
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            AAAgencies SerVSys REST API reference
+          </p>
+        </div>
+      </div>
+
+      <Card className="border-border/60">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-2 text-sm">
+            <Code2 className="w-4 h-4 text-primary" />
+            <span className="font-mono text-muted-foreground">Base URL:</span>
+            <code className="font-mono text-primary bg-primary/10 px-2 py-0.5 rounded text-xs">
+              https://api.aaagencies.ai/v1
+            </code>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            All requests require an API key in the{" "}
+            <code className="bg-muted px-1 rounded">X-API-Key</code> header.
+            Obtain keys from your org's API Keys page.
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-4">
+        {API_SECTIONS.map((section) => (
+          <Card key={section.title} className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-display">
+                {section.title}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {section.description}
+              </p>
+            </CardHeader>
+            <CardContent className="p-0 pb-1">
+              {section.endpoints.map((ep) => (
+                <EndpointRow key={ep.path + ep.method} endpoint={ep} />
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
