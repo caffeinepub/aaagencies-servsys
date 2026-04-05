@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Code2 } from "lucide-react";
@@ -9,6 +8,7 @@ type ApiEndpoint = {
   method: "GET" | "POST" | "PUT" | "DELETE";
   path: string;
   description: string;
+  requiredRole?: string;
   example?: string;
 };
 
@@ -27,6 +27,7 @@ const API_SECTIONS: ApiSection[] = [
         method: "GET",
         path: "/api/organizations",
         description: "List all organizations (super_admin)",
+        requiredRole: "super_admin",
       },
       {
         method: "POST",
@@ -44,6 +45,7 @@ const API_SECTIONS: ApiSection[] = [
         method: "GET",
         path: "/api/organizations/me",
         description: "Get caller's organization",
+        requiredRole: "authenticated",
       },
     ],
   },
@@ -62,6 +64,7 @@ const API_SECTIONS: ApiSection[] = [
         method: "GET",
         path: "/api/users/me",
         description: "Get current user profile",
+        requiredRole: "authenticated",
       },
       {
         method: "GET",
@@ -72,6 +75,28 @@ const API_SECTIONS: ApiSection[] = [
         method: "GET",
         path: "/api/users",
         description: "List all users (super_admin/org_admin)",
+        requiredRole: "org_admin",
+      },
+    ],
+  },
+  {
+    title: "User Profile",
+    description:
+      "Profile management and session tracking for authenticated users",
+    endpoints: [
+      {
+        method: "PUT",
+        path: "/api/users/me/profile",
+        description: "Update caller's profile",
+        requiredRole: "authenticated",
+        example:
+          '{"displayName": "Jane Doe", "email": "jane@example.com", "preferredLanguage": "es", "bio": "Agency founder"}',
+      },
+      {
+        method: "POST",
+        path: "/api/users/me/last-login",
+        description: "Record last login timestamp",
+        requiredRole: "authenticated",
       },
     ],
   },
@@ -157,6 +182,7 @@ const API_SECTIONS: ApiSection[] = [
         method: "GET",
         path: "/api/tasks/me",
         description: "Get tasks assigned to caller",
+        requiredRole: "authenticated",
       },
       {
         method: "PUT",
@@ -178,18 +204,60 @@ const API_SECTIONS: ApiSection[] = [
         method: "POST",
         path: "/api/invites",
         description: "Create an invite link",
+        requiredRole: "org_admin",
         example:
-          '{"orgId": "org-001", "role": "team_member", "maxRedemptions": 5}',
+          '{"orgId": "org-001", "role": "team_member", "maxRedemptions": 5, "expiresAt": 1700000000}',
       },
       {
         method: "GET",
-        path: "/api/invites/{id}",
-        description: "Get invite link details",
+        path: "/api/invites",
+        description: "List caller's invite links",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/invites/all",
+        description: "List all invite links",
+        requiredRole: "super_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/invites/{code}",
+        description: "Get invite link by code",
+        requiredRole: "public",
       },
       {
         method: "POST",
-        path: "/api/invites/{id}/redeem",
-        description: "Redeem an invite link",
+        path: "/api/invites/{code}/redeem",
+        description: "Redeem an invite link (assigns role)",
+        requiredRole: "authenticated",
+        example: '{"displayName": "Jane Doe", "email": "jane@example.com"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/invites/{id}/deactivate",
+        description: "Deactivate an invite link",
+        requiredRole: "org_admin",
+      },
+    ],
+  },
+  {
+    title: "Marketing / Leads",
+    description: "Early access lead capture and management",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/leads",
+        description: "Submit a lead (early access form)",
+        requiredRole: "public",
+        example:
+          '{"name": "Alex Rivera", "email": "alex@example.com", "message": "Role: Agency. Org: Acme Corp. Interested in SerVSys."}',
+      },
+      {
+        method: "GET",
+        path: "/api/leads",
+        description: "List all leads",
+        requiredRole: "super_admin",
       },
     ],
   },
@@ -202,6 +270,27 @@ const METHOD_COLORS: Record<string, string> = {
   DELETE: "bg-destructive/15 text-destructive border-destructive/30",
 };
 
+const ROLE_STYLES: Record<string, string> = {
+  public: "bg-muted/60 text-muted-foreground border-border/50",
+  authenticated: "bg-muted/60 text-muted-foreground border-border/50",
+  org_admin: "bg-muted/60 text-sky-400/80 border-sky-500/20",
+  super_admin: "bg-muted/60 text-violet-400/80 border-violet-500/20",
+};
+
+function RoleBadge({ accessLevel }: { accessLevel: string }) {
+  const style =
+    ROLE_STYLES[accessLevel] ??
+    "bg-muted/60 text-muted-foreground border-border/50";
+  return (
+    <Badge
+      variant="outline"
+      className={cn("font-mono text-[10px] px-1.5 py-0 h-4 shrink-0", style)}
+    >
+      {accessLevel}
+    </Badge>
+  );
+}
+
 function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -210,6 +299,7 @@ function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
         type="button"
         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors text-left"
         onClick={() => setExpanded(!expanded)}
+        data-ocid="api_docs.row"
       >
         <Badge
           variant="outline"
@@ -220,6 +310,9 @@ function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
         >
           {endpoint.method}
         </Badge>
+        {endpoint.requiredRole && (
+          <RoleBadge accessLevel={endpoint.requiredRole} />
+        )}
         <code className="text-xs font-mono text-foreground/80 flex-1 truncate">
           {endpoint.path}
         </code>
@@ -246,7 +339,7 @@ function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
 
 export default function ApiDocumentation() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-ocid="api_docs.page">
       <div className="flex items-center gap-3">
         <div>
           <h1 className="text-2xl font-display font-semibold">
@@ -272,10 +365,19 @@ export default function ApiDocumentation() {
             <code className="bg-muted px-1 rounded">X-API-Key</code> header.
             Obtain keys from your org's API Keys page.
           </p>
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border/30">
+            <span className="text-xs text-muted-foreground self-center">
+              Access levels:
+            </span>
+            <RoleBadge accessLevel="public" />
+            <RoleBadge accessLevel="authenticated" />
+            <RoleBadge accessLevel="org_admin" />
+            <RoleBadge accessLevel="super_admin" />
+          </div>
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      <div className="space-y-4" data-ocid="api_docs.list">
         {API_SECTIONS.map((section) => (
           <Card key={section.title} className="border-border/60">
             <CardHeader className="pb-2">

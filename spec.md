@@ -1,34 +1,35 @@
-# AAAgencies SerVSys™ — Phase 2B-ii: Membership Tier Pricing Cards
+# AAAgencies SerVSys™
 
 ## Current State
-- `PublicLandingPage.tsx` has: sticky nav, hero, portal cards, services showcase (AI Agents / SerVSys™ / FinFracFran™), lead capture form, footer.
-- No pricing/membership tier section exists on the landing page.
-- Four plan tiers are already defined in the backend (Free, Starter, Professional, Enterprise) and used on org badges, but not shown publicly.
+
+`ApiDocumentation.tsx` was scaffolded in Phase 1A. It covers six sections:
+- Organizations, Users, Wallets, AI Agents, Tasks, Invite Links
+
+Missing from the documentation (added in Phases 1B and 2A):
+- `updateMyProfile` (Phase 1B-i)
+- `updateLastLogin` (Phase 1B-i)
+- `createInviteLink`, `getInviteLinkByCode`, `getMyInviteLinks`, `getAllInviteLinks`, `redeemInviteLink`, `deactivateInviteLink` (Phase 1B-ii) — the existing "Invite Links" section only has 3 placeholder entries
+- `submitLead`, `getAllLeads` (Phase 2A)
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Membership Tier Pricing Section** on `PublicLandingPage.tsx`, inserted between the Services Showcase and the Lead Capture (Early Access) section.
-- Four tier cards: Free, Starter, Professional, Enterprise.
-- Each card: tier name, price (Free=$0, Starter=$29/mo, Professional=$99/mo, Enterprise=Contact Us), feature bullet list, CTA button.
-- Professional tier highlighted as "Recommended" with a visual accent ring.
-- Free and Starter CTAs scroll to the lead form (#lead-capture anchor). Enterprise CTA opens portal entry B (agency dashboard).
-- Section heading: "Plans for Every Scale" with a "Pricing" eyebrow badge.
-- `PRICING_TIERS` data array co-located in the file.
-- Footer "Pricing" link updated to anchor `#pricing`.
+- New `User Profile` section with `updateMyProfile` (POST, any authenticated user) and `updateLastLogin` (POST, any authenticated user)
+- New `Marketing / Leads` section with `submitLead` (POST, public) and `getAllLeads` (GET, super_admin)
 
 ### Modify
-- `PublicLandingPage.tsx`: insert `<PricingSection />` component (defined in the same file) between Services and Lead Capture sections.
-- Footer "Pricing" `<button>` replaced with `<a href="#pricing">` for smooth scroll.
+- Expand the existing `Invite Links` section to include all 6 live invite endpoints: `createInviteLink`, `getInviteLinkByCode`, `getMyInviteLinks`, `getAllInviteLinks`, `redeemInviteLink`, `deactivateInviteLink`; each with description, required role, input/output shape and example where applicable
+- Add a `Required Role` field to the `EndpointRow` display so each entry shows who can call it
 
 ### Remove
-- Nothing removed.
+- Nothing removed
 
 ## Implementation Plan
-1. Define `PRICING_TIERS` array with tier name, price, period, feature list, CTA label, CTA action, accent color, and `isRecommended` flag.
-2. Add `id="pricing"` anchor to the section.
-3. Render a responsive 4-column grid on lg (2-col md, 1-col sm).
-4. Recommended card gets a glowing border accent (`#21C7B7`) and a "Recommended" badge chip above the card header.
-5. CTA buttons: Free/Starter scroll to `#lead-capture`; Professional scrolls to `#lead-capture`; Enterprise links to `/portal/b`.
-6. Update footer Pricing link to `href="#pricing"`.
-7. Add `id="lead-capture"` to the Lead Capture section (currently has no id).
+
+1. Extend the `ApiEndpoint` type to include an optional `requiredRole` string field
+2. Update `EndpointRow` to render a small role badge next to the method badge when `requiredRole` is set
+3. Update `API_SECTIONS` data:
+   - Expand `Invite Links` to all 6 endpoints with full descriptions and examples
+   - Add `User Profile` section (2 endpoints)
+   - Add `Marketing / Leads` section (2 endpoints)
+4. No backend changes needed
