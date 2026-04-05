@@ -1,4 +1,6 @@
-import type { Organization } from "@/backend";
+import type { backendInterface as FullBackend } from "@/../src/backend.d";
+import type { Organization, PlanLimits } from "@/../src/backend.d";
+import { PlanTier } from "@/../src/backend.d";
 import { PlanTierBadge } from "@/components/PlanTierBadge";
 import {
   AlertDialog,
@@ -14,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -30,19 +33,25 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useActor } from "@/hooks/useActor";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowUpCircle,
+  Bot,
   Check,
   CreditCard,
   Crown,
   ExternalLink,
+  GitBranch,
   Info,
+  KeyRound,
   Loader2,
   Receipt,
   Shield,
   Sparkles,
+  TrendingUp,
+  Users,
+  Wallet,
   X,
   Zap,
 } from "lucide-react";
@@ -62,14 +71,14 @@ interface PlanConfig {
   name: string;
   price: string;
   priceSub: string;
-  features: PlanFeature[];
+  staticFeatures: PlanFeature[];
   accentClass: string;
   glowClass?: string;
   recommended?: boolean;
   icon: React.ElementType;
 }
 
-// ── Plan Definitions ──────────────────────────────────────────────────────────
+// ── Plan Definitions (static fallbacks) ──────────────────────────────────────
 
 const PLANS: PlanConfig[] = [
   {
@@ -79,11 +88,11 @@ const PLANS: PlanConfig[] = [
     priceSub: "forever",
     icon: Shield,
     accentClass: "border-slate-600/50",
-    features: [
-      { text: "1 organization" },
-      { text: "1 branch" },
-      { text: "3 team members" },
+    staticFeatures: [
+      { text: "5 team members" },
+      { text: "2 branches" },
       { text: "1 AI agent" },
+      { text: "2 API keys" },
       { text: "Community support" },
     ],
   },
@@ -94,11 +103,11 @@ const PLANS: PlanConfig[] = [
     priceSub: "per month",
     icon: Zap,
     accentClass: "border-blue-500/40",
-    features: [
-      { text: "3 organizations" },
+    staticFeatures: [
+      { text: "20 team members" },
       { text: "5 branches" },
-      { text: "10 team members" },
       { text: "5 AI agents" },
+      { text: "10 API keys" },
       { text: "Email support" },
       { text: "API access" },
     ],
@@ -113,11 +122,11 @@ const PLANS: PlanConfig[] = [
     glowClass:
       "shadow-[0_0_24px_rgba(20,184,166,0.18)] ring-1 ring-teal-500/30",
     recommended: true,
-    features: [
-      { text: "Unlimited organizations" },
+    staticFeatures: [
+      { text: "100 team members" },
       { text: "20 branches" },
-      { text: "50 team members" },
       { text: "20 AI agents" },
+      { text: "50 API keys" },
       { text: "Priority support" },
       { text: "API access" },
       { text: "FinFracFran™ wallets" },
@@ -131,9 +140,11 @@ const PLANS: PlanConfig[] = [
     priceSub: "pricing",
     icon: Crown,
     accentClass: "border-amber-500/40",
-    features: [
-      { text: "Everything in Professional" },
+    staticFeatures: [
+      { text: "Unlimited team members" },
+      { text: "Unlimited branches" },
       { text: "Unlimited AI agents" },
+      { text: "Unlimited API keys" },
       { text: "Dedicated support" },
       { text: "SLA guarantee" },
       { text: "White-label ready" },
@@ -149,6 +160,323 @@ function getPlanTierString(org: Organization): PlanId {
     return (Object.keys(org.planTier as object)[0] as PlanId) ?? "free";
   }
   return String(org.planTier) as PlanId;
+}
+
+function formatLimitValue(val: number): string {
+  return val >= 9999 ? "Unlimited" : String(val);
+}
+
+function buildPlanFeatures(limits: PlanLimits, planId: PlanId): PlanFeature[] {
+  const base: PlanFeature[] = [
+    { text: `${formatLimitValue(limits.maxUsers)} team members` },
+    { text: `${formatLimitValue(limits.maxBranches)} branches` },
+    { text: `${formatLimitValue(limits.maxAgents)} AI agents` },
+    { text: `${formatLimitValue(limits.maxApiKeys)} API keys` },
+    { text: `${formatLimitValue(limits.maxWallets)} wallets` },
+  ];
+  const extras: Record<PlanId, PlanFeature[]> = {
+    free: [{ text: "Community support" }],
+    starter: [{ text: "Email support" }, { text: "API access" }],
+    professional: [
+      { text: "Priority support" },
+      { text: "API access" },
+      { text: "FinFracFran™ wallets" },
+      { text: "Custom domain" },
+    ],
+    enterprise: [
+      { text: "Dedicated support" },
+      { text: "SLA guarantee" },
+      { text: "White-label ready" },
+      { text: "Custom integrations" },
+    ],
+  };
+  return [...base, ...(extras[planId] ?? [])];
+}
+
+// ── Resource Usage Card ───────────────────────────────────────────────────────
+
+interface ResourceRowProps {
+  icon: React.ElementType;
+  label: string;
+  current: number | null;
+  max: number;
+  isLoading: boolean;
+}
+
+function ResourceRow({
+  icon: Icon,
+  label,
+  current,
+  max,
+  isLoading,
+}: ResourceRowProps) {
+  const isUnlimited = max >= 9999;
+  const pct =
+    isUnlimited || current === null ? 0 : Math.min((current / max) * 100, 100);
+  const isAtLimit = !isUnlimited && current !== null && current >= max;
+  const isWarning = !isUnlimited && !isAtLimit && current !== null && pct >= 80;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-3 py-2">
+        <Skeleton className="w-7 h-7 rounded-lg shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-2 w-full" />
+        </div>
+        <Skeleton className="h-3 w-12" />
+      </div>
+    );
+  }
+
+  const progressColorClass = isAtLimit
+    ? "[&>div]:bg-destructive"
+    : isWarning
+      ? "[&>div]:bg-amber-500"
+      : "";
+
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div
+        className={`shrink-0 p-1.5 rounded-lg ${
+          isAtLimit
+            ? "bg-destructive/15"
+            : isWarning
+              ? "bg-amber-500/15"
+              : "bg-muted/50"
+        }`}
+      >
+        <Icon
+          className={`w-3.5 h-3.5 ${
+            isAtLimit
+              ? "text-destructive"
+              : isWarning
+                ? "text-amber-400"
+                : "text-muted-foreground"
+          }`}
+        />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span className="text-xs font-medium truncate">{label}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            {isWarning && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-400 border-amber-500/30"
+              >
+                ⚠ 80% used
+              </Badge>
+            )}
+            {isAtLimit && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 bg-destructive/10 text-destructive border-destructive/30"
+              >
+                🔴 At limit
+              </Badge>
+            )}
+            <span
+              className={`text-xs tabular-nums ${
+                isAtLimit
+                  ? "text-destructive font-semibold"
+                  : isWarning
+                    ? "text-amber-400 font-medium"
+                    : "text-muted-foreground"
+              }`}
+            >
+              {current !== null ? current : "—"} / {isUnlimited ? "∞" : max}
+            </span>
+          </div>
+        </div>
+
+        {isUnlimited ? (
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 h-1.5 rounded-full bg-teal-500/20" />
+            <span className="text-[10px] text-teal-400 font-medium">
+              Unlimited
+            </span>
+          </div>
+        ) : (
+          <Progress value={pct} className={`h-1.5 ${progressColorClass}`} />
+        )}
+      </div>
+
+      {isAtLimit && (
+        <Button
+          variant="destructive"
+          size="sm"
+          className="shrink-0 h-6 text-[10px] px-2"
+          onClick={() =>
+            document
+              .getElementById("plan-grid")
+              ?.scrollIntoView({ behavior: "smooth" })
+          }
+          data-ocid="subscription.usage.upgrade_button"
+        >
+          Upgrade →
+        </Button>
+      )}
+    </div>
+  );
+}
+
+interface ResourceUsageCardProps {
+  org: Organization;
+  fullActor: FullBackend | null;
+  isFetching: boolean;
+}
+
+function ResourceUsageCard({
+  org,
+  fullActor,
+  isFetching,
+}: ResourceUsageCardProps) {
+  const enabled = !!fullActor && !isFetching && !!org;
+
+  const currentTierStr = getPlanTierString(org);
+  const tierEnumValue =
+    (PlanTier[currentTierStr as keyof typeof PlanTier] as PlanTier) ??
+    PlanTier.free;
+
+  const { data: planLimits, isLoading: limitsLoading } = useQuery<PlanLimits>({
+    queryKey: ["plan-limits", currentTierStr],
+    queryFn: () => fullActor!.getPlanLimits(tierEnumValue),
+    enabled,
+  });
+
+  const resourceQueries = useQueries({
+    queries: [
+      {
+        queryKey: ["org-users", org.id],
+        queryFn: async () => {
+          const res = await fullActor!.getTeamMembersByOrg(org.id);
+          return res.length;
+        },
+        enabled,
+      },
+      {
+        queryKey: ["org-branches", org.id],
+        queryFn: async () => {
+          const res = await fullActor!.getBranchesByOrg(org.id);
+          return res.length;
+        },
+        enabled,
+      },
+      {
+        queryKey: ["org-agents", org.id],
+        queryFn: async () => {
+          const res = await fullActor!.getAgentsByOrg(org.id);
+          if (res.__kind__ === "ok") return res.ok.length;
+          return 0;
+        },
+        enabled,
+      },
+      {
+        queryKey: ["org-apikeys"],
+        queryFn: async () => {
+          const res = await fullActor!.listApiKeys();
+          if (res.__kind__ === "ok")
+            return res.ok.filter((k) => k.isActive).length;
+          return 0;
+        },
+        enabled,
+      },
+      {
+        queryKey: ["org-wallets", org.id],
+        queryFn: async () => {
+          const res = await fullActor!.getWalletsByOrg(org.id);
+          if (res.__kind__ === "ok") return res.ok.length;
+          return 0;
+        },
+        enabled,
+      },
+    ],
+  });
+
+  const [usersQ, branchesQ, agentsQ, apiKeysQ, walletsQ] = resourceQueries;
+
+  const defaultLimits: PlanLimits = {
+    maxUsers: 5,
+    maxBranches: 2,
+    maxAgents: 1,
+    maxApiKeys: 2,
+    maxWallets: 2,
+  };
+  const limits = planLimits ?? defaultLimits;
+  const anyLoading = limitsLoading || resourceQueries.some((q) => q.isLoading);
+
+  const resources = [
+    {
+      icon: Users,
+      label: "Team Members",
+      current: usersQ.data ?? null,
+      max: limits.maxUsers,
+      isLoading: usersQ.isLoading || limitsLoading,
+    },
+    {
+      icon: GitBranch,
+      label: "Branches",
+      current: branchesQ.data ?? null,
+      max: limits.maxBranches,
+      isLoading: branchesQ.isLoading || limitsLoading,
+    },
+    {
+      icon: Bot,
+      label: "AI Agents",
+      current: agentsQ.data ?? null,
+      max: limits.maxAgents,
+      isLoading: agentsQ.isLoading || limitsLoading,
+    },
+    {
+      icon: KeyRound,
+      label: "API Keys (Active)",
+      current: apiKeysQ.data ?? null,
+      max: limits.maxApiKeys,
+      isLoading: apiKeysQ.isLoading || limitsLoading,
+    },
+    {
+      icon: Wallet,
+      label: "Wallets",
+      current: walletsQ.data ?? null,
+      max: limits.maxWallets,
+      isLoading: walletsQ.isLoading || limitsLoading,
+    },
+  ];
+
+  return (
+    <Card className="border-border/60" data-ocid="subscription.usage.card">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-display flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" />
+          Resource Usage
+          {anyLoading && (
+            <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin ml-1" />
+          )}
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Live usage against your{" "}
+          <span className="capitalize font-medium text-foreground">
+            {currentTierStr}
+          </span>{" "}
+          plan limits
+        </p>
+      </CardHeader>
+      <CardContent className="divide-y divide-border/50">
+        {resources.map((r) => (
+          <ResourceRow
+            key={r.label}
+            icon={r.icon}
+            label={r.label}
+            current={r.current}
+            max={r.max}
+            isLoading={r.isLoading}
+          />
+        ))}
+      </CardContent>
+    </Card>
+  );
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -287,6 +615,7 @@ interface PlanCardProps {
   currentTier: PlanId;
   stripeConfigured: boolean;
   onUpgrade: (planId: PlanId) => void;
+  resolvedLimits?: PlanLimits;
 }
 
 function PlanCard({
@@ -294,6 +623,7 @@ function PlanCard({
   currentTier,
   stripeConfigured,
   onUpgrade,
+  resolvedLimits,
 }: PlanCardProps) {
   const isCurrent = plan.id === currentTier;
 
@@ -312,6 +642,10 @@ function PlanCard({
         : "Select Plan";
 
   const Icon = plan.icon;
+
+  const displayFeatures = resolvedLimits
+    ? buildPlanFeatures(resolvedLimits, plan.id)
+    : plan.staticFeatures;
 
   const accentIconColor: Record<PlanId, string> = {
     free: "text-slate-400",
@@ -374,7 +708,7 @@ function PlanCard({
 
       {/* Features */}
       <ul className="space-y-1.5 flex-1 mb-5">
-        {plan.features.map((feat) => (
+        {displayFeatures.map((feat) => (
           <li key={feat.text} className="flex items-start gap-2 text-xs">
             <Check
               className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${accentIconColor[plan.id]}`}
@@ -581,7 +915,8 @@ function CancelSubscriptionCard({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function SubscriptionBilling() {
-  const { actor, isFetching } = useActor();
+  const { actor: _actor, isFetching } = useActor();
+  const actor = _actor as unknown as FullBackend | null;
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -597,6 +932,24 @@ export default function SubscriptionBilling() {
     },
     enabled: !!actor && !isFetching,
   });
+
+  // Fetch all 4 tiers' limits in parallel for plan cards
+  const tierKeys = ["free", "starter", "professional", "enterprise"] as const;
+  const planLimitsQueries = useQueries({
+    queries: tierKeys.map((tier) => ({
+      queryKey: ["plan-limits", tier],
+      queryFn: () => actor!.getPlanLimits(tier as PlanTier),
+      enabled: !!actor && !isFetching,
+    })),
+  });
+
+  const planLimitsMap = tierKeys.reduce(
+    (acc, tier, idx) => {
+      acc[tier] = planLimitsQueries[idx].data ?? null;
+      return acc;
+    },
+    {} as Record<string, PlanLimits | null>,
+  );
 
   const stripeConfigured = !!org?.stripeCustomerId;
   const hasSubscription = !!org?.stripeSubscriptionId;
@@ -690,7 +1043,16 @@ export default function SubscriptionBilling() {
       {/* B. Current Plan Card */}
       {!isLoading && org && <CurrentPlanCard org={org} />}
 
-      {/* C. Plan Comparison Grid */}
+      {/* C. Resource Usage Card */}
+      {!isLoading && org && (
+        <ResourceUsageCard
+          org={org}
+          fullActor={actor}
+          isFetching={isFetching}
+        />
+      )}
+
+      {/* D. Plan Comparison Grid */}
       {!isLoading && (
         <div>
           <div className="flex items-center gap-2 mb-4">
@@ -706,7 +1068,10 @@ export default function SubscriptionBilling() {
               </Badge>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div
+            id="plan-grid"
+            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
+          >
             {PLANS.map((plan) => (
               <PlanCard
                 key={plan.id}
@@ -714,16 +1079,17 @@ export default function SubscriptionBilling() {
                 currentTier={currentTier}
                 stripeConfigured={stripeConfigured}
                 onUpgrade={handleUpgrade}
+                resolvedLimits={planLimitsMap[plan.id] ?? undefined}
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* D. Billing History Table */}
+      {/* E. Billing History Table */}
       {!isLoading && <BillingHistoryCard stripeConnected={stripeConfigured} />}
 
-      {/* E. Cancel Subscription */}
+      {/* F. Cancel Subscription */}
       {!isLoading && (
         <CancelSubscriptionCard
           hasSubscription={hasSubscription}

@@ -1,32 +1,27 @@
 # AAAgencies SerVSys™
 
 ## Current State
-- Phase 5A (backend) is fully complete: PlanLimits type, enforcement, custom domain, platform metrics, org activation/plan override APIs
-- Phase 5B-i: PlatformOverview.tsx shows live metrics from getPlatformMetrics()
-- Phase 5B-ii: Organizations.tsx is full tenant management with activate/deactivate and plan override
-- No `PlatformBilling.tsx` page exists yet
-- DashboardLayout.tsx has no "Platform Billing" nav entry in SUPER_ADMIN_NAV
+Phases 1–4 are fully complete. Phase 5A (backend plan limits, enforcement, custom domain, platform metrics) and 5B (Super Admin platform overview, tenant management, platform billing) are live.
+
+`SubscriptionBilling.tsx` (Org Admin) has a full Stripe-ready UI — current plan card, 4-tier plan comparison grid with static hardcoded feature text, billing history, and cancel section — but has no live usage bars or real limit data from the backend.
+
+`MyOrganization.tsx` (Org Admin) shows org details and language settings wired to `getMyOrganization()`, but still uses a `MOCK_ORGS` fallback in `toDisplayOrg()` and has no custom domain/branding section.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `src/frontend/src/pages/dashboard/SuperAdmin/PlatformBilling.tsx` — new Super Admin page:
-  - Revenue Overview section: aggregate MRR estimate per tier (tier org count × plan price), display-only
-  - Plan Limit Configuration section: editable table for all 4 tiers showing all 5 limit fields, loads from getPlanLimits() for all tiers, saves via setPlanLimits()
-  - Loading skeletons for both sections
-- "Platform Billing" nav entry in SUPER_ADMIN_NAV in DashboardLayout.tsx (icon: CreditCard)
-- Import PlatformBilling in DashboardLayout and add case "platform-billing"
+- Real-time usage bars section in `SubscriptionBilling.tsx`: fetch `getPlanLimits(tier)` and live resource counts (users via `getTeamMembersByOrg`, branches via `getBranchesByOrg`, agents via `getAgentsByOrg`, API keys via `listApiKeys`, wallets via `getWalletsByOrg`); render a Progress bar per resource with amber warning at ≥80%, red "At limit" at 100%, and an upgrade CTA when at 100%.
+- Live limit values on plan comparison cards in `SubscriptionBilling.tsx`: replace hardcoded feature strings with real values from `getPlanLimits()` for all 4 tiers.
+- Custom Domain & Branding card in `MyOrganization.tsx`: two inputs (`customDomain`, `customSubdomain`), pre-populated from org data, saved via `updateOrgDomain()`, read-only display with a "Branded Portal" badge when set.
 
 ### Modify
-- DashboardLayout.tsx: add `CreditCard` icon import, add nav item, add import + render case
+- `toDisplayOrg()` in `MyOrganization.tsx`: remove `MOCK_ORGS` fallback; return a null/empty state when org is not available.
+- `SubscriptionBilling.tsx` plan feature lists: driven by live `getPlanLimits()` data instead of hardcoded strings.
 
 ### Remove
-- Nothing
+- `MOCK_ORGS` import and usage from `MyOrganization.tsx`.
 
 ## Implementation Plan
-1. Create PlatformBilling.tsx:
-   - Load all 4 plan limits in parallel with 4x getPlanLimits() calls
-   - Revenue Overview: hardcoded plan prices (Free=$0, Starter=$29, Professional=$99, Enterprise=custom), use getPlatformMetrics() orgsByPlan for counts, show estimated MRR
-   - Plan Limit Config: editable number inputs per tier per field (maxUsers, maxBranches, maxAgents, maxApiKeys, maxWallets), per-tier save button calling setPlanLimits(), success/error toasts
-   - Loading skeletons while data loads
-2. Update DashboardLayout.tsx: add CreditCard to imports, add nav item, add import and switch case
+1. In `SubscriptionBilling.tsx`: fetch org → derive `planTier` → call `getPlanLimits(tier)` plus four parallel resource-count queries. Render a new "Resource Usage" card above the plan comparison grid with one row per resource (Progress bar, count label, warning/limit badge, upgrade CTA link).
+2. In `SubscriptionBilling.tsx`: pass live `PlanLimits` values into a dynamic plan feature builder so each tier's card shows real numbers.
+3. In `MyOrganization.tsx`: remove mock fallback; add a third card "Custom Domain & Branding" with `customDomain` and `customSubdomain` inputs wired to `updateOrgDomain()`; show read-only display with code-style labels and badge when values are set.
