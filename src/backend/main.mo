@@ -68,6 +68,24 @@ actor {
     logoUrl : ?Text;
     primaryLanguage : Text;
     supportedLanguages : [Text];
+    customDomain : ?Text;
+    customSubdomain : ?Text;
+  };
+
+  // Migration type: shape of Organization before 5A-iii (no customDomain/customSubdomain)
+  type OrganizationLegacy = {
+    id : Text;
+    name : Text;
+    description : Text;
+    planTier : PlanTier;
+    ownerId : Principal.Principal;
+    stripeCustomerId : ?Text;
+    stripeSubscriptionId : ?Text;
+    isActive : Bool;
+    createdAt : Int;
+    logoUrl : ?Text;
+    primaryLanguage : Text;
+    supportedLanguages : [Text];
   };
 
   module Organization {
@@ -312,7 +330,8 @@ actor {
     };
   };
 
-  let organizations = Map.empty<Text, Organization>();
+  let organizations = Map.empty<Text, OrganizationLegacy>();
+  let organizationsNew = Map.empty<Text, Organization>();
   let users = Map.empty<Principal.Principal, User>();
   let branches = Map.empty<Text, Branch>();
   let inviteLinks = Map.empty<Text, InviteLink>();
@@ -353,6 +372,8 @@ actor {
     logoUrl : ?Text;
     primaryLanguage : Text;
     supportedLanguages : [Text];
+    customDomain : ?Text;
+    customSubdomain : ?Text;
   };
 
   type BranchInput = {
@@ -526,7 +547,7 @@ actor {
     #ok : Organization;
     #err : Text;
   } {
-    if (organizations.containsKey(input.name)) {
+    if (organizationsNew.containsKey(input.name)) {
       return #err("Organization already exists");
     };
     let newOrg = {
@@ -542,17 +563,19 @@ actor {
       logoUrl = null;
       primaryLanguage = input.primaryLanguage;
       supportedLanguages = [];
+      customDomain = null;
+      customSubdomain = null;
     };
-    organizations.add(input.name, newOrg);
+    organizationsNew.add(input.name, newOrg);
     #ok(newOrg);
   };
 
   public shared func getOrganizationById(id : Text) : async ?Organization {
-    organizations.get(id);
+    organizationsNew.get(id);
   };
 
   public shared func getAllOrganizations() : async [Organization] {
-    organizations.values().toArray().sort();
+    organizationsNew.values().toArray().sort();
   };
 
   public shared ({ caller }) func getMyOrganization() : async ?Organization {
@@ -564,7 +587,7 @@ actor {
     };
     switch (foundOrg) {
       case (null) { null };
-      case (?orgId) { organizations.get(orgId) };
+      case (?orgId) { organizationsNew.get(orgId) };
     };
   };
 
@@ -572,7 +595,7 @@ actor {
     #ok : Organization;
     #err : Text;
   } {
-    switch (organizations.get(id)) {
+    switch (organizationsNew.get(id)) {
       case (null) { #err("Organization not found") };
       case (?org) {
         let authorized = isSuperAdmin(caller) or org.ownerId.equal(caller);
@@ -592,9 +615,11 @@ actor {
           logoUrl = input.logoUrl;
           primaryLanguage = input.primaryLanguage;
           supportedLanguages = input.supportedLanguages;
+          customDomain = input.customDomain;
+          customSubdomain = input.customSubdomain;
         };
-        organizations.remove(id);
-        organizations.add(updated.id, updated);
+        organizationsNew.remove(id);
+        organizationsNew.add(updated.id, updated);
         #ok(updated);
       };
     };
@@ -2053,7 +2078,7 @@ actor {
 
   // Returns the resolved plan limits for a given orgId
   func _getOrgLimits(orgId : Text) : PlanLimits {
-    switch (organizations.get(orgId)) {
+    switch (organizationsNew.get(orgId)) {
       case (?org) { _resolvedPlanLimits(org.planTier) };
       case null   { _getDefaultPlanLimits(#free) };
     };
@@ -2111,7 +2136,7 @@ actor {
     };
     if (callerUser.role != #super_admin) return #err("Only super_admin can view platform metrics");
 
-    let allOrgs = organizations.values().toArray();
+    let allOrgs = organizationsNew.values().toArray();
     let allUsers = users.values().toArray();
     let allAgents = agents.values().toArray();
     let allTasks = tasks.values().toArray();
@@ -2149,5 +2174,137 @@ actor {
     });
   };
 
+
+
+  // ─── Org Domain Management ────────────────────────────────────────────────
+
+  public shared ({ caller }) func updateOrgDomain(orgId : Text, customDomain : ?Text, customSubdomain : ?Text) : async { #ok : Organization; #err : Text } {
+    let callerUser = switch (users.get(caller)) {
+      case (?u) u;
+      case null return #err("Not registered");
+    };
+    let authorized = callerUser.role == #super_admin or (
+      callerUser.role == #org_admin and callerUser.orgId == ?orgId
+    );
+    if (not authorized) return #err("Not authorized");
+    switch (organizationsNew.get(orgId)) {
+      case (null) { #err("Organization not found") };
+      case (?org) {
+        let updated : Organization = {
+          id = org.id;
+          name = org.name;
+          description = org.description;
+          planTier = org.planTier;
+          ownerId = org.ownerId;
+          stripeCustomerId = org.stripeCustomerId;
+          stripeSubscriptionId = org.stripeSubscriptionId;
+          isActive = org.isActive;
+          createdAt = org.createdAt;
+          logoUrl = org.logoUrl;
+          primaryLanguage = org.primaryLanguage;
+          supportedLanguages = org.supportedLanguages;
+          customDomain = customDomain;
+          customSubdomain = customSubdomain;
+        };
+        organizationsNew.remove(orgId);
+        organizationsNew.add(updated.id, updated);
+        #ok(updated);
+      };
+    };
+  };
+
+  // ─── Org Plan Override ────────────────────────────────────────────────────
+
+  public shared ({ caller }) func setOrgPlanOverride(orgId : Text, tier : PlanTier) : async { #ok : Organization; #err : Text } {
+    let callerUser = switch (users.get(caller)) {
+      case (?u) u;
+      case null return #err("Not registered");
+    };
+    if (callerUser.role != #super_admin) return #err("Only super_admin can override plan tier");
+    switch (organizationsNew.get(orgId)) {
+      case (null) { #err("Organization not found") };
+      case (?org) {
+        let updated : Organization = {
+          id = org.id;
+          name = org.name;
+          description = org.description;
+          planTier = tier;
+          ownerId = org.ownerId;
+          stripeCustomerId = org.stripeCustomerId;
+          stripeSubscriptionId = org.stripeSubscriptionId;
+          isActive = org.isActive;
+          createdAt = org.createdAt;
+          logoUrl = org.logoUrl;
+          primaryLanguage = org.primaryLanguage;
+          supportedLanguages = org.supportedLanguages;
+          customDomain = org.customDomain;
+          customSubdomain = org.customSubdomain;
+        };
+        organizationsNew.remove(orgId);
+        organizationsNew.add(updated.id, updated);
+        #ok(updated);
+      };
+    };
+  };
+
+  // ─── Org Activation Toggle ────────────────────────────────────────────────
+
+  public shared ({ caller }) func setOrgActive(orgId : Text, isActive : Bool) : async { #ok : Organization; #err : Text } {
+    let callerUser = switch (users.get(caller)) {
+      case (?u) u;
+      case null return #err("Not registered");
+    };
+    if (callerUser.role != #super_admin) return #err("Only super_admin can activate/deactivate tenants");
+    switch (organizationsNew.get(orgId)) {
+      case (null) { #err("Organization not found") };
+      case (?org) {
+        let updated : Organization = {
+          id = org.id;
+          name = org.name;
+          description = org.description;
+          planTier = org.planTier;
+          ownerId = org.ownerId;
+          stripeCustomerId = org.stripeCustomerId;
+          stripeSubscriptionId = org.stripeSubscriptionId;
+          isActive = isActive;
+          createdAt = org.createdAt;
+          logoUrl = org.logoUrl;
+          primaryLanguage = org.primaryLanguage;
+          supportedLanguages = org.supportedLanguages;
+          customDomain = org.customDomain;
+          customSubdomain = org.customSubdomain;
+        };
+        organizationsNew.remove(orgId);
+        organizationsNew.add(updated.id, updated);
+        #ok(updated);
+      };
+    };
+  };
+
+
+  // ── Migration: 5A-iii — copy legacy orgs (no domain fields) into typed map ──
+  system func postupgrade() {
+    for ((k, org) in organizations.entries()) {
+      if (not organizationsNew.containsKey(k)) {
+        let migrated : Organization = {
+          id = org.id;
+          name = org.name;
+          description = org.description;
+          planTier = org.planTier;
+          ownerId = org.ownerId;
+          stripeCustomerId = org.stripeCustomerId;
+          stripeSubscriptionId = org.stripeSubscriptionId;
+          isActive = org.isActive;
+          createdAt = org.createdAt;
+          logoUrl = org.logoUrl;
+          primaryLanguage = org.primaryLanguage;
+          supportedLanguages = org.supportedLanguages;
+          customDomain = null;
+          customSubdomain = null;
+        };
+        organizationsNew.add(k, migrated);
+      };
+    };
+  };
 
 };

@@ -1,33 +1,33 @@
 # AAAgencies SerVSys™
 
 ## Current State
-- Backend has Organization type with planTier field but no plan limit definitions or enforcement.
-- No PlanLimits type, no stable storage for plan limits, no platform aggregate APIs.
-- PlatformOverview.tsx uses mock metric data — no live getPlatformMetrics() call.
-- 1,978 lines in main.mo; all Phases 1–4 fully live.
+Phase 5A-i (PlanLimits type + storage + read APIs) and 5A-ii (enforcement in createBranch, createWallet, generateApiKey, registerAgent, registerUser/redeemInviteLink) are complete and live. The Organization type has no custom domain fields, and there are no super_admin APIs to override plan tiers or activate/deactivate tenants.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `PlanLimits` record type: maxUsers, maxBranches, maxAgents, maxApiKeys, maxWallets (all Nat)
-- `PlatformMetrics` record type: totalOrgs, totalUsers, totalAgents, totalTasks, totalWallets, orgsByPlan (breakdown per tier)
-- `planLimitsMap` stable Map<Text, PlanLimits> keyed by plan tier text ("free", "starter", "professional", "enterprise")
-- Default plan limits initialized on first use (Free: 5/2/1/2/2, Starter: 20/5/5/10/5, Professional: 100/20/20/50/20, Enterprise: 999999/999999/999999/999999/999999)
-- `getPlanLimits(tier: PlanTier)` — any authenticated user; returns PlanLimits for the given tier
-- `setPlanLimits(tier: PlanTier, limits: PlanLimits)` — super_admin only; overrides defaults
-- `getPlatformMetrics()` — super_admin only; returns live aggregate counts from stable maps
-- `backend.d.ts` updated with PlanLimits, PlatformMetrics types and all three method signatures
+- `customDomain: ?Text` and `customSubdomain: ?Text` fields to the `Organization` type
+- `customDomain?: string` and `customSubdomain?: string` to `UpdateOrgInput` type (so org_admin can set via existing `updateOrganization`)
+- `updateOrgDomain(orgId, customDomain, customSubdomain)` — org_admin (own org) or super_admin; updates domain/subdomain settings and returns updated Organization
+- `setOrgPlanOverride(orgId, tier)` — super_admin only; changes an org's planTier
+- `setOrgActive(orgId, isActive)` — super_admin only; activates or deactivates a tenant org
+- All three methods added to `backend.d.ts` interface
 
 ### Modify
-- Nothing modified in existing functions (enforcement comes in 5A-ii)
+- `Organization` type in `main.mo`: added `customDomain` and `customSubdomain` optional fields
+- `createOrganization`: initializes both fields to `null`
+- `updateOrganization`: preserves or updates `customDomain`/`customSubdomain` from input
+- `Organization` interface in `backend.d.ts`: added optional `customDomain` and `customSubdomain`
+- `UpdateOrgInput` interface in `backend.d.ts`: added optional `customDomain` and `customSubdomain`
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Add `PlanLimits` and `PlatformMetrics` record types after existing type definitions
-2. Add `planLimitsMap` stable Map after existing stable maps; add `_getDefaultPlanLimits(tier)` private helper
-3. Implement `getPlanLimits(tier)` — looks up planLimitsMap, falls back to defaults
-4. Implement `setPlanLimits(tier, limits)` — super_admin auth check, upsert into planLimitsMap
-5. Implement `getPlatformMetrics()` — super_admin auth check, iterate all stable maps for live counts
-6. Update `backend.d.ts` with new types and three new method signatures
+1. ✅ Add `customDomain: ?Text` and `customSubdomain: ?Text` to `Organization` type in `main.mo`
+2. ✅ Add same fields to `UpdateOrgInput` type in `main.mo`
+3. ✅ Update `createOrganization` record to initialize both as `null`
+4. ✅ Update `updateOrganization` record to carry through `input.customDomain`/`input.customSubdomain`
+5. ✅ Add `updateOrgDomain`, `setOrgPlanOverride`, `setOrgActive` APIs to `main.mo`
+6. ✅ Update `Organization` and `UpdateOrgInput` interfaces in `backend.d.ts`
+7. ✅ Add method signatures for all three new APIs to `backendInterface` in `backend.d.ts`

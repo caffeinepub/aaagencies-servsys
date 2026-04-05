@@ -44,6 +44,8 @@ export interface UpdateOrgInput {
     logoUrl?: string;
     supportedLanguages: Array<string>;
     primaryLanguage: string;
+    customDomain?: string;
+    customSubdomain?: string;
 }
 export type Principal = Principal;
 export interface CreateInviteLinkInput {
@@ -151,6 +153,8 @@ export interface Organization {
     supportedLanguages: Array<string>;
     planTier: PlanTier;
     primaryLanguage: string;
+    customDomain?: string;
+    customSubdomain?: string;
 }
 export interface BranchUpdateInput {
     timezone?: string;
@@ -542,6 +546,27 @@ export interface backendInterface {
     getPlatformMetrics(): Promise<{
         __kind__: "ok";
         ok: PlatformMetrics;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    updateOrgDomain(orgId: string, customDomain: string | null, customSubdomain: string | null): Promise<{
+        __kind__: "ok";
+        ok: Organization;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    setOrgPlanOverride(orgId: string, tier: PlanTier): Promise<{
+        __kind__: "ok";
+        ok: Organization;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    setOrgActive(orgId: string, isActive: boolean): Promise<{
+        __kind__: "ok";
+        ok: Organization;
     } | {
         __kind__: "err";
         err: string;
