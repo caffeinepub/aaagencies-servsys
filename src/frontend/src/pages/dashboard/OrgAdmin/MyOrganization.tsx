@@ -8,9 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
 import type { MockOrg } from "@/lib/mockData";
 import { MOCK_ORGS } from "@/lib/mockData";
-import { useQuery } from "@tanstack/react-query";
-import { Building2, Languages, Pencil } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, Languages, Loader2, Pencil } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import type { Organization } from "../../../backend.d";
 
 type DisplayOrg = {
@@ -20,6 +21,7 @@ type DisplayOrg = {
   primaryLanguage: string;
   supportedLanguages: string[];
   planTier: string;
+  logoUrl?: string;
 };
 
 function toDisplayOrg(org: Organization | null | undefined): DisplayOrg {
@@ -32,6 +34,7 @@ function toDisplayOrg(org: Organization | null | undefined): DisplayOrg {
       primaryLanguage: mock.primaryLanguage,
       supportedLanguages: mock.supportedLanguages,
       planTier: mock.planTier,
+      logoUrl: undefined,
     };
   }
   const planTier =
@@ -45,20 +48,75 @@ function toDisplayOrg(org: Organization | null | undefined): DisplayOrg {
     primaryLanguage: org.primaryLanguage,
     supportedLanguages: org.supportedLanguages,
     planTier,
+    logoUrl: org.logoUrl,
   };
 }
 
+type EditForm = {
+  name: string;
+  description: string;
+  logoUrl: string;
+  primaryLanguage: string;
+  supportedLanguages: string; // comma-separated
+};
+
 export default function MyOrganization() {
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<EditForm>({
+    name: "",
+    description: "",
+    logoUrl: "",
+    primaryLanguage: "",
+    supportedLanguages: "",
+  });
 
   const { data: org, isLoading } = useQuery({
     queryKey: ["my-org"],
     queryFn: () => actor!.getMyOrganization(),
-    enabled: !!actor,
+    enabled: !!actor && !isFetching,
   });
 
   const displayOrg = toDisplayOrg(org);
+
+  const startEditing = () => {
+    setForm({
+      name: displayOrg.name,
+      description: displayOrg.description,
+      logoUrl: displayOrg.logoUrl ?? "",
+      primaryLanguage: displayOrg.primaryLanguage,
+      supportedLanguages: displayOrg.supportedLanguages.join(", "),
+    });
+    setEditing(true);
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: async (editForm: EditForm) => {
+      if (!actor || !org?.id) throw new Error("Not connected");
+      const input = {
+        name: editForm.name,
+        description: editForm.description,
+        logoUrl: editForm.logoUrl ? editForm.logoUrl : undefined,
+        primaryLanguage: editForm.primaryLanguage,
+        supportedLanguages: editForm.supportedLanguages
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
+      const result = await (actor as any).updateOrganization(org.id, input);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result.ok;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-org"] });
+      setEditing(false);
+      toast.success("Organization updated successfully");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
@@ -76,7 +134,8 @@ export default function MyOrganization() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setEditing(!editing)}
+          onClick={editing ? () => setEditing(false) : startEditing}
+          data-ocid="org.edit_button"
         >
           <Pencil className="w-3.5 h-3.5 mr-1.5" />
           {editing ? "Cancel" : "Edit"}
@@ -91,22 +150,99 @@ export default function MyOrganization() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input defaultValue={displayOrg.name} />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Input defaultValue={displayOrg.description} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2 col-span-2">
+                <Label>Organization Name</Label>
+                <Input
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                  placeholder="Your organization name"
+                  data-ocid="org.input"
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Description</Label>
+                <Input
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, description: e.target.value }))
+                  }
+                  placeholder="Describe your organization"
+                  data-ocid="org.input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  Logo URL{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (optional)
+                  </span>
+                </Label>
+                <Input
+                  value={form.logoUrl}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, logoUrl: e.target.value }))
+                  }
+                  placeholder="https://..."
+                  data-ocid="org.input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Primary Language</Label>
+                <Input
+                  value={form.primaryLanguage}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, primaryLanguage: e.target.value }))
+                  }
+                  placeholder="e.g. en"
+                  data-ocid="org.input"
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>
+                  Supported Languages{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (comma-separated, e.g. en, es, fr)
+                  </span>
+                </Label>
+                <Input
+                  value={form.supportedLanguages}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      supportedLanguages: e.target.value,
+                    }))
+                  }
+                  placeholder="en, es, fr, ar"
+                  data-ocid="org.input"
+                />
+              </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => setEditing(false)}>
-                Save Changes
+              <Button
+                size="sm"
+                onClick={() => updateMutation.mutate(form)}
+                disabled={
+                  updateMutation.isPending || !form.name || !form.description
+                }
+                data-ocid="org.save_button"
+              >
+                {updateMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => setEditing(false)}
+                data-ocid="org.cancel_button"
               >
                 Cancel
               </Button>
@@ -123,6 +259,16 @@ export default function MyOrganization() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {displayOrg.logoUrl && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Logo</p>
+                  <img
+                    src={displayOrg.logoUrl}
+                    alt="Org logo"
+                    className="h-10 mt-1 rounded object-contain"
+                  />
+                </div>
+              )}
               <div>
                 <p className="text-xs text-muted-foreground">Name</p>
                 <p className="text-sm font-medium">{displayOrg.name}</p>

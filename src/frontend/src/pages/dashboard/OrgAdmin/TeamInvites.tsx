@@ -1,4 +1,14 @@
 import { RoleBadge } from "@/components/RoleBadge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +31,6 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
-import { MOCK_USERS } from "@/lib/mockData";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -30,10 +39,12 @@ import {
   Link2,
   Loader2,
   Plus,
+  UserX,
   Users,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { User } from "../../../backend.d";
 
 interface InviteLink {
   id: string;
@@ -58,7 +69,29 @@ export default function TeamInvites() {
     expiresAt: "",
   });
 
-  const teamMembers = MOCK_USERS.filter((u) => u.orgId === "org-001");
+  // Change role dialog state
+  const [changeRoleUser, setChangeRoleUser] = useState<User | null>(null);
+  const [newRole, setNewRole] = useState("team_member");
+
+  // Remove member confirmation state
+  const [removeTarget, setRemoveTarget] = useState<User | null>(null);
+
+  // Fetch org to get orgId
+  const { data: org } = useQuery({
+    queryKey: ["my-org"],
+    queryFn: () => actor!.getMyOrganization(),
+    enabled: !!actor && !isFetching,
+  });
+
+  // Fetch real team members
+  const { data: teamMembers, isLoading: membersLoading } = useQuery<User[]>({
+    queryKey: ["team-members", org?.id],
+    queryFn: async () => {
+      if (!actor || !org?.id) return [];
+      return (actor as any).getTeamMembersByOrg(org.id);
+    },
+    enabled: !!actor && !!org?.id && !isFetching,
+  });
 
   // Load invite links from backend
   const {
@@ -126,6 +159,50 @@ export default function TeamInvites() {
     },
   });
 
+  // Update user role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({
+      principal,
+      role,
+    }: {
+      principal: unknown;
+      role: string;
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      const roleArg = { [role]: null } as any;
+      const result = await (actor as any).updateUserRole(principal, roleArg);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result.ok;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members", org?.id] });
+      setChangeRoleUser(null);
+      toast.success("Role updated successfully");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  // Remove member mutation
+  const removeMemberMutation = useMutation({
+    mutationFn: async (principal: unknown) => {
+      if (!actor) throw new Error("Not connected");
+      const result = await (actor as any).removeUserFromOrg(principal);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result.ok;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members", org?.id] });
+      setRemoveTarget(null);
+      toast.success("Member removed from organization");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+      setRemoveTarget(null);
+    },
+  });
+
   const formatExpiry = (link: InviteLink) => {
     const expiresAt = link.expiresAt;
     if (expiresAt && Array.isArray(expiresAt) && expiresAt.length > 0) {
@@ -149,6 +226,12 @@ export default function TeamInvites() {
     if (typeof role === "string") return role;
     return "unknown";
   };
+
+  const getUserRoleName = (user: User): string => {
+    return getRoleName(user.role);
+  };
+
+  const memberCount = Array.isArray(teamMembers) ? teamMembers.length : 0;
 
   return (
     <div className="space-y-6">
@@ -249,46 +332,96 @@ export default function TeamInvites() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-display flex items-center gap-2">
             <Users className="w-4 h-4 text-primary" /> Team Members (
-            {teamMembers.length})
+            {memberCount})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 pb-2">
-          <div className="divide-y divide-border/40">
-            {teamMembers.map((user, idx) => {
-              const initials = user.displayName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2);
-              return (
-                <div
-                  key={user.id}
-                  className="flex items-center gap-3 px-5 py-2.5"
-                  data-ocid={`team.item.${idx + 1}`}
-                >
-                  <Avatar className="w-7 h-7 shrink-0">
-                    <AvatarFallback className="text-xs bg-primary/15 text-primary">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{user.displayName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {user.email}
-                    </p>
-                  </div>
-                  <RoleBadge role={user.role} />
-                  <Badge
-                    variant="outline"
-                    className="text-xs bg-teal-500/10 text-teal-400 border-teal-500/30"
+          {membersLoading && (
+            <div className="space-y-3 px-5 py-3" data-ocid="team.loading_state">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-3/4" />
+            </div>
+          )}
+
+          {!membersLoading && (!teamMembers || teamMembers.length === 0) && (
+            <div
+              className="flex flex-col items-center gap-2 px-5 py-8 text-center"
+              data-ocid="team.empty_state"
+            >
+              <Users className="w-8 h-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">
+                No team members yet. Invite members using the button above.
+              </p>
+            </div>
+          )}
+
+          {!membersLoading && teamMembers && teamMembers.length > 0 && (
+            <div className="divide-y divide-border/40">
+              {teamMembers.map((user, idx) => {
+                const initials = (user.displayName || "?")
+                  .split(" ")
+                  .map((n: string) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2);
+                const roleName = getUserRoleName(user);
+                return (
+                  <div
+                    key={String(user.principal)}
+                    className="flex items-center gap-3 px-5 py-2.5"
+                    data-ocid={`team.item.${idx + 1}`}
                   >
-                    Active
-                  </Badge>
-                </div>
-              );
-            })}
-          </div>
+                    <Avatar className="w-7 h-7 shrink-0">
+                      <AvatarFallback className="text-xs bg-primary/15 text-primary">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{user.displayName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                    <RoleBadge role={roleName} />
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${
+                        user.isActive
+                          ? "bg-teal-500/10 text-teal-400 border-teal-500/30"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {user.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2"
+                        data-ocid={`team.edit_button.${idx + 1}`}
+                        onClick={() => {
+                          setNewRole(roleName);
+                          setChangeRoleUser(user);
+                        }}
+                      >
+                        Change Role
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-7 h-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        data-ocid={`team.delete_button.${idx + 1}`}
+                        onClick={() => setRemoveTarget(user)}
+                      >
+                        <UserX className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -405,6 +538,102 @@ export default function TeamInvites() {
           )}
         </CardContent>
       </Card>
+
+      {/* Change Role Dialog */}
+      <Dialog
+        open={!!changeRoleUser}
+        onOpenChange={(open) => !open && setChangeRoleUser(null)}
+      >
+        <DialogContent data-ocid="team.dialog">
+          <DialogHeader>
+            <DialogTitle className="font-display">Change Role</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              Update the role for <strong>{changeRoleUser?.displayName}</strong>
+              .
+            </p>
+            <div className="space-y-2">
+              <Label>New Role</Label>
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger data-ocid="team.select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="team_member">Team Member</SelectItem>
+                  <SelectItem value="org_admin">Org Admin</SelectItem>
+                  <SelectItem value="end_customer">End Customer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                disabled={updateRoleMutation.isPending}
+                data-ocid="team.confirm_button"
+                onClick={() =>
+                  changeRoleUser &&
+                  updateRoleMutation.mutate({
+                    principal: changeRoleUser.principal,
+                    role: newRole,
+                  })
+                }
+              >
+                {updateRoleMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Role"
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setChangeRoleUser(null)}
+                data-ocid="team.cancel_button"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Member Confirmation */}
+      <AlertDialog
+        open={!!removeTarget}
+        onOpenChange={(open) => !open && setRemoveTarget(null)}
+      >
+        <AlertDialogContent data-ocid="team.dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Team Member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove <strong>{removeTarget?.displayName}</strong> from
+              your organization. They will lose access to all org resources.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-ocid="team.cancel_button">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-ocid="team.confirm_button"
+              onClick={() =>
+                removeTarget &&
+                removeMemberMutation.mutate(removeTarget.principal)
+              }
+            >
+              {removeMemberMutation.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                "Remove Member"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

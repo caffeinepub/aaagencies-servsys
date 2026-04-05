@@ -9,6 +9,55 @@
 import { IDL } from '@icp-sdk/core/candid';
 
 export const Principal = IDL.Principal;
+export const BranchInput = IDL.Record({
+  'timezone' : IDL.Text,
+  'orgId' : IDL.Text,
+  'name' : IDL.Text,
+  'subWalletEnabled' : IDL.Bool,
+  'managerId' : IDL.Opt(Principal),
+  'siteUrl' : IDL.Opt(IDL.Text),
+  'phone' : IDL.Opt(IDL.Text),
+  'location' : IDL.Text,
+  'primaryLanguage' : IDL.Text,
+});
+export const Branch = IDL.Record({
+  'id' : IDL.Text,
+  'timezone' : IDL.Text,
+  'orgId' : IDL.Text,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'isActive' : IDL.Bool,
+  'subWalletEnabled' : IDL.Bool,
+  'managerId' : IDL.Opt(Principal),
+  'siteUrl' : IDL.Opt(IDL.Text),
+  'phone' : IDL.Opt(IDL.Text),
+  'location' : IDL.Text,
+  'primaryLanguage' : IDL.Text,
+});
+export const Role = IDL.Variant({
+  'super_admin' : IDL.Null,
+  'org_admin' : IDL.Null,
+  'end_customer' : IDL.Null,
+  'team_member' : IDL.Null,
+});
+export const CreateInviteLinkInput = IDL.Record({
+  'expiresAt' : IDL.Opt(IDL.Int),
+  'orgId' : IDL.Opt(IDL.Text),
+  'role' : Role,
+  'maxRedemptions' : IDL.Opt(IDL.Nat),
+});
+export const InviteLink = IDL.Record({
+  'id' : IDL.Text,
+  'expiresAt' : IDL.Opt(IDL.Int),
+  'orgId' : IDL.Opt(IDL.Text),
+  'redemptionCount' : IDL.Nat,
+  'code' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'createdBy' : Principal,
+  'role' : Role,
+  'isActive' : IDL.Bool,
+  'maxRedemptions' : IDL.Opt(IDL.Nat),
+});
 export const PlanTier = IDL.Variant({
   'enterprise' : IDL.Null,
   'starter' : IDL.Null,
@@ -36,11 +85,62 @@ export const Organization = IDL.Record({
   'planTier' : PlanTier,
   'primaryLanguage' : IDL.Text,
 });
-export const Role = IDL.Variant({
-  'super_admin' : IDL.Null,
-  'org_admin' : IDL.Null,
-  'end_customer' : IDL.Null,
-  'team_member' : IDL.Null,
+export const AccountType = IDL.Variant({
+  'vendor_account' : IDL.Null,
+  'branch_fund' : IDL.Null,
+  'org_treasury' : IDL.Null,
+  'member_wallet' : IDL.Null,
+});
+export const WalletInput = IDL.Record({
+  'orgId' : IDL.Text,
+  'name' : IDL.Text,
+  'accountType' : AccountType,
+  'branchId' : IDL.Opt(IDL.Text),
+});
+export const WalletAccount = IDL.Record({
+  'id' : IDL.Text,
+  'orgId' : IDL.Text,
+  'ownerId' : Principal,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'isActive' : IDL.Bool,
+  'accountType' : AccountType,
+  'currency' : IDL.Text,
+  'balanceE8s' : IDL.Nat,
+  'branchId' : IDL.Opt(IDL.Text),
+});
+export const TransactionStatus = IDL.Variant({
+  'pending' : IDL.Null,
+  'completed' : IDL.Null,
+  'failed' : IDL.Null,
+});
+export const TxType = IDL.Variant({
+  'deposit' : IDL.Null,
+  'fractionalize' : IDL.Null,
+  'distribute' : IDL.Null,
+  'withdrawal' : IDL.Null,
+  'transfer' : IDL.Null,
+});
+export const Transaction = IDL.Record({
+  'id' : IDL.Text,
+  'status' : TransactionStatus,
+  'createdAt' : IDL.Int,
+  'description' : IDL.Text,
+  'toWalletId' : IDL.Text,
+  'fromWalletId' : IDL.Text,
+  'txType' : TxType,
+  'amountE8s' : IDL.Nat,
+  'initiatedBy' : Principal,
+});
+export const Lead = IDL.Record({
+  'id' : IDL.Text,
+  'preferredLanguage' : IDL.Text,
+  'orgName' : IDL.Opt(IDL.Text),
+  'interest' : IDL.Text,
+  'source' : IDL.Text,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'email' : IDL.Text,
 });
 export const User = IDL.Record({
   'principal' : Principal,
@@ -49,7 +149,7 @@ export const User = IDL.Record({
   'orgId' : IDL.Opt(IDL.Text),
   'lastLoginAt' : IDL.Opt(IDL.Int),
   'createdAt' : IDL.Int,
-  'role' : IDL.Role,
+  'role' : Role,
   'isActive' : IDL.Bool,
   'email' : IDL.Text,
   'stripeCustomerId' : IDL.Opt(IDL.Text),
@@ -62,76 +162,43 @@ export const UserInput = IDL.Record({
   'displayName' : IDL.Text,
   'email' : IDL.Text,
 });
-export const Lead = IDL.Record({
-  'id' : IDL.Text,
-  'name' : IDL.Text,
-  'email' : IDL.Text,
-  'interest' : IDL.Text,
-  'orgName' : IDL.Opt(IDL.Text),
-  'preferredLanguage' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'source' : IDL.Text,
-});
 export const LeadInput = IDL.Record({
+  'preferredLanguage' : IDL.Text,
+  'orgName' : IDL.Opt(IDL.Text),
+  'interest' : IDL.Text,
+  'source' : IDL.Text,
   'name' : IDL.Text,
   'email' : IDL.Text,
-  'interest' : IDL.Text,
-  'orgName' : IDL.Opt(IDL.Text),
+});
+export const BranchUpdateInput = IDL.Record({
+  'timezone' : IDL.Opt(IDL.Text),
+  'name' : IDL.Opt(IDL.Text),
+  'isActive' : IDL.Opt(IDL.Bool),
+  'subWalletEnabled' : IDL.Opt(IDL.Bool),
+  'managerId' : IDL.Opt(Principal),
+  'siteUrl' : IDL.Opt(IDL.Text),
+  'phone' : IDL.Opt(IDL.Text),
+  'location' : IDL.Opt(IDL.Text),
+  'primaryLanguage' : IDL.Opt(IDL.Text),
+});
+export const UpdateProfileInput = IDL.Record({
   'preferredLanguage' : IDL.Text,
-  'source' : IDL.Text,
+  'displayName' : IDL.Text,
+  'email' : IDL.Text,
+  'avatarUrl' : IDL.Opt(IDL.Text),
 });
-export const InviteLink = IDL.Record({
-  'id' : IDL.Text,
-  'code' : IDL.Text,
-  'orgId' : IDL.Opt(IDL.Text),
-  'createdBy' : Principal,
-  'role' : Role,
-  'maxRedemptions' : IDL.Opt(IDL.Nat),
-  'redemptionCount' : IDL.Nat,
-  'expiresAt' : IDL.Opt(IDL.Int),
-  'isActive' : IDL.Bool,
-  'createdAt' : IDL.Int,
-});
-export const CreateInviteLinkInput = IDL.Record({
-  'role' : Role,
-  'maxRedemptions' : IDL.Opt(IDL.Nat),
-  'expiresAt' : IDL.Opt(IDL.Int),
-  'orgId' : IDL.Opt(IDL.Text),
+export const UpdateOrgInput = IDL.Record({
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+  'logoUrl' : IDL.Opt(IDL.Text),
+  'supportedLanguages' : IDL.Vec(IDL.Text),
+  'primaryLanguage' : IDL.Text,
 });
 
 export const idlService = IDL.Service({
-  'createOrganization' : IDL.Func(
-      [OrganizationInput],
-      [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
-      [],
-    ),
-  'getAllOrganizations' : IDL.Func([], [IDL.Vec(Organization)], []),
-  'getAllUsers' : IDL.Func([], [IDL.Vec(User)], ['query']),
-  'getAllUsersByEmail' : IDL.Func([], [IDL.Vec(User)], ['query']),
-  'getMyOrganization' : IDL.Func([], [IDL.Opt(Organization)], []),
-  'getMyProfile' : IDL.Func([], [User], []),
-  'getOrganizationById' : IDL.Func([IDL.Text], [IDL.Opt(Organization)], []),
-  'getUserById' : IDL.Func([Principal], [User], []),
-  'isRegistered' : IDL.Func([], [IDL.Bool], ['query']),
-  'registerUser' : IDL.Func(
-      [UserInput],
-      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
-      [],
-    ),
-  'updateMyProfile' : IDL.Func(
-      [IDL.Record({ displayName: IDL.Text, email: IDL.Text, preferredLanguage: IDL.Text, avatarUrl: IDL.Opt(IDL.Text) })],
-      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
-      [],
-    ),
-  'updateLastLogin' : IDL.Func([], [], []),
-  'submitLead' : IDL.Func(
-      [LeadInput],
-      [IDL.Variant({ 'ok' : Lead, 'err' : IDL.Text })],
-      [],
-    ),
-  'getAllLeads' : IDL.Func(
-      [],
-      [IDL.Variant({ 'ok' : IDL.Vec(Lead), 'err' : IDL.Text })],
+  'createBranch' : IDL.Func(
+      [BranchInput],
+      [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
       [],
     ),
   'createInviteLink' : IDL.Func(
@@ -139,21 +206,113 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
       [],
     ),
-  'getAllInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
-  'getMyInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
-  'getInviteLinkByCode' : IDL.Func(
-      [IDL.Text],
-      [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
-      ['query'],
+  'createOrganization' : IDL.Func(
+      [OrganizationInput],
+      [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+      [],
     ),
-  'redeemInviteLink' : IDL.Func(
-      [IDL.Text, UserInput],
-      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+  'createWallet' : IDL.Func(
+      [WalletInput],
+      [IDL.Variant({ 'ok' : WalletAccount, 'err' : IDL.Text })],
+      [],
+    ),
+  'deactivateBranch' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
       [],
     ),
   'deactivateInviteLink' : IDL.Func(
       [IDL.Text],
       [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
+      [],
+    ),
+  'depositToWallet' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Text],
+      [IDL.Variant({ 'ok' : Transaction, 'err' : IDL.Text })],
+      [],
+    ),
+  'getAllInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
+  'getAllLeads' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Vec(Lead), 'err' : IDL.Text })],
+      [],
+    ),
+  'getAllOrganizations' : IDL.Func([], [IDL.Vec(Organization)], []),
+  'getAllUsers' : IDL.Func([], [IDL.Vec(User)], ['query']),
+  'getAllUsersByEmail' : IDL.Func([], [IDL.Vec(User)], ['query']),
+  'getBranchesByOrg' : IDL.Func([IDL.Text], [IDL.Vec(Branch)], []),
+  'getInviteLinkByCode' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getMyInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
+  'getMyOrganization' : IDL.Func([], [IDL.Opt(Organization)], []),
+  'getMyProfile' : IDL.Func([], [User], []),
+  'getMyWallets' : IDL.Func([], [IDL.Vec(WalletAccount)], ['query']),
+  'getOrganizationById' : IDL.Func([IDL.Text], [IDL.Opt(Organization)], []),
+  'getTeamMembersByOrg' : IDL.Func([IDL.Text], [IDL.Vec(User)], []),
+  'getTransactionHistory' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(Transaction), 'err' : IDL.Text })],
+      [],
+    ),
+  'getTransactionHistoryByOrg' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(Transaction), 'err' : IDL.Text })],
+      [],
+    ),
+  'getUserById' : IDL.Func([Principal], [User], []),
+  'getWalletsByOrg' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(WalletAccount), 'err' : IDL.Text })],
+      [],
+    ),
+  'isRegistered' : IDL.Func([], [IDL.Bool], ['query']),
+  'redeemInviteLink' : IDL.Func(
+      [IDL.Text, UserInput],
+      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+      [],
+    ),
+  'registerUser' : IDL.Func(
+      [UserInput],
+      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+      [],
+    ),
+  'removeUserFromOrg' : IDL.Func(
+      [Principal],
+      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+      [],
+    ),
+  'submitLead' : IDL.Func(
+      [LeadInput],
+      [IDL.Variant({ 'ok' : Lead, 'err' : IDL.Text })],
+      [],
+    ),
+  'transferICP' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+      [IDL.Variant({ 'ok' : Transaction, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateBranch' : IDL.Func(
+      [IDL.Text, BranchUpdateInput],
+      [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateLastLogin' : IDL.Func([], [], []),
+  'updateMyProfile' : IDL.Func(
+      [UpdateProfileInput],
+      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateOrganization' : IDL.Func(
+      [IDL.Text, UpdateOrgInput],
+      [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateUserRole' : IDL.Func(
+      [Principal, Role],
+      [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
       [],
     ),
 });
@@ -162,6 +321,55 @@ export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
   const Principal = IDL.Principal;
+  const BranchInput = IDL.Record({
+    'timezone' : IDL.Text,
+    'orgId' : IDL.Text,
+    'name' : IDL.Text,
+    'subWalletEnabled' : IDL.Bool,
+    'managerId' : IDL.Opt(Principal),
+    'siteUrl' : IDL.Opt(IDL.Text),
+    'phone' : IDL.Opt(IDL.Text),
+    'location' : IDL.Text,
+    'primaryLanguage' : IDL.Text,
+  });
+  const Branch = IDL.Record({
+    'id' : IDL.Text,
+    'timezone' : IDL.Text,
+    'orgId' : IDL.Text,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'isActive' : IDL.Bool,
+    'subWalletEnabled' : IDL.Bool,
+    'managerId' : IDL.Opt(Principal),
+    'siteUrl' : IDL.Opt(IDL.Text),
+    'phone' : IDL.Opt(IDL.Text),
+    'location' : IDL.Text,
+    'primaryLanguage' : IDL.Text,
+  });
+  const Role = IDL.Variant({
+    'super_admin' : IDL.Null,
+    'org_admin' : IDL.Null,
+    'end_customer' : IDL.Null,
+    'team_member' : IDL.Null,
+  });
+  const CreateInviteLinkInput = IDL.Record({
+    'expiresAt' : IDL.Opt(IDL.Int),
+    'orgId' : IDL.Opt(IDL.Text),
+    'role' : Role,
+    'maxRedemptions' : IDL.Opt(IDL.Nat),
+  });
+  const InviteLink = IDL.Record({
+    'id' : IDL.Text,
+    'expiresAt' : IDL.Opt(IDL.Int),
+    'orgId' : IDL.Opt(IDL.Text),
+    'redemptionCount' : IDL.Nat,
+    'code' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'createdBy' : Principal,
+    'role' : Role,
+    'isActive' : IDL.Bool,
+    'maxRedemptions' : IDL.Opt(IDL.Nat),
+  });
   const PlanTier = IDL.Variant({
     'enterprise' : IDL.Null,
     'starter' : IDL.Null,
@@ -189,11 +397,62 @@ export const idlFactory = ({ IDL }) => {
     'planTier' : PlanTier,
     'primaryLanguage' : IDL.Text,
   });
-  const Role = IDL.Variant({
-    'super_admin' : IDL.Null,
-    'org_admin' : IDL.Null,
-    'end_customer' : IDL.Null,
-    'team_member' : IDL.Null,
+  const AccountType = IDL.Variant({
+    'vendor_account' : IDL.Null,
+    'branch_fund' : IDL.Null,
+    'org_treasury' : IDL.Null,
+    'member_wallet' : IDL.Null,
+  });
+  const WalletInput = IDL.Record({
+    'orgId' : IDL.Text,
+    'name' : IDL.Text,
+    'accountType' : AccountType,
+    'branchId' : IDL.Opt(IDL.Text),
+  });
+  const WalletAccount = IDL.Record({
+    'id' : IDL.Text,
+    'orgId' : IDL.Text,
+    'ownerId' : Principal,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'isActive' : IDL.Bool,
+    'accountType' : AccountType,
+    'currency' : IDL.Text,
+    'balanceE8s' : IDL.Nat,
+    'branchId' : IDL.Opt(IDL.Text),
+  });
+  const TransactionStatus = IDL.Variant({
+    'pending' : IDL.Null,
+    'completed' : IDL.Null,
+    'failed' : IDL.Null,
+  });
+  const TxType = IDL.Variant({
+    'deposit' : IDL.Null,
+    'fractionalize' : IDL.Null,
+    'distribute' : IDL.Null,
+    'withdrawal' : IDL.Null,
+    'transfer' : IDL.Null,
+  });
+  const Transaction = IDL.Record({
+    'id' : IDL.Text,
+    'status' : TransactionStatus,
+    'createdAt' : IDL.Int,
+    'description' : IDL.Text,
+    'toWalletId' : IDL.Text,
+    'fromWalletId' : IDL.Text,
+    'txType' : TxType,
+    'amountE8s' : IDL.Nat,
+    'initiatedBy' : Principal,
+  });
+  const Lead = IDL.Record({
+    'id' : IDL.Text,
+    'preferredLanguage' : IDL.Text,
+    'orgName' : IDL.Opt(IDL.Text),
+    'interest' : IDL.Text,
+    'source' : IDL.Text,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'email' : IDL.Text,
   });
   const User = IDL.Record({
     'principal' : Principal,
@@ -215,76 +474,43 @@ export const idlFactory = ({ IDL }) => {
     'displayName' : IDL.Text,
     'email' : IDL.Text,
   });
-  const Lead = IDL.Record({
-    'id' : IDL.Text,
-    'name' : IDL.Text,
-    'email' : IDL.Text,
-    'interest' : IDL.Text,
-    'orgName' : IDL.Opt(IDL.Text),
-    'preferredLanguage' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'source' : IDL.Text,
-  });
   const LeadInput = IDL.Record({
+    'preferredLanguage' : IDL.Text,
+    'orgName' : IDL.Opt(IDL.Text),
+    'interest' : IDL.Text,
+    'source' : IDL.Text,
     'name' : IDL.Text,
     'email' : IDL.Text,
-    'interest' : IDL.Text,
-    'orgName' : IDL.Opt(IDL.Text),
+  });
+  const BranchUpdateInput = IDL.Record({
+    'timezone' : IDL.Opt(IDL.Text),
+    'name' : IDL.Opt(IDL.Text),
+    'isActive' : IDL.Opt(IDL.Bool),
+    'subWalletEnabled' : IDL.Opt(IDL.Bool),
+    'managerId' : IDL.Opt(Principal),
+    'siteUrl' : IDL.Opt(IDL.Text),
+    'phone' : IDL.Opt(IDL.Text),
+    'location' : IDL.Opt(IDL.Text),
+    'primaryLanguage' : IDL.Opt(IDL.Text),
+  });
+  const UpdateProfileInput = IDL.Record({
     'preferredLanguage' : IDL.Text,
-    'source' : IDL.Text,
+    'displayName' : IDL.Text,
+    'email' : IDL.Text,
+    'avatarUrl' : IDL.Opt(IDL.Text),
   });
-  const InviteLink = IDL.Record({
-    'id' : IDL.Text,
-    'code' : IDL.Text,
-    'orgId' : IDL.Opt(IDL.Text),
-    'createdBy' : Principal,
-    'role' : Role,
-    'maxRedemptions' : IDL.Opt(IDL.Nat),
-    'redemptionCount' : IDL.Nat,
-    'expiresAt' : IDL.Opt(IDL.Int),
-    'isActive' : IDL.Bool,
-    'createdAt' : IDL.Int,
-  });
-  const CreateInviteLinkInput = IDL.Record({
-    'role' : Role,
-    'maxRedemptions' : IDL.Opt(IDL.Nat),
-    'expiresAt' : IDL.Opt(IDL.Int),
-    'orgId' : IDL.Opt(IDL.Text),
+  const UpdateOrgInput = IDL.Record({
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+    'logoUrl' : IDL.Opt(IDL.Text),
+    'supportedLanguages' : IDL.Vec(IDL.Text),
+    'primaryLanguage' : IDL.Text,
   });
   
   return IDL.Service({
-    'createOrganization' : IDL.Func(
-        [OrganizationInput],
-        [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
-        [],
-      ),
-    'getAllOrganizations' : IDL.Func([], [IDL.Vec(Organization)], []),
-    'getAllUsers' : IDL.Func([], [IDL.Vec(User)], ['query']),
-    'getAllUsersByEmail' : IDL.Func([], [IDL.Vec(User)], ['query']),
-    'getMyOrganization' : IDL.Func([], [IDL.Opt(Organization)], []),
-    'getMyProfile' : IDL.Func([], [User], []),
-    'getOrganizationById' : IDL.Func([IDL.Text], [IDL.Opt(Organization)], []),
-    'getUserById' : IDL.Func([Principal], [User], []),
-    'isRegistered' : IDL.Func([], [IDL.Bool], ['query']),
-    'registerUser' : IDL.Func(
-        [UserInput],
-        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
-        [],
-      ),
-    'updateMyProfile' : IDL.Func(
-        [IDL.Record({ displayName: IDL.Text, email: IDL.Text, preferredLanguage: IDL.Text, avatarUrl: IDL.Opt(IDL.Text) })],
-        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
-        [],
-      ),
-    'updateLastLogin' : IDL.Func([], [], []),
-    'submitLead' : IDL.Func(
-        [LeadInput],
-        [IDL.Variant({ 'ok' : Lead, 'err' : IDL.Text })],
-        [],
-      ),
-    'getAllLeads' : IDL.Func(
-        [],
-        [IDL.Variant({ 'ok' : IDL.Vec(Lead), 'err' : IDL.Text })],
+    'createBranch' : IDL.Func(
+        [BranchInput],
+        [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
         [],
       ),
     'createInviteLink' : IDL.Func(
@@ -292,21 +518,113 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
         [],
       ),
-    'getAllInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
-    'getMyInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
-    'getInviteLinkByCode' : IDL.Func(
-        [IDL.Text],
-        [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
-        ['query'],
+    'createOrganization' : IDL.Func(
+        [OrganizationInput],
+        [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+        [],
       ),
-    'redeemInviteLink' : IDL.Func(
-        [IDL.Text, UserInput],
-        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+    'createWallet' : IDL.Func(
+        [WalletInput],
+        [IDL.Variant({ 'ok' : WalletAccount, 'err' : IDL.Text })],
+        [],
+      ),
+    'deactivateBranch' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
         [],
       ),
     'deactivateInviteLink' : IDL.Func(
         [IDL.Text],
         [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
+        [],
+      ),
+    'depositToWallet' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Text],
+        [IDL.Variant({ 'ok' : Transaction, 'err' : IDL.Text })],
+        [],
+      ),
+    'getAllInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
+    'getAllLeads' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Vec(Lead), 'err' : IDL.Text })],
+        [],
+      ),
+    'getAllOrganizations' : IDL.Func([], [IDL.Vec(Organization)], []),
+    'getAllUsers' : IDL.Func([], [IDL.Vec(User)], ['query']),
+    'getAllUsersByEmail' : IDL.Func([], [IDL.Vec(User)], ['query']),
+    'getBranchesByOrg' : IDL.Func([IDL.Text], [IDL.Vec(Branch)], []),
+    'getInviteLinkByCode' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getMyInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
+    'getMyOrganization' : IDL.Func([], [IDL.Opt(Organization)], []),
+    'getMyProfile' : IDL.Func([], [User], []),
+    'getMyWallets' : IDL.Func([], [IDL.Vec(WalletAccount)], ['query']),
+    'getOrganizationById' : IDL.Func([IDL.Text], [IDL.Opt(Organization)], []),
+    'getTeamMembersByOrg' : IDL.Func([IDL.Text], [IDL.Vec(User)], []),
+    'getTransactionHistory' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(Transaction), 'err' : IDL.Text })],
+        [],
+      ),
+    'getTransactionHistoryByOrg' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(Transaction), 'err' : IDL.Text })],
+        [],
+      ),
+    'getUserById' : IDL.Func([Principal], [User], []),
+    'getWalletsByOrg' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(WalletAccount), 'err' : IDL.Text })],
+        [],
+      ),
+    'isRegistered' : IDL.Func([], [IDL.Bool], ['query']),
+    'redeemInviteLink' : IDL.Func(
+        [IDL.Text, UserInput],
+        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+        [],
+      ),
+    'registerUser' : IDL.Func(
+        [UserInput],
+        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+        [],
+      ),
+    'removeUserFromOrg' : IDL.Func(
+        [Principal],
+        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+        [],
+      ),
+    'submitLead' : IDL.Func(
+        [LeadInput],
+        [IDL.Variant({ 'ok' : Lead, 'err' : IDL.Text })],
+        [],
+      ),
+    'transferICP' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Nat, IDL.Text],
+        [IDL.Variant({ 'ok' : Transaction, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateBranch' : IDL.Func(
+        [IDL.Text, BranchUpdateInput],
+        [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateLastLogin' : IDL.Func([], [], []),
+    'updateMyProfile' : IDL.Func(
+        [UpdateProfileInput],
+        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateOrganization' : IDL.Func(
+        [IDL.Text, UpdateOrgInput],
+        [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateUserRole' : IDL.Func(
+        [Principal, Role],
+        [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
         [],
       ),
   });

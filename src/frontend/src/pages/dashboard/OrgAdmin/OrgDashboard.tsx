@@ -28,17 +28,36 @@ function toDisplayOrg(org: Organization | null | undefined): DisplayOrg {
   return { name: org.name, description: org.description, planTier };
 }
 
-// MOCK DATA - Phase 3 will replace with real API
 export default function OrgDashboard() {
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
 
   const { data: org, isLoading } = useQuery({
     queryKey: ["my-org"],
     queryFn: () => actor!.getMyOrganization(),
-    enabled: !!actor,
+    enabled: !!actor && !isFetching,
+  });
+
+  const { data: teamMembers } = useQuery({
+    queryKey: ["team-members", org?.id],
+    queryFn: async () => {
+      if (!actor || !org?.id) return [];
+      return (actor as any).getTeamMembersByOrg(org.id);
+    },
+    enabled: !!actor && !!org?.id && !isFetching,
+  });
+
+  const { data: branches } = useQuery({
+    queryKey: ["branches", org?.id],
+    queryFn: async () => {
+      if (!actor || !org?.id) return [];
+      return (actor as any).getBranchesByOrg(org.id);
+    },
+    enabled: !!actor && !!org?.id && !isFetching,
   });
 
   const displayOrg = toDisplayOrg(org);
+  const teamCount = Array.isArray(teamMembers) ? teamMembers.length : 0;
+  const branchCount = Array.isArray(branches) ? branches.length : 0;
 
   return (
     <div className="space-y-6">
@@ -67,13 +86,13 @@ export default function OrgDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Team Members"
-          value={18}
+          value={teamCount}
           icon={Users}
           iconClassName="bg-teal-500/10"
         />
         <StatCard
           title="Branches"
-          value={3}
+          value={branchCount}
           icon={Building2}
           iconClassName="bg-blue-500/10"
         />

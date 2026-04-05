@@ -1,35 +1,37 @@
 # AAAgencies SerVSys™
 
 ## Current State
-
-`ApiDocumentation.tsx` was scaffolded in Phase 1A. It covers six sections:
-- Organizations, Users, Wallets, AI Agents, Tasks, Invite Links
-
-Missing from the documentation (added in Phases 1B and 2A):
-- `updateMyProfile` (Phase 1B-i)
-- `updateLastLogin` (Phase 1B-i)
-- `createInviteLink`, `getInviteLinkByCode`, `getMyInviteLinks`, `getAllInviteLinks`, `redeemInviteLink`, `deactivateInviteLink` (Phase 1B-ii) — the existing "Invite Links" section only has 3 placeholder entries
-- `submitLead`, `getAllLeads` (Phase 2A)
+Phases 1–3 fully complete. Phase 4A is live (backend agent registry + wired frontend). Backend has: Organization, Branch, User, InviteLink, Lead, WalletAccount, Transaction, ApiKey, AgentDefinition types and all their CRUD APIs.
 
 ## Requested Changes (Diff)
 
 ### Add
-- New `User Profile` section with `updateMyProfile` (POST, any authenticated user) and `updateLastLogin` (POST, any authenticated user)
-- New `Marketing / Leads` section with `submitLead` (POST, public) and `getAllLeads` (GET, super_admin)
+- `TaskStatus` variant: `#pending | #in_progress | #completed | #failed | #cancelled`
+- `TaskPriority` variant: `#low | #medium | #high | #urgent`
+- `Task` type: id, orgId, createdBy, assignedAgentId?, assignedTo?, title, description, status, priority, language, tags[], inputData?, outputData?, createdAt, updatedAt
+- `TaskInput` input type
+- `TaskUpdateInput` partial update type (all optional fields + status)
+- `tasks` stable map + `nextTaskId` counter
+- `createTask(input)` — any registered user; scoped to their org
+- `updateTask(id, input)` — creator, org_admin (same org), or super_admin
+- `updateTaskStatus(id, status)` — creator, assignee, org_admin (same org), or super_admin
+- `assignTaskToAgent(taskId, agentId)` — verifies agent exists; creator, org_admin, or super_admin
+- `getTasksByOrg(orgId)` — org_admin (same org) or super_admin; sorted newest-first
+- `getMyTasks()` — any registered user; returns tasks where createdBy = caller OR assignedTo = caller; sorted newest-first
+- `getTasksByAgent(agentId)` — any registered user; returns tasks assigned to the given agent
+- All Task types + 7 API methods added to `backend.d.ts`
 
 ### Modify
-- Expand the existing `Invite Links` section to include all 6 live invite endpoints: `createInviteLink`, `getInviteLinkByCode`, `getMyInviteLinks`, `getAllInviteLinks`, `redeemInviteLink`, `deactivateInviteLink`; each with description, required role, input/output shape and example where applicable
-- Add a `Required Role` field to the `EndpointRow` display so each entry shows who can call it
+- `main.mo`: added `isRegisteredUser` helper; added `tasks` map and `nextTaskId` counter alongside existing stable state
+- `backend.d.ts`: appended `TaskStatus`, `TaskPriority`, `Task`, `TaskInput`, `TaskUpdateInput` enums/interfaces and all 7 task method signatures to `backendInterface`
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-
-1. Extend the `ApiEndpoint` type to include an optional `requiredRole` string field
-2. Update `EndpointRow` to render a small role badge next to the method badge when `requiredRole` is set
-3. Update `API_SECTIONS` data:
-   - Expand `Invite Links` to all 6 endpoints with full descriptions and examples
-   - Add `User Profile` section (2 endpoints)
-   - Add `Marketing / Leads` section (2 endpoints)
-4. No backend changes needed
+1. Add TaskStatus, TaskPriority, Task types to main.mo ✓
+2. Add TaskInput, TaskUpdateInput input types to main.mo ✓
+3. Add tasks map + nextTaskId counter to actor state ✓
+4. Implement all 7 task APIs with correct role/auth checks ✓
+5. Append all Task types + API signatures to backend.d.ts ✓
+6. Deploy to get updated bindings for frontend wiring in 4B-ii

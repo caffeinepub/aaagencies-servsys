@@ -10,6 +10,82 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type AccountType = { 'vendor_account' : null } |
+  { 'branch_fund' : null } |
+  { 'org_treasury' : null } |
+  { 'member_wallet' : null };
+export interface Branch {
+  'id' : string,
+  'timezone' : string,
+  'orgId' : string,
+  'name' : string,
+  'createdAt' : bigint,
+  'isActive' : boolean,
+  'subWalletEnabled' : boolean,
+  'managerId' : [] | [Principal],
+  'siteUrl' : [] | [string],
+  'phone' : [] | [string],
+  'location' : string,
+  'primaryLanguage' : string,
+}
+export interface BranchInput {
+  'timezone' : string,
+  'orgId' : string,
+  'name' : string,
+  'subWalletEnabled' : boolean,
+  'managerId' : [] | [Principal],
+  'siteUrl' : [] | [string],
+  'phone' : [] | [string],
+  'location' : string,
+  'primaryLanguage' : string,
+}
+export interface BranchUpdateInput {
+  'timezone' : [] | [string],
+  'name' : [] | [string],
+  'isActive' : [] | [boolean],
+  'subWalletEnabled' : [] | [boolean],
+  'managerId' : [] | [Principal],
+  'siteUrl' : [] | [string],
+  'phone' : [] | [string],
+  'location' : [] | [string],
+  'primaryLanguage' : [] | [string],
+}
+export interface CreateInviteLinkInput {
+  'expiresAt' : [] | [bigint],
+  'orgId' : [] | [string],
+  'role' : Role,
+  'maxRedemptions' : [] | [bigint],
+}
+export interface InviteLink {
+  'id' : string,
+  'expiresAt' : [] | [bigint],
+  'orgId' : [] | [string],
+  'redemptionCount' : bigint,
+  'code' : string,
+  'createdAt' : bigint,
+  'createdBy' : Principal,
+  'role' : Role,
+  'isActive' : boolean,
+  'maxRedemptions' : [] | [bigint],
+}
+export interface Lead {
+  'id' : string,
+  'preferredLanguage' : string,
+  'orgName' : [] | [string],
+  'interest' : string,
+  'source' : string,
+  'name' : string,
+  'createdAt' : bigint,
+  'email' : string,
+}
+export interface LeadInput {
+  'preferredLanguage' : string,
+  'orgName' : [] | [string],
+  'interest' : string,
+  'source' : string,
+  'name' : string,
+  'email' : string,
+}
 export interface Organization {
   'id' : string,
   'ownerId' : Principal,
@@ -31,24 +107,6 @@ export interface OrganizationInput {
   'planTier' : PlanTier,
   'primaryLanguage' : string,
 }
-export interface Lead {
-  'id' : string,
-  'name' : string,
-  'email' : string,
-  'interest' : string,
-  'orgName' : [] | [string],
-  'preferredLanguage' : string,
-  'createdAt' : bigint,
-  'source' : string,
-}
-export interface LeadInput {
-  'name' : string,
-  'email' : string,
-  'interest' : string,
-  'orgName' : [] | [string],
-  'preferredLanguage' : string,
-  'source' : string,
-}
 export type PlanTier = { 'enterprise' : null } |
   { 'starter' : null } |
   { 'free' : null } |
@@ -58,6 +116,38 @@ export type Role = { 'super_admin' : null } |
   { 'org_admin' : null } |
   { 'end_customer' : null } |
   { 'team_member' : null };
+export interface Transaction {
+  'id' : string,
+  'status' : TransactionStatus,
+  'createdAt' : bigint,
+  'description' : string,
+  'toWalletId' : string,
+  'fromWalletId' : string,
+  'txType' : TxType,
+  'amountE8s' : bigint,
+  'initiatedBy' : Principal,
+}
+export type TransactionStatus = { 'pending' : null } |
+  { 'completed' : null } |
+  { 'failed' : null };
+export type TxType = { 'deposit' : null } |
+  { 'fractionalize' : null } |
+  { 'distribute' : null } |
+  { 'withdrawal' : null } |
+  { 'transfer' : null };
+export interface UpdateOrgInput {
+  'name' : string,
+  'description' : string,
+  'logoUrl' : [] | [string],
+  'supportedLanguages' : Array<string>,
+  'primaryLanguage' : string,
+}
+export interface UpdateProfileInput {
+  'preferredLanguage' : string,
+  'displayName' : string,
+  'email' : string,
+  'avatarUrl' : [] | [string],
+}
 export interface User {
   'principal' : Principal,
   'preferredLanguage' : string,
@@ -78,73 +168,135 @@ export interface UserInput {
   'displayName' : string,
   'email' : string,
 }
-export interface InviteLink {
+export interface WalletAccount {
   'id' : string,
-  'code' : string,
-  'orgId' : [] | [string],
-  'createdBy' : Principal,
-  'role' : Role,
-  'maxRedemptions' : [] | [bigint],
-  'redemptionCount' : bigint,
-  'expiresAt' : [] | [bigint],
-  'isActive' : boolean,
+  'orgId' : string,
+  'ownerId' : Principal,
+  'name' : string,
   'createdAt' : bigint,
+  'isActive' : boolean,
+  'accountType' : AccountType,
+  'currency' : string,
+  'balanceE8s' : bigint,
+  'branchId' : [] | [string],
 }
-export interface CreateInviteLinkInput {
-  'role' : Role,
-  'maxRedemptions' : [] | [bigint],
-  'expiresAt' : [] | [bigint],
-  'orgId' : [] | [string],
+export interface WalletInput {
+  'orgId' : string,
+  'name' : string,
+  'accountType' : AccountType,
+  'branchId' : [] | [string],
 }
 export interface _SERVICE {
+  'createBranch' : ActorMethod<
+    [BranchInput],
+    { 'ok' : Branch } |
+      { 'err' : string }
+  >,
+  'createInviteLink' : ActorMethod<
+    [CreateInviteLinkInput],
+    { 'ok' : InviteLink } |
+      { 'err' : string }
+  >,
   'createOrganization' : ActorMethod<
     [OrganizationInput],
     { 'ok' : Organization } |
       { 'err' : string }
   >,
+  'createWallet' : ActorMethod<
+    [WalletInput],
+    { 'ok' : WalletAccount } |
+      { 'err' : string }
+  >,
+  'deactivateBranch' : ActorMethod<
+    [string],
+    { 'ok' : Branch } |
+      { 'err' : string }
+  >,
+  'deactivateInviteLink' : ActorMethod<
+    [string],
+    { 'ok' : InviteLink } |
+      { 'err' : string }
+  >,
+  'depositToWallet' : ActorMethod<
+    [string, bigint, string],
+    { 'ok' : Transaction } |
+      { 'err' : string }
+  >,
+  'getAllInviteLinks' : ActorMethod<[], Array<InviteLink>>,
+  'getAllLeads' : ActorMethod<[], { 'ok' : Array<Lead> } | { 'err' : string }>,
   'getAllOrganizations' : ActorMethod<[], Array<Organization>>,
   'getAllUsers' : ActorMethod<[], Array<User>>,
   'getAllUsersByEmail' : ActorMethod<[], Array<User>>,
+  'getBranchesByOrg' : ActorMethod<[string], Array<Branch>>,
+  'getInviteLinkByCode' : ActorMethod<
+    [string],
+    { 'ok' : InviteLink } |
+      { 'err' : string }
+  >,
+  'getMyInviteLinks' : ActorMethod<[], Array<InviteLink>>,
   'getMyOrganization' : ActorMethod<[], [] | [Organization]>,
   'getMyProfile' : ActorMethod<[], User>,
+  'getMyWallets' : ActorMethod<[], Array<WalletAccount>>,
   'getOrganizationById' : ActorMethod<[string], [] | [Organization]>,
+  'getTeamMembersByOrg' : ActorMethod<[string], Array<User>>,
+  'getTransactionHistory' : ActorMethod<
+    [string],
+    { 'ok' : Array<Transaction> } |
+      { 'err' : string }
+  >,
+  'getTransactionHistoryByOrg' : ActorMethod<
+    [string],
+    { 'ok' : Array<Transaction> } |
+      { 'err' : string }
+  >,
   'getUserById' : ActorMethod<[Principal], User>,
+  'getWalletsByOrg' : ActorMethod<
+    [string],
+    { 'ok' : Array<WalletAccount> } |
+      { 'err' : string }
+  >,
   'isRegistered' : ActorMethod<[], boolean>,
+  'redeemInviteLink' : ActorMethod<
+    [string, UserInput],
+    { 'ok' : User } |
+      { 'err' : string }
+  >,
   'registerUser' : ActorMethod<
     [UserInput],
     { 'ok' : User } |
       { 'err' : string }
   >,
-  'updateMyProfile' : ActorMethod<
-    [{ displayName: string; email: string; preferredLanguage: string; avatarUrl: [] | [string] }],
-    { 'ok' : User } | { 'err' : string }
+  'removeUserFromOrg' : ActorMethod<
+    [Principal],
+    { 'ok' : User } |
+      { 'err' : string }
+  >,
+  'submitLead' : ActorMethod<[LeadInput], { 'ok' : Lead } | { 'err' : string }>,
+  'transferICP' : ActorMethod<
+    [string, string, bigint, string],
+    { 'ok' : Transaction } |
+      { 'err' : string }
+  >,
+  'updateBranch' : ActorMethod<
+    [string, BranchUpdateInput],
+    { 'ok' : Branch } |
+      { 'err' : string }
   >,
   'updateLastLogin' : ActorMethod<[], undefined>,
-  'submitLead' : ActorMethod<
-    [LeadInput],
-    { 'ok' : Lead } | { 'err' : string }
+  'updateMyProfile' : ActorMethod<
+    [UpdateProfileInput],
+    { 'ok' : User } |
+      { 'err' : string }
   >,
-  'getAllLeads' : ActorMethod<
-    [],
-    { 'ok' : Array<Lead> } | { 'err' : string }
+  'updateOrganization' : ActorMethod<
+    [string, UpdateOrgInput],
+    { 'ok' : Organization } |
+      { 'err' : string }
   >,
-  'createInviteLink' : ActorMethod<
-    [CreateInviteLinkInput],
-    { 'ok' : InviteLink } | { 'err' : string }
-  >,
-  'getAllInviteLinks' : ActorMethod<[], Array<InviteLink>>,
-  'getMyInviteLinks' : ActorMethod<[], Array<InviteLink>>,
-  'getInviteLinkByCode' : ActorMethod<
-    [string],
-    { 'ok' : InviteLink } | { 'err' : string }
-  >,
-  'redeemInviteLink' : ActorMethod<
-    [string, UserInput],
-    { 'ok' : User } | { 'err' : string }
-  >,
-  'deactivateInviteLink' : ActorMethod<
-    [string],
-    { 'ok' : InviteLink } | { 'err' : string }
+  'updateUserRole' : ActorMethod<
+    [Principal, Role],
+    { 'ok' : User } |
+      { 'err' : string }
   >,
 }
 export declare const idlService: IDL.ServiceClass;

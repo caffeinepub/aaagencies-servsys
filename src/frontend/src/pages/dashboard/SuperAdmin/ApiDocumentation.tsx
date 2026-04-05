@@ -19,6 +19,7 @@ type ApiSection = {
 };
 
 const API_SECTIONS: ApiSection[] = [
+  // ─── Phase 1A ───────────────────────────────────────────────────────────────
   {
     title: "Organizations",
     description: "Manage platform organizations and their configurations",
@@ -26,7 +27,7 @@ const API_SECTIONS: ApiSection[] = [
       {
         method: "GET",
         path: "/api/organizations",
-        description: "List all organizations (super_admin)",
+        description: "List all organizations",
         requiredRole: "super_admin",
       },
       {
@@ -46,6 +47,16 @@ const API_SECTIONS: ApiSection[] = [
         path: "/api/organizations/me",
         description: "Get caller's organization",
         requiredRole: "authenticated",
+      },
+      // Phase 3A
+      {
+        method: "PUT",
+        path: "/api/organizations/me",
+        description:
+          "Update caller's organization (name, description, plan, logo)",
+        requiredRole: "org_admin",
+        example:
+          '{"name": "Acme Corp", "description": "Global AI Agency", "planTier": "professional", "logoUrl": "https://"}',
       },
     ],
   },
@@ -74,11 +85,32 @@ const API_SECTIONS: ApiSection[] = [
       {
         method: "GET",
         path: "/api/users",
-        description: "List all users (super_admin/org_admin)",
+        description: "List all users",
+        requiredRole: "org_admin",
+      },
+      // Phase 3A
+      {
+        method: "GET",
+        path: "/api/users/org/{orgId}",
+        description: "List all team members for an organization",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "PUT",
+        path: "/api/users/{principal}/role",
+        description: "Update a user's role within the org",
+        requiredRole: "org_admin",
+        example: '{"role": "team_member"}',
+      },
+      {
+        method: "DELETE",
+        path: "/api/users/{principal}/org",
+        description: "Remove a user from the organization",
         requiredRole: "org_admin",
       },
     ],
   },
+  // ─── Phase 1B ───────────────────────────────────────────────────────────────
   {
     title: "User Profile",
     description:
@@ -101,43 +133,228 @@ const API_SECTIONS: ApiSection[] = [
     ],
   },
   {
-    title: "Wallets",
-    description: "FinFracFran multi-wallet and transaction management",
+    title: "Invite Links",
+    description: "Role-scoped invite link management",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/invites",
+        description: "Create an invite link",
+        requiredRole: "org_admin",
+        example:
+          '{"orgId": "org-001", "role": "team_member", "maxRedemptions": 5, "expiresAt": 1700000000}',
+      },
+      {
+        method: "GET",
+        path: "/api/invites",
+        description: "List caller's invite links",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/invites/all",
+        description: "List all invite links",
+        requiredRole: "super_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/invites/{code}",
+        description: "Get invite link by code",
+        requiredRole: "public",
+      },
+      {
+        method: "POST",
+        path: "/api/invites/{code}/redeem",
+        description: "Redeem an invite link (assigns role)",
+        requiredRole: "authenticated",
+        example: '{"displayName": "Jane Doe", "email": "jane@example.com"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/invites/{id}/deactivate",
+        description: "Deactivate an invite link",
+        requiredRole: "org_admin",
+      },
+    ],
+  },
+  // ─── Phase 2A ───────────────────────────────────────────────────────────────
+  {
+    title: "Marketing / Leads",
+    description: "Early access lead capture and management",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/leads",
+        description: "Submit a lead (early access form)",
+        requiredRole: "public",
+        example:
+          '{"name": "Alex Rivera", "email": "alex@example.com", "message": "Role: Agency. Org: Acme Corp. Interested in SerVSys."}',
+      },
+      {
+        method: "GET",
+        path: "/api/leads",
+        description: "List all leads",
+        requiredRole: "super_admin",
+      },
+    ],
+  },
+  // ─── Phase 3A ───────────────────────────────────────────────────────────────
+  {
+    title: "Branches & Sites",
+    description:
+      "Organization branches and site management with per-branch configuration",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/branches/org/{orgId}",
+        description: "List all branches for an organization",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "POST",
+        path: "/api/branches",
+        description: "Create a new branch/site",
+        requiredRole: "org_admin",
+        example:
+          '{"orgId": "org-001", "name": "Downtown HQ", "location": "New York, NY", "siteUrl": "https://nyc.acme.com", "phone": "+1-555-0100", "timezone": "America/New_York", "language": "en", "hasSubWallet": true}',
+      },
+      {
+        method: "PUT",
+        path: "/api/branches/{id}",
+        description: "Update branch details",
+        requiredRole: "org_admin",
+        example:
+          '{"name": "Downtown HQ", "location": "New York, NY", "timezone": "America/New_York", "isActive": true}',
+      },
+      {
+        method: "PUT",
+        path: "/api/branches/{id}/deactivate",
+        description: "Deactivate a branch",
+        requiredRole: "org_admin",
+      },
+    ],
+  },
+  // ─── Phase 3B ───────────────────────────────────────────────────────────────
+  {
+    title: "Wallets & ICP Transfers",
+    description:
+      "FinFracFran multi-wallet management with real ICP ledger integration",
     endpoints: [
       {
         method: "POST",
         path: "/api/wallets",
         description: "Create a new wallet account",
+        requiredRole: "org_admin",
+        example:
+          '{"orgId": "org-001", "name": "Main Treasury", "accountType": "org_main", "branchId": null}',
       },
       {
         method: "GET",
-        path: "/api/wallets/{id}",
-        description: "Get wallet by ID",
+        path: "/api/wallets/me",
+        description: "Get wallets belonging to the caller",
+        requiredRole: "authenticated",
       },
       {
         method: "GET",
         path: "/api/wallets/org/{orgId}",
         description: "Get all wallets for an organization",
+        requiredRole: "org_admin",
       },
       {
         method: "POST",
         path: "/api/wallets/{id}/deposit",
-        description: "Deposit funds into wallet",
+        description: "Deposit ICP into wallet (admin top-up)",
+        requiredRole: "org_admin",
         example:
-          '{"amount": 1000, "currency": "USD", "description": "Q2 payment"}',
+          '{"amountE8s": 100000000, "description": "Q2 Treasury Deposit"}',
       },
       {
         method: "POST",
         path: "/api/wallets/transfer",
-        description: "Transfer between wallets",
+        description: "Transfer ICP between wallets (real ledger call)",
+        requiredRole: "authenticated",
+        example:
+          '{"fromWalletId": "w-001", "toWalletId": "w-002", "amountE8s": 50000000, "memo": "Payment for services"}',
       },
       {
-        method: "POST",
-        path: "/api/wallets/{id}/fractionalize",
-        description: "FinFracFran distribution to recipients",
+        method: "GET",
+        path: "/api/wallets/{id}/transactions",
+        description: "Get transaction history for a wallet",
+        requiredRole: "authenticated",
+      },
+      {
+        method: "GET",
+        path: "/api/wallets/org/{orgId}/transactions",
+        description: "Get all transactions for an organization",
+        requiredRole: "org_admin",
       },
     ],
   },
+  // ─── Phase 3C ───────────────────────────────────────────────────────────────
+  {
+    title: "Subscriptions & Billing",
+    description:
+      "Stripe-powered subscription management. All endpoints activate when Stripe keys are configured.",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/billing/checkout",
+        description: "Create a Stripe Checkout session for plan upgrade",
+        requiredRole: "org_admin",
+        example:
+          '{"planTier": "professional", "successUrl": "https://app.aaagencies.ai/billing?success=1", "cancelUrl": "https://app.aaagencies.ai/billing"}',
+      },
+      {
+        method: "GET",
+        path: "/api/billing/subscription",
+        description: "Get current subscription status and plan details",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "POST",
+        path: "/api/billing/cancel",
+        description: "Cancel active subscription (end of billing period)",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "POST",
+        path: "/api/billing/webhook",
+        description: "Stripe webhook handler (internal — not called directly)",
+        requiredRole: "public",
+      },
+    ],
+  },
+  // ─── Phase 3D ───────────────────────────────────────────────────────────────
+  {
+    title: "API Keys",
+    description:
+      "Org-scoped API key management with one-time reveal and masked storage",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/keys",
+        description:
+          "Generate a new API key. Returns full key once — never retrievable again.",
+        requiredRole: "org_admin",
+        example:
+          '{"name": "Production Integration", "description": "Used by CRM", "permissions": ["read", "write", "agents"]}',
+      },
+      {
+        method: "GET",
+        path: "/api/keys",
+        description:
+          "List API keys for caller's org (prefix only, full key never returned)",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "DELETE",
+        path: "/api/keys/{keyId}",
+        description: "Revoke an API key (marks inactive, irreversible)",
+        requiredRole: "org_admin",
+      },
+    ],
+  },
+  // ─── Core AI (Phase 1A) ─────────────────────────────────────────────────────
   {
     title: "AI Agents",
     description: "Register and manage AI agents in the swarm",
@@ -193,71 +410,6 @@ const API_SECTIONS: ApiSection[] = [
         method: "PUT",
         path: "/api/tasks/{id}/assign",
         description: "Assign task to agent",
-      },
-    ],
-  },
-  {
-    title: "Invite Links",
-    description: "Role-scoped invite link management",
-    endpoints: [
-      {
-        method: "POST",
-        path: "/api/invites",
-        description: "Create an invite link",
-        requiredRole: "org_admin",
-        example:
-          '{"orgId": "org-001", "role": "team_member", "maxRedemptions": 5, "expiresAt": 1700000000}',
-      },
-      {
-        method: "GET",
-        path: "/api/invites",
-        description: "List caller's invite links",
-        requiredRole: "org_admin",
-      },
-      {
-        method: "GET",
-        path: "/api/invites/all",
-        description: "List all invite links",
-        requiredRole: "super_admin",
-      },
-      {
-        method: "GET",
-        path: "/api/invites/{code}",
-        description: "Get invite link by code",
-        requiredRole: "public",
-      },
-      {
-        method: "POST",
-        path: "/api/invites/{code}/redeem",
-        description: "Redeem an invite link (assigns role)",
-        requiredRole: "authenticated",
-        example: '{"displayName": "Jane Doe", "email": "jane@example.com"}',
-      },
-      {
-        method: "PUT",
-        path: "/api/invites/{id}/deactivate",
-        description: "Deactivate an invite link",
-        requiredRole: "org_admin",
-      },
-    ],
-  },
-  {
-    title: "Marketing / Leads",
-    description: "Early access lead capture and management",
-    endpoints: [
-      {
-        method: "POST",
-        path: "/api/leads",
-        description: "Submit a lead (early access form)",
-        requiredRole: "public",
-        example:
-          '{"name": "Alex Rivera", "email": "alex@example.com", "message": "Role: Agency. Org: Acme Corp. Interested in SerVSys."}',
-      },
-      {
-        method: "GET",
-        path: "/api/leads",
-        description: "List all leads",
-        requiredRole: "super_admin",
       },
     ],
   },
@@ -337,6 +489,15 @@ function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
   );
 }
 
+const PHASE_LABELS: Record<string, string> = {
+  Organizations: "3A",
+  Users: "3A",
+  "Branches & Sites": "3A",
+  "Wallets & ICP Transfers": "3B",
+  "Subscriptions & Billing": "3C",
+  "API Keys": "3D",
+};
+
 export default function ApiDocumentation() {
   return (
     <div className="space-y-6" data-ocid="api_docs.page">
@@ -346,7 +507,7 @@ export default function ApiDocumentation() {
             API Documentation
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            AAAgencies SerVSys REST API reference
+            AAAgencies SerVSys REST API reference — Phases 1–3
           </p>
         </div>
       </div>
@@ -381,9 +542,19 @@ export default function ApiDocumentation() {
         {API_SECTIONS.map((section) => (
           <Card key={section.title} className="border-border/60">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-display">
-                {section.title}
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base font-display">
+                  {section.title}
+                </CardTitle>
+                {PHASE_LABELS[section.title] && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-mono px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/30"
+                  >
+                    Phase {PHASE_LABELS[section.title]}
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {section.description}
               </p>

@@ -11,9 +11,11 @@ import {
   Building2,
   ChevronRight,
   ClipboardList,
+  CreditCard,
   FileCode2,
   GitBranch,
   Headphones,
+  Inbox,
   Key,
   LayoutDashboard,
   LogOut,
@@ -38,10 +40,12 @@ import ApiKeys from "./dashboard/OrgAdmin/ApiKeys";
 import BranchesSites from "./dashboard/OrgAdmin/BranchesSites";
 import MyOrganization from "./dashboard/OrgAdmin/MyOrganization";
 import OrgDashboard from "./dashboard/OrgAdmin/OrgDashboard";
+import SubscriptionBilling from "./dashboard/OrgAdmin/SubscriptionBilling";
 import TeamInvites from "./dashboard/OrgAdmin/TeamInvites";
 import WalletsFinance from "./dashboard/OrgAdmin/WalletsFinance";
 import AllUsers from "./dashboard/SuperAdmin/AllUsers";
 import ApiDocumentation from "./dashboard/SuperAdmin/ApiDocumentation";
+import LeadAdmin from "./dashboard/SuperAdmin/LeadAdmin";
 import Organizations from "./dashboard/SuperAdmin/Organizations";
 import PlatformMetrics from "./dashboard/SuperAdmin/PlatformMetrics";
 import PlatformOverview from "./dashboard/SuperAdmin/PlatformOverview";
@@ -64,6 +68,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   { id: "organizations", label: "Organizations", icon: Building2 },
   { id: "all-users", label: "All Users", icon: Users },
   { id: "platform-metrics", label: "Platform Metrics", icon: BarChart3 },
+  { id: "leads", label: "Leads", icon: Inbox },
   { id: "api-documentation", label: "API Documentation", icon: FileCode2 },
   { id: "settings", label: "Settings", icon: Settings },
   { id: "profile", label: "Profile", icon: UserCircle },
@@ -75,6 +80,11 @@ const ORG_ADMIN_NAV: NavItem[] = [
   { id: "branches-sites", label: "Branches & Sites", icon: GitBranch },
   { id: "team-invites", label: "Team & Invites", icon: Users },
   { id: "wallets-finance", label: "Wallets & Finance", icon: Wallet },
+  {
+    id: "subscription-billing",
+    label: "Subscription & Billing",
+    icon: CreditCard,
+  },
   { id: "ai-agents", label: "AI Agents", icon: Bot },
   { id: "api-keys", label: "API Keys", icon: Key },
   { id: "settings", label: "Settings", icon: Settings },
@@ -190,6 +200,8 @@ export default function DashboardLayout({
         return <AllUsers />;
       case "platform-metrics":
         return <PlatformMetrics />;
+      case "leads":
+        return <LeadAdmin />;
       case "api-documentation":
         return <ApiDocumentation />;
       case "org-dashboard":
@@ -202,6 +214,8 @@ export default function DashboardLayout({
         return <TeamInvites />;
       case "wallets-finance":
         return <WalletsFinance />;
+      case "subscription-billing":
+        return <SubscriptionBilling />;
       case "ai-agents":
         return <AiAgents />;
       case "api-keys":
