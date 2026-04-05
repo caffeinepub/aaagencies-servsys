@@ -616,6 +616,12 @@ actor {
     if (not authorized) {
       return #err("Not authorized");
     };
+    // Plan limit check
+    let branchLimits = _getOrgLimits(input.orgId);
+    let existingBranches = branches.values().toArray().filter(func(b : Branch) : Bool { b.orgId == input.orgId });
+    if (existingBranches.size() >= branchLimits.maxBranches) {
+      return #err("Plan limit reached: upgrade your plan to add more branches (limit: " # branchLimits.maxBranches.toText() # ")");
+    };
     let idNum = nextBranchId;
     nextBranchId += 1;
     let id = "BR" # idNum.toText();
@@ -839,6 +845,8 @@ actor {
     if (isEmailTaken(input.email, null)) {
       return #err("Email already in use by another account. If this is your email, you can still continue - Internet Identity is your unique login.");
     };
+    // Note: registerUser creates a free-tier user with no org yet, no limit enforced here.
+    // Limit enforcement for org-scoped users happens at invite redemption.
     let newUser = {
       principal = input.principal;
       role = #team_member;
@@ -1035,6 +1043,19 @@ actor {
             if (isEmailTaken(input.email, null)) {
               return #err("Email already in use by another account. If this is your email, you can still continue - Internet Identity is your unique login.");
             };
+            // Plan limit check for org-scoped user count
+            switch (link.orgId) {
+              case (?linkOrgId) {
+                let userLimits = _getOrgLimits(linkOrgId);
+                let orgUserCount = users.values().toArray().filter(func(u : User) : Bool {
+                  switch (u.orgId) { case (?uid) { uid == linkOrgId }; case null { false } };
+                }).size();
+                if (orgUserCount >= userLimits.maxUsers) {
+                  return #err("Plan limit reached: this organization cannot add more users (limit: " # userLimits.maxUsers.toText() # "). Contact the org admin to upgrade.");
+                };
+              };
+              case null {};
+            };
             let newUser : User = {
               principal = input.principal;
               role = link.role;
@@ -1148,6 +1169,16 @@ actor {
   } {
     if (not isOrgAdmin(caller) and not isSuperAdmin(caller)) {
       return #err("Not authorized");
+    };
+    // Plan limit check
+    let walletOrgId = switch (getCallerOrgId(caller)) {
+      case (?oid) { oid };
+      case null   { if (isSuperAdmin(caller)) { input.orgId } else { return #err("No organization found") } };
+    };
+    let walletLimits = _getOrgLimits(walletOrgId);
+    let existingWallets = wallets.values().toArray().filter(func(w : WalletAccount) : Bool { w.orgId == walletOrgId });
+    if (existingWallets.size() >= walletLimits.maxWallets) {
+      return #err("Plan limit reached: upgrade your plan to add more wallets (limit: " # walletLimits.maxWallets.toText() # ")");
     };
     let id = "WALLET" # nextWalletId.toText();
     nextWalletId += 1;
@@ -1374,6 +1405,12 @@ actor {
       };
       case (?id) { id };
     };
+    // Plan limit check
+    let apiKeyLimits = _getOrgLimits(orgId);
+    let existingApiKeys = apiKeys.values().toArray().filter(func(k : ApiKey) : Bool { k.orgId == orgId and k.isActive });
+    if (existingApiKeys.size() >= apiKeyLimits.maxApiKeys) {
+      return #err("Plan limit reached: upgrade your plan to add more API keys (limit: " # apiKeyLimits.maxApiKeys.toText() # ")");
+    };
     let id = "APIKEY" # nextApiKeyId.toText();
     nextApiKeyId += 1;
     let fullKey = generateKeyString(nextApiKeyId, Time.now());
@@ -1475,6 +1512,12 @@ actor {
         };
       };
       case (?id) { id };
+    };
+    // Plan limit check
+    let agentLimits = _getOrgLimits(orgId);
+    let existingAgents = agents.values().toArray().filter(func(a : AgentDefinition) : Bool { a.orgId == orgId });
+    if (existingAgents.size() >= agentLimits.maxAgents) {
+      return #err("Plan limit reached: upgrade your plan to register more agents (limit: " # agentLimits.maxAgents.toText() # ")");
     };
     let id = "AGENT" # nextAgentId.toText();
     nextAgentId += 1;
@@ -2007,6 +2050,14 @@ actor {
 
 
   // ─── PaaS Plan Limits Helpers ─────────────────────────────────────────────
+
+  // Returns the resolved plan limits for a given orgId
+  func _getOrgLimits(orgId : Text) : PlanLimits {
+    switch (organizations.get(orgId)) {
+      case (?org) { _resolvedPlanLimits(org.planTier) };
+      case null   { _getDefaultPlanLimits(#free) };
+    };
+  };
 
   func _getDefaultPlanLimits(tier : PlanTier) : PlanLimits {
     switch (tier) {
