@@ -10,6 +10,7 @@ import Int "mo:core/Int";
 import Iter "mo:core/Iter";
 import Char "mo:core/Char";
 import Nat32 "mo:core/Nat32";
+import OutCall "http-outcalls/outcall";
 
 
 
@@ -1827,6 +1828,151 @@ actor {
         #ok([]);
       };
     };
+  };
+
+
+
+  // HTTP outcall transform (required by ICP — strips non-deterministic headers)
+  public query func transformHttpResponse(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
+    OutCall.transform(input);
+  };
+
+  // Extract a JSON string field value from a simple flat JSON object.
+  // e.g. extractJsonStringField(`{"reply":"Hello"}`, "reply") => ?"Hello"
+  func extractJsonStringField(json : Text, fieldName : Text) : ?Text {
+    let needle = "\"" # fieldName # "\":\"";
+    let parts = json.split(#text needle).toArray();
+    if (parts.size() < 2) { return null };
+    let afterKey = parts[1];
+    let valueParts = afterKey.split(#text "\"").toArray();
+    if (valueParts.size() < 1) { return null };
+    ?valueParts[0];
+  };
+
+  // Send a message to an agent via HTTP outcall (generic REST POST {"message":"..."})
+  // and persist both the user message and agent reply in the conversation.
+  public shared ({ caller }) func sendAgentMessage(agentId : Text, userMessage : Text) : async {
+    #ok : [ConversationMessage];
+    #err : Text;
+  } {
+    if (not isRegisteredUser(caller)) {
+      return #err("Not authorized");
+    };
+    let callerOrgId = getCallerOrgId(caller);
+    let orgId = switch (callerOrgId) {
+      case (?oid) { oid };
+      case (null) { return #err("User has no organization") };
+    };
+
+    // Lookup agent
+    let agent = switch (agents.get(agentId)) {
+      case (?a) { a };
+      case (null) { return #err("Agent not found") };
+    };
+
+    let convKey = agentId # ":" # caller.toText();
+
+    // Get or create the conversation
+    let existingConv : Conversation = switch (conversations.get(convKey)) {
+      case (?c) { c };
+      case (null) {
+        let id = "CONV" # nextConversationId.toText();
+        nextConversationId += 1;
+        let newConv : Conversation = {
+          id = id;
+          agentId = agentId;
+          userId = caller;
+          orgId = orgId;
+          messages = [];
+          createdAt = Time.now();
+          lastMessageAt = Time.now();
+        };
+        conversations.add(convKey, newConv);
+        newConv;
+      };
+    };
+
+    // Record the user message
+    let userMsgId = "MSG" # _nextMessageId.toText();
+    _nextMessageId += 1;
+    let userMsg : ConversationMessage = {
+      id = userMsgId;
+      agentId = agentId;
+      orgId = orgId;
+      senderId = caller;
+      senderRole = #user;
+      content = userMessage;
+      timestamp = Time.now();
+      isError = false;
+    };
+
+    // Call agent endpoint or return fallback
+    let agentMsg : ConversationMessage = switch (agent.endpointUrl) {
+      case (null) {
+        let msgId = "MSG" # _nextMessageId.toText();
+        _nextMessageId += 1;
+        {
+          id = msgId;
+          agentId = agentId;
+          orgId = orgId;
+          senderId = Principal.fromText("aaaaa-aa");
+          senderRole = #agent;
+          content = "This agent does not have an endpoint configured yet. Please ask your administrator to set up an endpoint URL.";
+          timestamp = Time.now();
+          isError = false;
+        };
+      };
+      case (?url) {
+        let requestBody = "{\"message\":\"" # userMessage # "\"}";
+        let headers : [OutCall.Header] = [
+          { name = "Content-Type"; value = "application/json" },
+          { name = "Accept";       value = "application/json" },
+        ];
+        try {
+          let rawResponse = await OutCall.httpPostRequest(url, headers, requestBody, transformHttpResponse);
+          // Parse {"reply":"..."} from response; fall back to raw text on failure
+          let replyContent = switch (extractJsonStringField(rawResponse, "reply")) {
+            case (?v) { v };
+            case (null) { rawResponse };
+          };
+          let msgId = "MSG" # _nextMessageId.toText();
+          _nextMessageId += 1;
+          {
+            id = msgId;
+            agentId = agentId;
+            orgId = orgId;
+            senderId = Principal.fromText("aaaaa-aa");
+            senderRole = #agent;
+            content = replyContent;
+            timestamp = Time.now();
+            isError = false;
+          };
+        } catch (_err) {
+          let msgId = "MSG" # _nextMessageId.toText();
+          _nextMessageId += 1;
+          {
+            id = msgId;
+            agentId = agentId;
+            orgId = orgId;
+            senderId = Principal.fromText("aaaaa-aa");
+            senderRole = #agent;
+            content = "Failed to reach the agent endpoint. Please check the URL configuration and try again.";
+            timestamp = Time.now();
+            isError = true;
+          };
+        };
+      };
+    };
+
+    // Persist updated conversation
+    let updatedMessages = existingConv.messages.concat([userMsg, agentMsg]);
+    let updatedConv : Conversation = {
+      existingConv with
+      messages = updatedMessages;
+      lastMessageAt = Time.now();
+    };
+    conversations.add(convKey, updatedConv);
+    #ok(updatedMessages);
   };
 
 

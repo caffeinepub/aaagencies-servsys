@@ -524,6 +524,13 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    sendAgentMessage(agentId: string, userMessage: string): Promise<{
+        __kind__: "ok";
+        ok: Array<ConversationMessage>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
 }
 
 export enum TaskStatus {
