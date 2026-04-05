@@ -1,37 +1,30 @@
 # AAAgencies SerVSys™
 
 ## Current State
-Phases 1–3 fully complete. Phase 4A is live (backend agent registry + wired frontend). Backend has: Organization, Branch, User, InviteLink, Lead, WalletAccount, Transaction, ApiKey, AgentDefinition types and all their CRUD APIs.
+
+Phase 4B-i is complete: the backend has full Task management APIs — `createTask`, `updateTask`, `updateTaskStatus`, `assignTaskToAgent`, `getTasksByOrg`, `getMyTasks`, `getTasksByAgent` — all wired and published in `backend.d.ts` with `Task`, `TaskInput`, `TaskUpdateInput`, `TaskStatus`, and `TaskPriority` types.
+
+Frontend task pages still use `MOCK_TASKS` from `mockData.ts`:
+- `MyTasks.tsx` (Team Member) — read-only mock list with expand/collapse, no create
+- `MyRequests.tsx` (End Customer) — read-only mock list, no create
+- No Org Admin Task Management page exists yet
 
 ## Requested Changes (Diff)
 
 ### Add
-- `TaskStatus` variant: `#pending | #in_progress | #completed | #failed | #cancelled`
-- `TaskPriority` variant: `#low | #medium | #high | #urgent`
-- `Task` type: id, orgId, createdBy, assignedAgentId?, assignedTo?, title, description, status, priority, language, tags[], inputData?, outputData?, createdAt, updatedAt
-- `TaskInput` input type
-- `TaskUpdateInput` partial update type (all optional fields + status)
-- `tasks` stable map + `nextTaskId` counter
-- `createTask(input)` — any registered user; scoped to their org
-- `updateTask(id, input)` — creator, org_admin (same org), or super_admin
-- `updateTaskStatus(id, status)` — creator, assignee, org_admin (same org), or super_admin
-- `assignTaskToAgent(taskId, agentId)` — verifies agent exists; creator, org_admin, or super_admin
-- `getTasksByOrg(orgId)` — org_admin (same org) or super_admin; sorted newest-first
-- `getMyTasks()` — any registered user; returns tasks where createdBy = caller OR assignedTo = caller; sorted newest-first
-- `getTasksByAgent(agentId)` — any registered user; returns tasks assigned to the given agent
-- All Task types + 7 API methods added to `backend.d.ts`
+- `src/frontend/src/pages/dashboard/OrgAdmin/TaskManagement.tsx` — new Org Admin page: full task list from `getTasksByOrg()`, create/edit/assign-to-agent dialogs, quick status update, filter by status/priority/agent, live counts in header
+- Wire `task-management` nav entry into `ORG_ADMIN_NAV` in `DashboardLayout.tsx` (with `ListTodo` or `ClipboardList` icon), import and render `TaskManagement` in `renderPage`
 
 ### Modify
-- `main.mo`: added `isRegisteredUser` helper; added `tasks` map and `nextTaskId` counter alongside existing stable state
-- `backend.d.ts`: appended `TaskStatus`, `TaskPriority`, `Task`, `TaskInput`, `TaskUpdateInput` enums/interfaces and all 7 task method signatures to `backendInterface`
+- `MyTasks.tsx` (Team Member): replace `MOCK_TASKS` with real `getMyTasks()` backend call; add Create Task button/dialog (title, description, priority, language, tags, optional agent assignment via `getAgentsByOrg()`); add quick status update via `updateTaskStatus()`; loading skeletons; empty state
+- `MyRequests.tsx` (End Customer): replace `MOCK_TASKS` with real `getMyTasks()` backend call; add Create Request button/dialog (title, description, priority, language, tags); requests are tasks the end customer created; loading skeletons; empty state with friendly copy
 
 ### Remove
-- Nothing removed
+- All `MOCK_TASKS` imports from `MyTasks.tsx` and `MyRequests.tsx`
 
 ## Implementation Plan
-1. Add TaskStatus, TaskPriority, Task types to main.mo ✓
-2. Add TaskInput, TaskUpdateInput input types to main.mo ✓
-3. Add tasks map + nextTaskId counter to actor state ✓
-4. Implement all 7 task APIs with correct role/auth checks ✓
-5. Append all Task types + API signatures to backend.d.ts ✓
-6. Deploy to get updated bindings for frontend wiring in 4B-ii
+
+1. **MyTasks.tsx** — wire `getMyTasks()`, load org agents via `getAgentsByOrg()` for assignment in create dialog; Create Task dialog with `createTask()`; inline status selector calls `updateTaskStatus()`; expand detail panel; loading/empty states
+2. **TaskManagement.tsx** (new) — load org via `getMyOrganization()`, then `getTasksByOrg(orgId)`; `getAgentsByOrg(orgId)` for agent assignment dropdown; Create dialog, Edit dialog, Assign to Agent dialog, status update; filter bar (status, priority, agent); sortable table or card list
+3. **MyRequests.tsx** — wire `getMyTasks()` (end customer sees tasks they created); Create Request dialog with `createTask()`; card list with status badges; loading/empty states
+4. **DashboardLayout.tsx** — add `task-management` to `ORG_ADMIN_NAV`, import `TaskManagement`, wire into `renderPage`

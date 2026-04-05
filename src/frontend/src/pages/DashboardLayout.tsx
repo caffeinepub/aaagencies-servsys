@@ -18,6 +18,7 @@ import {
   Inbox,
   Key,
   LayoutDashboard,
+  ListTodo,
   LogOut,
   Menu,
   Settings,
@@ -41,6 +42,7 @@ import BranchesSites from "./dashboard/OrgAdmin/BranchesSites";
 import MyOrganization from "./dashboard/OrgAdmin/MyOrganization";
 import OrgDashboard from "./dashboard/OrgAdmin/OrgDashboard";
 import SubscriptionBilling from "./dashboard/OrgAdmin/SubscriptionBilling";
+import TaskManagement from "./dashboard/OrgAdmin/TaskManagement";
 import TeamInvites from "./dashboard/OrgAdmin/TeamInvites";
 import WalletsFinance from "./dashboard/OrgAdmin/WalletsFinance";
 import AllUsers from "./dashboard/SuperAdmin/AllUsers";
@@ -86,6 +88,7 @@ const ORG_ADMIN_NAV: NavItem[] = [
     icon: CreditCard,
   },
   { id: "ai-agents", label: "AI Agents", icon: Bot },
+  { id: "task-management", label: "Task Management", icon: ListTodo },
   { id: "api-keys", label: "API Keys", icon: Key },
   { id: "settings", label: "Settings", icon: Settings },
   { id: "profile", label: "Profile", icon: UserCircle },
@@ -218,6 +221,8 @@ export default function DashboardLayout({
         return <SubscriptionBilling />;
       case "ai-agents":
         return <AiAgents />;
+      case "task-management":
+        return <TaskManagement />;
       case "api-keys":
         return <ApiKeys />;
       case "my-tasks":

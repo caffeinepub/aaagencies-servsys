@@ -511,6 +511,13 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    createTask(input: import("./backend.d").TaskInput): Promise<{ __kind__: "ok"; ok: import("./backend.d").Task } | { __kind__: "err"; err: string }>;
+    updateTask(id: string, input: import("./backend.d").TaskUpdateInput): Promise<{ __kind__: "ok"; ok: import("./backend.d").Task } | { __kind__: "err"; err: string }>;
+    updateTaskStatus(id: string, newStatus: import("./backend.d").TaskStatus): Promise<{ __kind__: "ok"; ok: import("./backend.d").Task } | { __kind__: "err"; err: string }>;
+    assignTaskToAgent(taskId: string, agentId: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").Task } | { __kind__: "err"; err: string }>;
+    getTasksByOrg(orgId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }>;
+    getMyTasks(): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }>;
+    getTasksByAgent(agentId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
 }
 import type { AccountType as _AccountType, Branch as _Branch, BranchInput as _BranchInput, BranchUpdateInput as _BranchUpdateInput, CreateInviteLinkInput as _CreateInviteLinkInput, InviteLink as _InviteLink, Lead as _Lead, LeadInput as _LeadInput, Organization as _Organization, OrganizationInput as _OrganizationInput, PlanTier as _PlanTier, Principal as _Principal, Role as _Role, Transaction as _Transaction, TransactionStatus as _TransactionStatus, TxType as _TxType, UpdateOrgInput as _UpdateOrgInput, UpdateProfileInput as _UpdateProfileInput, User as _User, WalletAccount as _WalletAccount, WalletInput as _WalletInput } from "./declarations/backend.did.d.ts";
@@ -1178,6 +1185,41 @@ export class Backend implements backendInterface {
     async getAgentById(id: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").AgentDefinition } | { __kind__: "err"; err: string }> {
         const result = await (this.actor as any).getAgentById(id);
         if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_AgentDefinition(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async createTask(input: import("./backend.d").TaskInput): Promise<{ __kind__: "ok"; ok: import("./backend.d").Task } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).createTask(to_candid_TaskInput(input));
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_Task(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async updateTask(id: string, input: import("./backend.d").TaskUpdateInput): Promise<{ __kind__: "ok"; ok: import("./backend.d").Task } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).updateTask(id, to_candid_TaskUpdateInput(input));
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_Task(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async updateTaskStatus(id: string, newStatus: import("./backend.d").TaskStatus): Promise<{ __kind__: "ok"; ok: import("./backend.d").Task } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).updateTaskStatus(id, { [newStatus]: null });
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_Task(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async assignTaskToAgent(taskId: string, agentId: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").Task } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).assignTaskToAgent(taskId, agentId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_Task(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async getTasksByOrg(orgId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getTasksByOrg(orgId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map((t: any) => from_candid_Task(t)) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async getMyTasks(): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getMyTasks();
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map((t: any) => from_candid_Task(t)) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async getTasksByAgent(agentId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getTasksByAgent(agentId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map((t: any) => from_candid_Task(t)) }; }
         return { __kind__: "err" as const, err: result.err };
     }
     async _initializeAccessControlWithSecret(userSecret: string): Promise<void> {
@@ -2076,5 +2118,79 @@ function from_candid_AgentDefinition(value: any): import("./backend.d").AgentDef
         endpointUrl: Array.isArray(value.endpoint_url) ? (value.endpoint_url.length > 0 ? value.endpoint_url[0] : undefined) : value.endpointUrl,
         createdAt: value.created_at ?? value.createdAt,
         createdBy: value.created_by ?? value.createdBy,
+    };
+}
+
+// Task helpers - converts raw Candid response to Task TypeScript type
+function from_candid_Task(value: any): import("./backend.d").Task {
+    const TaskStatus = import("./backend.d").TaskStatus;
+    const TaskPriority = import("./backend.d").TaskPriority;
+    const statusMap: Record<string, import("./backend.d").TaskStatus> = {
+        pending: TaskStatus.pending,
+        in_progress: TaskStatus.in_progress,
+        completed: TaskStatus.completed,
+        failed: TaskStatus.failed,
+        cancelled: TaskStatus.cancelled,
+    };
+    const priorityMap: Record<string, import("./backend.d").TaskPriority> = {
+        low: TaskPriority.low,
+        medium: TaskPriority.medium,
+        high: TaskPriority.high,
+        urgent: TaskPriority.urgent,
+    };
+    const rawStatus = typeof value.status === "object" ? Object.keys(value.status)[0] : String(value.status);
+    const rawPriority = typeof value.priority === "object" ? Object.keys(value.priority)[0] : String(value.priority);
+    return {
+        id: value.id,
+        orgId: value.org_id ?? value.orgId,
+        createdBy: value.created_by ?? value.createdBy,
+        assignedAgentId: Array.isArray(value.assigned_agent_id ?? value.assignedAgentId)
+            ? ((value.assigned_agent_id ?? value.assignedAgentId).length > 0 ? (value.assigned_agent_id ?? value.assignedAgentId)[0] : undefined)
+            : (value.assigned_agent_id ?? value.assignedAgentId ?? undefined),
+        assignedTo: Array.isArray(value.assigned_to ?? value.assignedTo)
+            ? ((value.assigned_to ?? value.assignedTo).length > 0 ? (value.assigned_to ?? value.assignedTo)[0] : undefined)
+            : (value.assigned_to ?? value.assignedTo ?? undefined),
+        title: value.title,
+        description: value.description,
+        status: statusMap[rawStatus] ?? TaskStatus.pending,
+        priority: priorityMap[rawPriority] ?? TaskPriority.medium,
+        language: value.language,
+        tags: value.tags ?? [],
+        inputData: Array.isArray(value.input_data ?? value.inputData)
+            ? ((value.input_data ?? value.inputData).length > 0 ? (value.input_data ?? value.inputData)[0] : undefined)
+            : (value.input_data ?? value.inputData ?? undefined),
+        outputData: Array.isArray(value.output_data ?? value.outputData)
+            ? ((value.output_data ?? value.outputData).length > 0 ? (value.output_data ?? value.outputData)[0] : undefined)
+            : (value.output_data ?? value.outputData ?? undefined),
+        createdAt: value.created_at ?? value.createdAt,
+        updatedAt: value.updated_at ?? value.updatedAt,
+    };
+}
+
+function to_candid_TaskInput(input: import("./backend.d").TaskInput): any {
+    return {
+        title: input.title,
+        description: input.description,
+        priority: { [input.priority]: null },
+        language: input.language,
+        tags: input.tags,
+        assigned_agent_id: input.assignedAgentId !== undefined ? [input.assignedAgentId] : [],
+        assigned_to: input.assignedTo !== undefined ? [input.assignedTo] : [],
+        input_data: input.inputData !== undefined ? [input.inputData] : [],
+    };
+}
+
+function to_candid_TaskUpdateInput(input: import("./backend.d").TaskUpdateInput): any {
+    return {
+        title: input.title !== undefined ? [input.title] : [],
+        description: input.description !== undefined ? [input.description] : [],
+        priority: input.priority !== undefined ? [{ [input.priority]: null }] : [],
+        language: input.language !== undefined ? [input.language] : [],
+        tags: input.tags !== undefined ? [input.tags] : [],
+        assigned_agent_id: input.assignedAgentId !== undefined ? [input.assignedAgentId] : [],
+        assigned_to: input.assignedTo !== undefined ? [input.assignedTo] : [],
+        input_data: input.inputData !== undefined ? [input.inputData] : [],
+        output_data: input.outputData !== undefined ? [input.outputData] : [],
+        status: input.status !== undefined ? [{ [input.status]: null }] : [],
     };
 }
