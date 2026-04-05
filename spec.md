@@ -1,33 +1,37 @@
 # AAAgencies SerVSys™
 
 ## Current State
-Phase 5A-i (PlanLimits type + storage + read APIs) and 5A-ii (enforcement in createBranch, createWallet, generateApiKey, registerAgent, registerUser/redeemInviteLink) are complete and live. The Organization type has no custom domain fields, and there are no super_admin APIs to override plan tiers or activate/deactivate tenants.
+- `Organizations.tsx` exists as a basic Super Admin page: list of orgs, create org dialog, plan tier badge, active/inactive badge
+- Uses `MOCK_ORGS` as fallback when no real data; real orgs displayed when available
+- No activate/deactivate toggle, no plan override dialog, no per-org resource count indicators
+- Backend has `setOrgActive(orgId, isActive)`, `setOrgPlanOverride(orgId, tier)` APIs (5A-iii)
+- Backend has `getAgentsByOrg`, `getBranchesByOrg`, `getTeamMembersByOrg` for per-org counts
+- `getPlanLimits(tier)` available for limit context
+- `DashboardLayout.tsx` routes `organizations` → `<Organizations />`
 
 ## Requested Changes (Diff)
 
 ### Add
-- `customDomain: ?Text` and `customSubdomain: ?Text` fields to the `Organization` type
-- `customDomain?: string` and `customSubdomain?: string` to `UpdateOrgInput` type (so org_admin can set via existing `updateOrganization`)
-- `updateOrgDomain(orgId, customDomain, customSubdomain)` — org_admin (own org) or super_admin; updates domain/subdomain settings and returns updated Organization
-- `setOrgPlanOverride(orgId, tier)` — super_admin only; changes an org's planTier
-- `setOrgActive(orgId, isActive)` — super_admin only; activates or deactivates a tenant org
-- All three methods added to `backend.d.ts` interface
+- Activate/Deactivate toggle per org row — calls `setOrgActive(orgId, !isActive)` with confirmation AlertDialog
+- Plan Override dialog — "Change Plan" button per org row, tier selector, calls `setOrgPlanOverride(orgId, tier)`
+- Per-org resource count indicators — users, agents, branches inline in each row
+- Remove `MOCK_ORGS` fallback — show real empty state when no orgs
+- Loading skeletons while data loads
+- Expandable row or side panel for org details (domain, subdomain, owner)
 
 ### Modify
-- `Organization` type in `main.mo`: added `customDomain` and `customSubdomain` optional fields
-- `createOrganization`: initializes both fields to `null`
-- `updateOrganization`: preserves or updates `customDomain`/`customSubdomain` from input
-- `Organization` interface in `backend.d.ts`: added optional `customDomain` and `customSubdomain`
-- `UpdateOrgInput` interface in `backend.d.ts`: added optional `customDomain` and `customSubdomain`
+- `Organizations.tsx` — expand from simple list to full tenant management UI
+- Row layout: org name/description + resource counts + plan badge + active badge + action buttons (Change Plan, Activate/Deactivate)
 
 ### Remove
-- Nothing removed
+- `MOCK_ORGS` fallback import and usage
 
 ## Implementation Plan
-1. ✅ Add `customDomain: ?Text` and `customSubdomain: ?Text` to `Organization` type in `main.mo`
-2. ✅ Add same fields to `UpdateOrgInput` type in `main.mo`
-3. ✅ Update `createOrganization` record to initialize both as `null`
-4. ✅ Update `updateOrganization` record to carry through `input.customDomain`/`input.customSubdomain`
-5. ✅ Add `updateOrgDomain`, `setOrgPlanOverride`, `setOrgActive` APIs to `main.mo`
-6. ✅ Update `Organization` and `UpdateOrgInput` interfaces in `backend.d.ts`
-7. ✅ Add method signatures for all three new APIs to `backendInterface` in `backend.d.ts`
+1. Rewrite `Organizations.tsx` with:
+   - Real data from `getAllOrganizations()` only (no mock fallback)
+   - Per-org sub-queries for user/agent/branch counts (via `getTeamMembersByOrg`, `getAgentsByOrg`, `getBranchesByOrg`)
+   - Activate/Deactivate toggle with AlertDialog confirmation
+   - Plan Override dialog with PlanTier select
+   - Resource count badges inline per row
+   - Loading skeletons
+   - Real empty state
