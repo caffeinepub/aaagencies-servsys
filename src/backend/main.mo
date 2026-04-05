@@ -252,6 +252,39 @@ actor {
     };
   };
 
+
+  type SenderRole = {
+    #user;
+    #agent;
+  };
+
+  type ConversationMessage = {
+    id : Text;
+    agentId : Text;
+    orgId : Text;
+    senderId : Principal.Principal;
+    senderRole : SenderRole;
+    content : Text;
+    timestamp : Int;
+    isError : Bool;
+  };
+
+  type Conversation = {
+    id : Text;
+    agentId : Text;
+    userId : Principal.Principal;
+    orgId : Text;
+    messages : [ConversationMessage];
+    createdAt : Int;
+    lastMessageAt : Int;
+  };
+
+  module Conversation {
+    public func compareByLastMessage(a : Conversation, b : Conversation) : Order.Order {
+      Int.compare(b.lastMessageAt, a.lastMessageAt);
+    };
+  };
+
   let organizations = Map.empty<Text, Organization>();
   let users = Map.empty<Principal.Principal, User>();
   let branches = Map.empty<Text, Branch>();
@@ -263,6 +296,7 @@ actor {
   let apiKeys = Map.empty<Text, ApiKey>();
   let agents = Map.empty<Text, AgentDefinition>();
   let tasks = Map.empty<Text, Task>();
+  let conversations = Map.empty<Text, Conversation>();
 
   var nextInviteId : Nat = 1;
   var nextLeadId : Nat = 1;
@@ -272,6 +306,8 @@ actor {
   var nextApiKeyId : Nat = 1;
   var nextAgentId : Nat = 1;
   var nextTaskId : Nat = 1;
+  var nextConversationId : Nat = 1;
+  var _nextMessageId : Nat = 1;
 
   type OrganizationInput = {
     name : Text;
@@ -1154,7 +1190,7 @@ actor {
       accountType = fromWallet.accountType;
       name = fromWallet.name;
       currency = fromWallet.currency;
-      balanceE8s = if (fromWallet.balanceE8s >= amountE8s) { fromWallet.balanceE8s - amountE8s } else { 0 };
+      balanceE8s = if (fromWallet.balanceE8s >= amountE8s) { Nat.sub(fromWallet.balanceE8s, amountE8s) } else { 0 };
       isActive = fromWallet.isActive;
       createdAt = fromWallet.createdAt;
     };
@@ -1757,5 +1793,41 @@ actor {
     );
     #ok(filtered.sort(Task.compareByCreatedAt));
   };
+
+  public shared ({ caller }) func getConversationHistory(agentId : Text) : async {
+    #ok : [ConversationMessage];
+    #err : Text;
+  } {
+    if (not isRegisteredUser(caller)) {
+      return #err("Not authorized");
+    };
+    let callerOrgId = getCallerOrgId(caller);
+    let orgId = switch (callerOrgId) {
+      case (?oid) { oid };
+      case (null) { return #err("User has no organization") };
+    };
+    // Lookup conversation by agentId + userId composite key
+    let convKey = agentId # ":" # caller.toText();
+    switch (conversations.get(convKey)) {
+      case (?conv) { #ok(conv.messages) };
+      case (null) {
+        // Create empty conversation record
+        let id = "CONV" # nextConversationId.toText();
+        nextConversationId += 1;
+        let newConv : Conversation = {
+          id = id;
+          agentId = agentId;
+          userId = caller;
+          orgId = orgId;
+          messages = [];
+          createdAt = Time.now();
+          lastMessageAt = Time.now();
+        };
+        conversations.add(convKey, newConv);
+        #ok([]);
+      };
+    };
+  };
+
 
 };

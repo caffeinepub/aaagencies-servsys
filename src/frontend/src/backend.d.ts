@@ -517,6 +517,13 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    getConversationHistory(agentId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<ConversationMessage>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
 }
 
 export enum TaskStatus {
@@ -574,4 +581,27 @@ export interface TaskUpdateInput {
     inputData?: string;
     outputData?: string;
     status?: TaskStatus;
+}
+
+export type SenderRole = "user" | "agent";
+
+export interface ConversationMessage {
+    id: string;
+    agentId: string;
+    orgId: string;
+    senderId: Principal;
+    senderRole: SenderRole;
+    content: string;
+    timestamp: bigint;
+    isError: boolean;
+}
+
+export interface Conversation {
+    id: string;
+    agentId: string;
+    userId: Principal;
+    orgId: string;
+    messages: Array<ConversationMessage>;
+    createdAt: bigint;
+    lastMessageAt: bigint;
 }
