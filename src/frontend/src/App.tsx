@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
+import { I18nProvider } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -170,24 +171,24 @@ export default function App() {
     document.documentElement.classList.add("dark");
   }, []);
 
-  // Route: / and /home → Public marketing landing page
+  // Route: / and /home → Public marketing landing page (wrapped in I18nProvider)
   if (pathname === "/" || pathname === "/home") {
     return (
-      <>
+      <I18nProvider>
         <PublicLandingPage />
         <Toaster richColors />
-      </>
+      </I18nProvider>
     );
   }
 
-  // Route: /portal/:id
+  // Route: /portal/:id (wrapped in I18nProvider so LanguageSwitcher works if added later)
   const portalMatch = pathname.match(/^\/portal\/([^/]+)$/);
   if (portalMatch) {
     return (
-      <>
+      <I18nProvider>
         <PortalInterstitialPage portalId={portalMatch[1]} />
         <Toaster richColors />
-      </>
+      </I18nProvider>
     );
   }
 
@@ -207,9 +208,9 @@ export default function App() {
 
   // Default: unknown paths → public landing page
   return (
-    <>
+    <I18nProvider>
       <PublicLandingPage />
       <Toaster richColors />
-    </>
+    </I18nProvider>
   );
 }

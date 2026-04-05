@@ -5,8 +5,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "@/lib/i18n";
 import { Globe } from "lucide-react";
-import { useEffect, useState } from "react";
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇺🇸" },
@@ -19,16 +19,9 @@ const LANGUAGES = [
 ];
 
 export function LanguageSwitcher({ className }: { className?: string }) {
-  const [currentLang, setCurrentLang] = useState(() => {
-    return localStorage.getItem("preferred_language") ?? "en";
-  });
+  const { lang, setLang } = useTranslation();
 
-  useEffect(() => {
-    localStorage.setItem("preferred_language", currentLang);
-  }, [currentLang]);
-
-  const selected =
-    LANGUAGES.find((l) => l.code === currentLang) ?? LANGUAGES[0];
+  const selected = LANGUAGES.find((l) => l.code === lang) ?? LANGUAGES[0];
 
   return (
     <DropdownMenu>
@@ -41,15 +34,15 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
-        {LANGUAGES.map((lang) => (
+        {LANGUAGES.map((language) => (
           <DropdownMenuItem
-            key={lang.code}
-            onClick={() => setCurrentLang(lang.code)}
+            key={language.code}
+            onClick={() => setLang(language.code)}
             className="cursor-pointer"
           >
-            <span className="mr-2">{lang.flag}</span>
-            {lang.label}
-            {lang.code === currentLang && (
+            <span className="mr-2">{language.flag}</span>
+            {language.label}
+            {language.code === lang && (
               <span className="ml-auto text-primary text-xs">✓</span>
             )}
           </DropdownMenuItem>

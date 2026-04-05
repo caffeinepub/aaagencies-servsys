@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActor } from "@/hooks/useActor";
+import { useTranslation } from "@/lib/i18n";
 import { useMutation } from "@tanstack/react-query";
 import {
   Bot,
@@ -21,220 +22,7 @@ import { toast } from "sonner";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 
 // ─────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────
-
-interface PortalCard {
-  id: "a" | "b" | "c";
-  icon: React.ElementType;
-  eyebrow: string;
-  title: string;
-  description: string;
-  iconColor: string;
-  iconBg: string;
-}
-
-const PORTALS: PortalCard[] = [
-  {
-    id: "a",
-    icon: Bot,
-    eyebrow: "Portal A",
-    title: "AI Agent Console",
-    description:
-      "Access AI-powered agent swarms, task routing, and intelligent automation for your business.",
-    iconColor: "#21C7B7",
-    iconBg: "rgba(33,199,183,0.12)",
-  },
-  {
-    id: "b",
-    icon: Building2,
-    eyebrow: "Portal B",
-    title: "Client & Agency Dashboard",
-    description:
-      "Manage your organization, teams, branches, wallets, and vendor memberships.",
-    iconColor: "#4B8EFF",
-    iconBg: "rgba(75,142,255,0.12)",
-  },
-  {
-    id: "c",
-    icon: ShieldCheck,
-    eyebrow: "Portal C",
-    title: "Super Admin Console",
-    description:
-      "Platform-level controls, tenant provisioning, audit logs, and multi-org oversight.",
-    iconColor: "#C8894A",
-    iconBg: "rgba(200,137,74,0.12)",
-  },
-];
-
-const FEATURES = [
-  { icon: Zap, label: "Multi-Agent Swarms" },
-  { icon: Bot, label: "AI-First Architecture" },
-  { icon: Globe, label: "Multi-Lingual & Global" },
-  { icon: ShieldCheck, label: "Self-Sovereign Identity" },
-];
-
-const SERVICE_ITEMS = [
-  {
-    eyebrow: "AI Agents",
-    title: "Intelligent Multi-Agent Automation",
-    description:
-      "Deploy AI agent swarms that route tasks, automate workflows, and learn from your organization's data — across any language, region, or vertical.",
-    bullets: [
-      "Multi-agent task routing & orchestration",
-      "Agent registry & lifecycle management",
-      "Real-time automation across departments",
-      "Pluggable AI models & custom logic",
-    ],
-    accentColor: "#21C7B7",
-    accentBg: "rgba(33,199,183,0.10)",
-    icon: Bot,
-  },
-  {
-    eyebrow: "SerVSys\u2122",
-    title: "Service as a System",
-    description:
-      "A unified platform for multi-org, multi-vendor, multi-site, and multi-user service delivery. Run your entire agency ecosystem from a single control plane.",
-    bullets: [
-      "Multi-tenant organization management",
-      "Branch & site provisioning",
-      "Multi-vendor & multi-wallet support",
-      "Role-scoped access across all teams",
-    ],
-    accentColor: "#4B8EFF",
-    accentBg: "rgba(75,142,255,0.10)",
-    icon: Building2,
-  },
-  {
-    eyebrow: "FinFracFran\u2122",
-    title: "Financial Fractionalization & Franchising",
-    description:
-      "The FinFracFran\u2122 framework modernizes asset ownership and wealth distribution — enabling fractional ownership, franchise models, and equitable earnings for everyone.",
-    bullets: [
-      "Fractional asset ownership & tokenization",
-      "Franchise licensing & royalty flows",
-      "Equitable wealth distribution models",
-      "Multi-wallet & payment-rail ready",
-    ],
-    accentColor: "#C8894A",
-    accentBg: "rgba(200,137,74,0.10)",
-    icon: Zap,
-  },
-];
-
-const PRICING_TIERS = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    description: "Explore the platform with no commitment.",
-    features: [
-      "1 organization",
-      "Up to 3 users",
-      "1 AI agent slot",
-      "Basic task management",
-      "Community support",
-    ],
-    ctaLabel: "Get Started Free",
-    ctaAction: "lead",
-    accentColor: "#A9B8C6",
-    accentBg: "rgba(169,184,198,0.10)",
-    isRecommended: false,
-  },
-  {
-    name: "Starter",
-    price: "$29",
-    period: "/ month",
-    description: "For small teams and growing agencies.",
-    features: [
-      "3 organizations",
-      "Up to 20 users",
-      "5 AI agent slots",
-      "Invite link onboarding",
-      "Multi-wallet support",
-      "Email support",
-    ],
-    ctaLabel: "Request Early Access",
-    ctaAction: "lead",
-    accentColor: "#4B8EFF",
-    accentBg: "rgba(75,142,255,0.10)",
-    isRecommended: false,
-  },
-  {
-    name: "Professional",
-    price: "$99",
-    period: "/ month",
-    description: "Full-featured for established agencies.",
-    features: [
-      "Unlimited organizations",
-      "Unlimited users",
-      "25 AI agent slots",
-      "SerVSys\u2122 multi-site ops",
-      "FinFracFran\u2122 framework",
-      "Branch & vendor management",
-      "Priority support",
-      "API access",
-    ],
-    ctaLabel: "Get Professional",
-    ctaAction: "lead",
-    accentColor: "#21C7B7",
-    accentBg: "rgba(33,199,183,0.10)",
-    isRecommended: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    description: "Tailored for large-scale, multi-tenant deployments.",
-    features: [
-      "Unlimited everything",
-      "White-label options",
-      "Dedicated PaaS tenant",
-      "Custom AI agent quota",
-      "SLA & compliance",
-      "Dedicated account manager",
-      "Webhook & audit log access",
-    ],
-    ctaLabel: "Contact Sales",
-    ctaAction: "portal",
-    accentColor: "#C8894A",
-    accentBg: "rgba(200,137,74,0.10)",
-    isRecommended: false,
-  },
-];
-
-// Footer links with optional href overrides
-const FOOTER_LINKS = [
-  {
-    heading: "Platform",
-    links: [
-      { label: "About" },
-      { label: "Services", href: "#services" },
-      { label: "API Docs" },
-      { label: "Pricing", href: "#pricing" },
-    ],
-  },
-  {
-    heading: "Portals",
-    links: [
-      { label: "AI Agent Console" },
-      { label: "Agency Dashboard" },
-      { label: "Admin Console" },
-    ],
-  },
-  {
-    heading: "Company",
-    links: [
-      { label: "Contact" },
-      { label: "Blog" },
-      { label: "Careers" },
-      { label: "Press" },
-    ],
-  },
-];
-
-// ─────────────────────────────────────────────────────────────
-// Lead Form
+// Actor type for lead submission
 // ─────────────────────────────────────────────────────────────
 
 interface ActorWithLead {
@@ -250,25 +38,58 @@ interface ActorWithLead {
   >;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Lead Form (2C-ii enhanced version)
+// ─────────────────────────────────────────────────────────────
+
 function LeadForm() {
   const { actor, isFetching } = useActor();
+  const { t, lang } = useTranslation();
   const leadActor = actor as unknown as ActorWithLead | null;
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
     orgName: "",
+    role: "",
     interest: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const ROLE_OPTIONS = [
+    { value: "individual", label: t("lead.form.role.individual") },
+    { value: "agency", label: t("lead.form.role.agency") },
+    { value: "enterprise", label: t("lead.form.role.enterprise") },
+    { value: "developer", label: t("lead.form.role.developer") },
+    { value: "partner", label: t("lead.form.role.partner") },
+  ];
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    if (!form.name.trim()) newErrors.name = t("lead.form.nameRequired");
+    if (!form.email.trim()) {
+      newErrors.email = t("lead.form.emailRequired");
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = t("lead.form.emailInvalid");
+    }
+    if (!form.role) newErrors.role = t("lead.form.roleRequired");
+    if (!form.interest.trim())
+      newErrors.interest = t("lead.form.interestRequired");
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!leadActor) throw new Error("Actor not ready");
-      const lang = localStorage.getItem("preferred_language") ?? "en";
+      // Combine role + interest into the interest field since backend schema is unchanged
+      const combinedInterest = form.role
+        ? `[${form.role.toUpperCase()}] ${form.interest}`
+        : form.interest;
       const result = await leadActor.submitLead({
         name: form.name,
         email: form.email,
-        interest: form.interest,
+        interest: combinedInterest,
         orgName: form.orgName || undefined,
         preferredLanguage: lang,
         source: "direct",
@@ -278,15 +99,22 @@ function LeadForm() {
     },
     onSuccess: () => {
       setSubmitted(true);
-      toast.success("Thanks! We'll be in touch soon.");
     },
     onError: (err: Error) => {
       toast.error(err.message || "Something went wrong. Please try again.");
     },
   });
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    submitMutation.mutate();
+  };
+
   const inputCls =
     "bg-[#0B1E2C] border border-[#163244] text-[#EAF2F8] placeholder:text-[#A9B8C6]/60 rounded-[8px] focus:border-[#21C7B7]/60 focus:ring-[#21C7B7]/20 h-11";
+
+  const errorCls = "text-xs mt-1";
 
   if (isFetching) {
     return (
@@ -311,11 +139,10 @@ function LeadForm() {
           <CheckCircle2 className="w-8 h-8 text-[#21C7B7]" />
         </div>
         <h3 className="font-display text-xl font-semibold text-[#EAF2F8]">
-          You're on the list!
+          {t("lead.success.heading")}
         </h3>
         <p className="text-[#A9B8C6] text-sm text-center max-w-xs">
-          We'll reach out soon with early access details. Welcome to the
-          AAAgencies community.
+          {t("lead.success.body")}
         </p>
       </motion.div>
     );
@@ -323,54 +150,71 @@ function LeadForm() {
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        submitMutation.mutate();
-      }}
+      onSubmit={handleSubmit}
       className="grid grid-cols-1 md:grid-cols-2 gap-4"
       data-ocid="lead.form"
+      noValidate
     >
+      {/* Name */}
       <div className="space-y-1.5">
         <Label htmlFor="lead-name" className="text-[#A9B8C6] text-sm">
-          Name <span className="text-[#C8894A]">*</span>
+          {t("lead.form.nameLbl")} <span className="text-[#C8894A]">*</span>
         </Label>
         <Input
           id="lead-name"
-          required
-          placeholder="Your full name"
+          placeholder={t("lead.form.namePlaceholder")}
           value={form.name}
-          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          onChange={(e) => {
+            setForm((f) => ({ ...f, name: e.target.value }));
+            if (errors.name) setErrors((er) => ({ ...er, name: "" }));
+          }}
           className={inputCls}
           data-ocid="lead.input"
           autoComplete="name"
         />
+        {errors.name && (
+          <p className={errorCls} style={{ color: "#C8894A" }}>
+            {errors.name}
+          </p>
+        )}
       </div>
 
+      {/* Email */}
       <div className="space-y-1.5">
         <Label htmlFor="lead-email" className="text-[#A9B8C6] text-sm">
-          Email <span className="text-[#C8894A]">*</span>
+          {t("lead.form.emailLbl")} <span className="text-[#C8894A]">*</span>
         </Label>
         <Input
           id="lead-email"
           type="email"
-          required
-          placeholder="you@example.com"
+          placeholder={t("lead.form.emailPlaceholder")}
           value={form.email}
-          onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+          onChange={(e) => {
+            setForm((f) => ({ ...f, email: e.target.value }));
+            if (errors.email) setErrors((er) => ({ ...er, email: "" }));
+          }}
           className={inputCls}
           data-ocid="lead.input"
           autoComplete="email"
         />
+        {errors.email && (
+          <p className={errorCls} style={{ color: "#C8894A" }}>
+            {errors.email}
+          </p>
+        )}
       </div>
 
+      {/* Organization */}
       <div className="space-y-1.5">
         <Label htmlFor="lead-org" className="text-[#A9B8C6] text-sm">
-          Organization{" "}
-          <span className="text-[#A9B8C6]/60 font-normal">(optional)</span>
+          {t("lead.form.orgLbl")}{" "}
+          <span className="text-[#A9B8C6]/60 font-normal">
+            {t("lead.form.orgOptional")}
+          </span>
         </Label>
         <Input
           id="lead-org"
-          placeholder="Your company or org name"
+          placeholder={t("lead.form.orgPlaceholder")}
           value={form.orgName}
           onChange={(e) => setForm((f) => ({ ...f, orgName: e.target.value }))}
           className={inputCls}
@@ -379,40 +223,87 @@ function LeadForm() {
         />
       </div>
 
+      {/* Role / Interest dropdown */}
+      <div className="space-y-1.5">
+        <Label htmlFor="lead-role" className="text-[#A9B8C6] text-sm">
+          {t("lead.form.roleLbl")} <span className="text-[#C8894A]">*</span>
+        </Label>
+        <select
+          id="lead-role"
+          value={form.role}
+          onChange={(e) => {
+            setForm((f) => ({ ...f, role: e.target.value }));
+            if (errors.role) setErrors((er) => ({ ...er, role: "" }));
+          }}
+          className={`${inputCls} w-full px-3 appearance-none`}
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A9B8C6' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 12px center",
+          }}
+          data-ocid="lead.select"
+        >
+          <option
+            value=""
+            disabled
+            style={{ backgroundColor: "#0B1E2C", color: "#A9B8C6" }}
+          >
+            {t("lead.form.rolePlaceholder")}
+          </option>
+          {ROLE_OPTIONS.map((opt) => (
+            <option
+              key={opt.value}
+              value={opt.value}
+              style={{ backgroundColor: "#0B1E2C", color: "#EAF2F8" }}
+            >
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        {errors.role && (
+          <p className={errorCls} style={{ color: "#C8894A" }}>
+            {errors.role}
+          </p>
+        )}
+      </div>
+
+      {/* Message */}
       <div className="space-y-1.5 md:col-span-2">
         <Label htmlFor="lead-interest" className="text-[#A9B8C6] text-sm">
-          Message / Interest <span className="text-[#C8894A]">*</span>
+          {t("lead.form.interestLbl")} <span className="text-[#C8894A]">*</span>
         </Label>
         <Textarea
           id="lead-interest"
-          required
-          placeholder="Tell us what you're looking to build or explore..."
+          placeholder={t("lead.form.interestPlaceholder")}
           value={form.interest}
-          onChange={(e) => setForm((f) => ({ ...f, interest: e.target.value }))}
+          onChange={(e) => {
+            setForm((f) => ({ ...f, interest: e.target.value }));
+            if (errors.interest) setErrors((er) => ({ ...er, interest: "" }));
+          }}
           className={`${inputCls} h-24 resize-none`}
           data-ocid="lead.textarea"
         />
+        {errors.interest && (
+          <p className={errorCls} style={{ color: "#C8894A" }}>
+            {errors.interest}
+          </p>
+        )}
       </div>
 
       <div className="md:col-span-2 flex justify-end">
         <Button
           type="submit"
-          disabled={
-            submitMutation.isPending ||
-            !form.name ||
-            !form.email ||
-            !form.interest
-          }
+          disabled={submitMutation.isPending}
           className="px-8 h-11 rounded-[8px] bg-[#E6EEF5] text-[#07131F] hover:bg-white font-semibold"
           data-ocid="lead.submit_button"
         >
           {submitMutation.isPending ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Submitting...
+              {t("lead.form.submitting")}
             </>
           ) : (
-            "Request Early Access"
+            t("lead.form.submit")
           )}
         </Button>
       </div>
@@ -426,6 +317,207 @@ function LeadForm() {
 
 export default function PublicLandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const { t, lang } = useTranslation();
+
+  const isRtl = lang === "ar";
+
+  // Derived data (depends on translations)
+  const PORTALS = [
+    {
+      id: "a" as const,
+      icon: Bot,
+      eyebrow: t("portals.a.eyebrow"),
+      title: t("portals.a.title"),
+      description: t("portals.a.description"),
+      iconColor: "#21C7B7",
+      iconBg: "rgba(33,199,183,0.12)",
+    },
+    {
+      id: "b" as const,
+      icon: Building2,
+      eyebrow: t("portals.b.eyebrow"),
+      title: t("portals.b.title"),
+      description: t("portals.b.description"),
+      iconColor: "#4B8EFF",
+      iconBg: "rgba(75,142,255,0.12)",
+    },
+    {
+      id: "c" as const,
+      icon: ShieldCheck,
+      eyebrow: t("portals.c.eyebrow"),
+      title: t("portals.c.title"),
+      description: t("portals.c.description"),
+      iconColor: "#C8894A",
+      iconBg: "rgba(200,137,74,0.12)",
+    },
+  ];
+
+  const FEATURES = [
+    { icon: Zap, label: t("features.multiAgentSwarms") },
+    { icon: Bot, label: t("features.aiFirst") },
+    { icon: Globe, label: t("features.multiLingual") },
+    { icon: ShieldCheck, label: t("features.selfSovereign") },
+  ];
+
+  const SERVICE_ITEMS = [
+    {
+      eyebrow: t("services.agents.eyebrow"),
+      title: t("services.agents.title"),
+      description: t("services.agents.description"),
+      bullets: [
+        t("services.agents.bullet1"),
+        t("services.agents.bullet2"),
+        t("services.agents.bullet3"),
+        t("services.agents.bullet4"),
+      ],
+      accentColor: "#21C7B7",
+      accentBg: "rgba(33,199,183,0.10)",
+      icon: Bot,
+    },
+    {
+      eyebrow: t("services.servsys.eyebrow"),
+      title: t("services.servsys.title"),
+      description: t("services.servsys.description"),
+      bullets: [
+        t("services.servsys.bullet1"),
+        t("services.servsys.bullet2"),
+        t("services.servsys.bullet3"),
+        t("services.servsys.bullet4"),
+      ],
+      accentColor: "#4B8EFF",
+      accentBg: "rgba(75,142,255,0.10)",
+      icon: Building2,
+    },
+    {
+      eyebrow: t("services.finfracfran.eyebrow"),
+      title: t("services.finfracfran.title"),
+      description: t("services.finfracfran.description"),
+      bullets: [
+        t("services.finfracfran.bullet1"),
+        t("services.finfracfran.bullet2"),
+        t("services.finfracfran.bullet3"),
+        t("services.finfracfran.bullet4"),
+      ],
+      accentColor: "#C8894A",
+      accentBg: "rgba(200,137,74,0.10)",
+      icon: Zap,
+    },
+  ];
+
+  const PRICING_TIERS = [
+    {
+      name: t("pricing.free.name"),
+      price: "$0",
+      period: t("pricing.forever"),
+      description: t("pricing.free.description"),
+      features: [
+        t("pricing.free.f1"),
+        t("pricing.free.f2"),
+        t("pricing.free.f3"),
+        t("pricing.free.f4"),
+        t("pricing.free.f5"),
+      ],
+      ctaLabel: t("pricing.free.cta"),
+      ctaAction: "lead",
+      accentColor: "#A9B8C6",
+      accentBg: "rgba(169,184,198,0.10)",
+      isRecommended: false,
+    },
+    {
+      name: t("pricing.starter.name"),
+      price: "$29",
+      period: t("pricing.perMonth"),
+      description: t("pricing.starter.description"),
+      features: [
+        t("pricing.starter.f1"),
+        t("pricing.starter.f2"),
+        t("pricing.starter.f3"),
+        t("pricing.starter.f4"),
+        t("pricing.starter.f5"),
+        t("pricing.starter.f6"),
+      ],
+      ctaLabel: t("pricing.starter.cta"),
+      ctaAction: "lead",
+      accentColor: "#4B8EFF",
+      accentBg: "rgba(75,142,255,0.10)",
+      isRecommended: false,
+    },
+    {
+      name: t("pricing.professional.name"),
+      price: "$99",
+      period: t("pricing.perMonth"),
+      description: t("pricing.professional.description"),
+      features: [
+        t("pricing.professional.f1"),
+        t("pricing.professional.f2"),
+        t("pricing.professional.f3"),
+        t("pricing.professional.f4"),
+        t("pricing.professional.f5"),
+        t("pricing.professional.f6"),
+        t("pricing.professional.f7"),
+        t("pricing.professional.f8"),
+      ],
+      ctaLabel: t("pricing.professional.cta"),
+      ctaAction: "lead",
+      accentColor: "#21C7B7",
+      accentBg: "rgba(33,199,183,0.10)",
+      isRecommended: true,
+    },
+    {
+      name: t("pricing.enterprise.name"),
+      price:
+        t("pricing.enterprise.name") === "Enterprise"
+          ? "Custom"
+          : t("pricing.enterprise.name") === "Entreprise"
+            ? "Sur mesure"
+            : "Custom",
+      period: "",
+      description: t("pricing.enterprise.description"),
+      features: [
+        t("pricing.enterprise.f1"),
+        t("pricing.enterprise.f2"),
+        t("pricing.enterprise.f3"),
+        t("pricing.enterprise.f4"),
+        t("pricing.enterprise.f5"),
+        t("pricing.enterprise.f6"),
+        t("pricing.enterprise.f7"),
+      ],
+      ctaLabel: t("pricing.enterprise.cta"),
+      ctaAction: "portal",
+      accentColor: "#C8894A",
+      accentBg: "rgba(200,137,74,0.10)",
+      isRecommended: false,
+    },
+  ];
+
+  const FOOTER_LINKS = [
+    {
+      heading: t("footer.platform"),
+      links: [
+        { label: t("footer.links.about") },
+        { label: t("footer.links.services"), href: "#services" },
+        { label: t("footer.links.apiDocs") },
+        { label: t("footer.links.pricing"), href: "#pricing" },
+      ],
+    },
+    {
+      heading: t("footer.portals"),
+      links: [
+        { label: t("footer.links.aiAgentConsole") },
+        { label: t("footer.links.agencyDashboard") },
+        { label: t("footer.links.adminConsole") },
+      ],
+    },
+    {
+      heading: t("footer.company"),
+      links: [
+        { label: t("footer.links.contact") },
+        { label: t("footer.links.blog") },
+        { label: t("footer.links.careers") },
+        { label: t("footer.links.press") },
+      ],
+    },
+  ];
 
   // Ensure dark mode on public page
   useEffect(() => {
@@ -472,6 +564,7 @@ export default function PublicLandingPage() {
     <div
       className="min-h-screen"
       style={{ backgroundColor: "#07131F", color: "#EAF2F8" }}
+      dir={isRtl ? "rtl" : "ltr"}
     >
       {/* ── Sticky Nav ── */}
       <header
@@ -496,10 +589,10 @@ export default function PublicLandingPage() {
           />
           <div className="leading-tight hidden sm:block">
             <span className="font-display font-bold text-base text-[#EAF2F8] block leading-none">
-              AAAgencies <span style={{ color: "#21C7B7" }}>SerVSys\u2122</span>
+              AAAgencies <span style={{ color: "#21C7B7" }}>SerVSys™</span>
             </span>
             <span className="text-[10px]" style={{ color: "#A9B8C6" }}>
-              Ours Empowers YOurs
+              {t("nav.tagline")}
             </span>
           </div>
         </a>
@@ -514,7 +607,7 @@ export default function PublicLandingPage() {
             className="hidden sm:inline-flex rounded-full border-[#163244] bg-transparent text-[#A9B8C6] hover:text-[#EAF2F8] hover:bg-[#0B1E2C] h-8 px-4 text-xs"
             data-ocid="nav.login_button"
           >
-            Login
+            {t("nav.login")}
           </Button>
           <Button
             size="sm"
@@ -522,7 +615,7 @@ export default function PublicLandingPage() {
             className="rounded-full bg-[#E6EEF5] text-[#07131F] hover:bg-white font-semibold h-8 px-4 text-xs"
             data-ocid="nav.primary_button"
           >
-            Get Started
+            {t("nav.getStarted")}
           </Button>
         </div>
       </header>
@@ -564,7 +657,7 @@ export default function PublicLandingPage() {
                 className="w-1.5 h-1.5 rounded-full animate-pulse"
                 style={{ backgroundColor: "#21C7B7" }}
               />
-              AI Agents & Agencies as a Service
+              {t("hero.badge")}
             </div>
 
             {/* H1 */}
@@ -572,10 +665,13 @@ export default function PublicLandingPage() {
               className="font-display font-bold leading-[1.06] tracking-[-0.02em] mb-6"
               style={{ fontSize: "clamp(38px, 6vw, 60px)", color: "#EAF2F8" }}
             >
-              The Future of Work is <br className="hidden md:block" />
-              <span style={{ color: "#21C7B7" }}>SerVSys\u2122</span> Powered{" "}
+              {t("hero.h1_line1")} <br className="hidden md:block" />
+              <span style={{ color: "#21C7B7" }}>{t("hero.h1_servsys")}</span>{" "}
               <br className="hidden md:block" />
-              with <span style={{ color: "#C8894A" }}>FinFracFran\u2122</span>
+              {t("hero.h1_with")}{" "}
+              <span style={{ color: "#C8894A" }}>
+                {t("hero.h1_finfracfran")}
+              </span>
             </h1>
 
             {/* Sub-headline */}
@@ -583,9 +679,7 @@ export default function PublicLandingPage() {
               className="mb-10 leading-relaxed max-w-2xl"
               style={{ fontSize: "17px", color: "#A9B8C6", lineHeight: "1.65" }}
             >
-              An AI-driven, multi-tenant platform for multi-agent operations,
-              financial fractionalization, and equitable wealth distribution.
-              Built for individuals, teams, and enterprises worldwide.
+              {t("hero.subheadline")}
             </p>
 
             {/* CTAs */}
@@ -595,7 +689,7 @@ export default function PublicLandingPage() {
                 className="rounded-full h-12 px-7 font-semibold text-sm bg-[#E6EEF5] text-[#07131F] hover:bg-white"
                 data-ocid="hero.primary_button"
               >
-                Explore Portals
+                {t("hero.cta1")}
               </Button>
               <Button
                 variant="outline"
@@ -603,7 +697,7 @@ export default function PublicLandingPage() {
                 className="rounded-full h-12 px-7 text-sm border-[#163244] bg-transparent text-[#A9B8C6] hover:text-[#EAF2F8] hover:bg-[#0B1E2C]"
                 data-ocid="hero.secondary_button"
               >
-                Login to Dashboard
+                {t("hero.cta2")}
               </Button>
             </div>
           </motion.div>
@@ -650,11 +744,10 @@ export default function PublicLandingPage() {
             className="font-display font-bold text-3xl mb-3"
             style={{ color: "#EAF2F8" }}
           >
-            Choose Your Portal
+            {t("portals.heading")}
           </h2>
           <p style={{ color: "#A9B8C6", fontSize: "15px" }}>
-            Three purpose-built entry points \u2014 each tailored to a different
-            role in the SerVSys\u2122 ecosystem.
+            {t("portals.subheading")}
           </p>
         </motion.div>
 
@@ -718,7 +811,7 @@ export default function PublicLandingPage() {
                 style={{ color: portal.iconColor }}
                 data-ocid={`portals.enter_button.${i + 1}`}
               >
-                Enter Portal
+                {t("portals.enterPortal")}
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
             </motion.div>
@@ -733,7 +826,6 @@ export default function PublicLandingPage() {
         aria-label="Platform Services"
         data-ocid="services.section"
       >
-        {/* Section heading */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -749,21 +841,19 @@ export default function PublicLandingPage() {
               color: "#21C7B7",
             }}
           >
-            Platform Services
+            {t("services.badge")}
           </div>
           <h2
             className="font-display font-bold text-3xl md:text-4xl mb-3"
             style={{ color: "#EAF2F8" }}
           >
-            Everything Your Agency Needs
+            {t("services.heading")}
           </h2>
           <p style={{ color: "#A9B8C6", fontSize: "15px", maxWidth: "560px" }}>
-            Three interconnected systems \u2014 AI, Operations, and Finance
-            \u2014 designed to work as one.
+            {t("services.subheading")}
           </p>
         </motion.div>
 
-        {/* Service cards */}
         <div className="flex flex-col gap-5" data-ocid="services.list">
           {SERVICE_ITEMS.map((service, i) => {
             const Icon = service.icon;
@@ -785,7 +875,6 @@ export default function PublicLandingPage() {
                 }}
                 data-ocid={`services.item.${i + 1}`}
               >
-                {/* Icon badge */}
                 <div className="flex-shrink-0">
                   <div
                     className="w-14 h-14 rounded-xl flex items-center justify-center"
@@ -801,7 +890,6 @@ export default function PublicLandingPage() {
                   </div>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <p
                     className="text-[10px] font-semibold uppercase tracking-widest mb-1"
@@ -822,7 +910,6 @@ export default function PublicLandingPage() {
                     {service.description}
                   </p>
 
-                  {/* Bullet chips */}
                   <div className="flex flex-wrap gap-2">
                     {service.bullets.map((bullet) => (
                       <span
@@ -852,7 +939,6 @@ export default function PublicLandingPage() {
         aria-label="Pricing"
         data-ocid="pricing.section"
       >
-        {/* Section heading */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -868,21 +954,19 @@ export default function PublicLandingPage() {
               color: "#21C7B7",
             }}
           >
-            Pricing
+            {t("pricing.badge")}
           </div>
           <h2
             className="font-display font-bold text-3xl md:text-4xl mb-3"
             style={{ color: "#EAF2F8" }}
           >
-            Plans for Every Scale
+            {t("pricing.heading")}
           </h2>
           <p style={{ color: "#A9B8C6", fontSize: "15px", maxWidth: "560px" }}>
-            From solo explorers to global enterprises \u2014 SerVSys\u2122
-            scales with you.
+            {t("pricing.subheading")}
           </p>
         </motion.div>
 
-        {/* Pricing cards grid */}
         <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"
           data-ocid="pricing.list"
@@ -906,7 +990,6 @@ export default function PublicLandingPage() {
               }}
               data-ocid={`pricing.item.${i + 1}`}
             >
-              {/* Recommended badge */}
               {tier.isRecommended && (
                 <div
                   className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap"
@@ -915,11 +998,10 @@ export default function PublicLandingPage() {
                     color: "#07131F",
                   }}
                 >
-                  Recommended
+                  {t("pricing.recommended")}
                 </div>
               )}
 
-              {/* Tier name eyebrow */}
               <p
                 className="text-[10px] font-semibold uppercase tracking-widest mb-2"
                 style={{ color: tier.accentColor }}
@@ -927,7 +1009,6 @@ export default function PublicLandingPage() {
                 {tier.name}
               </p>
 
-              {/* Price */}
               <div className="flex items-baseline gap-1.5 mb-1">
                 <span
                   className="text-4xl font-bold leading-none"
@@ -942,7 +1023,6 @@ export default function PublicLandingPage() {
                 )}
               </div>
 
-              {/* Description */}
               <p
                 className="text-sm mt-2 mb-5"
                 style={{ color: "#A9B8C6", lineHeight: "1.55" }}
@@ -950,13 +1030,11 @@ export default function PublicLandingPage() {
                 {tier.description}
               </p>
 
-              {/* Divider */}
               <div
                 className="mb-5"
                 style={{ borderTop: "1px solid #163244" }}
               />
 
-              {/* Feature list */}
               <ul className="flex flex-col gap-2.5 flex-1">
                 {tier.features.map((feature) => (
                   <li
@@ -973,20 +1051,15 @@ export default function PublicLandingPage() {
                 ))}
               </ul>
 
-              {/* Spacer */}
               <div className="flex-1" />
 
-              {/* CTA Button */}
               <button
                 type="button"
                 onClick={() => handlePricingCta(tier.ctaAction)}
                 className="mt-6 w-full h-10 rounded-[8px] text-sm font-semibold transition-colors"
                 style={
                   tier.isRecommended
-                    ? {
-                        backgroundColor: "#21C7B7",
-                        color: "#07131F",
-                      }
+                    ? { backgroundColor: "#21C7B7", color: "#07131F" }
                     : {
                         backgroundColor: "transparent",
                         border: `1px solid ${tier.accentColor}`,
@@ -1040,11 +1113,10 @@ export default function PublicLandingPage() {
               className="font-display font-bold text-3xl mb-3"
               style={{ color: "#EAF2F8" }}
             >
-              Get Early Access
+              {t("lead.heading")}
             </h2>
             <p style={{ color: "#A9B8C6", fontSize: "15px" }}>
-              Be among the first to experience the full SerVSys\u2122 platform.
-              Share your interest and we'll reach out with priority onboarding.
+              {t("lead.subheading")}
             </p>
           </motion.div>
 
@@ -1072,30 +1144,27 @@ export default function PublicLandingPage() {
                   className="font-display font-bold text-base"
                   style={{ color: "#EAF2F8" }}
                 >
-                  AAAgencies{" "}
-                  <span style={{ color: "#21C7B7" }}>SerVSys\u2122</span>
+                  AAAgencies <span style={{ color: "#21C7B7" }}>SerVSys™</span>
                 </span>
               </div>
               <p
                 className="text-sm leading-relaxed mb-5 max-w-xs"
                 style={{ color: "#A9B8C6" }}
               >
-                AI Agents & Agencies as a Service. Transforming how
-                organizations operate through intelligent automation and
-                financial fractionalization.
+                {t("footer.brand.description")}
               </p>
               <div className="space-y-1.5">
                 <p
                   className="text-xs font-semibold uppercase tracking-wider"
                   style={{ color: "#21C7B7" }}
                 >
-                  You Be Your Best
+                  {t("footer.brand.mission1")}
                 </p>
                 <p
                   className="text-xs font-medium italic"
                   style={{ color: "#A9B8C6" }}
                 >
-                  Self Sovereign Always & In All Ways
+                  {t("footer.brand.mission2")}
                 </p>
               </div>
             </div>
@@ -1142,8 +1211,7 @@ export default function PublicLandingPage() {
             style={{ borderTop: "1px solid #163244" }}
           >
             <p className="text-xs" style={{ color: "#A9B8C6" }}>
-              \u00a9 {new Date().getFullYear()} AAAgencies SerVSys\u2122. All
-              rights reserved. FinFracFran\u2122 Framework.
+              © {new Date().getFullYear()} {t("footer.copyright")}
             </p>
             <p className="text-xs" style={{ color: "#A9B8C6" }}>
               Built with{" "}
