@@ -531,6 +531,21 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    getPlanLimits(tier: PlanTier): Promise<PlanLimits>;
+    setPlanLimits(tier: PlanTier, limits: PlanLimits): Promise<{
+        __kind__: "ok";
+        ok: PlanLimits;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getPlatformMetrics(): Promise<{
+        __kind__: "ok";
+        ok: PlatformMetrics;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
 }
 
 export enum TaskStatus {
@@ -611,4 +626,29 @@ export interface Conversation {
     messages: Array<ConversationMessage>;
     createdAt: bigint;
     lastMessageAt: bigint;
+}
+
+export interface PlanLimits {
+    maxUsers: number;
+    maxBranches: number;
+    maxAgents: number;
+    maxApiKeys: number;
+    maxWallets: number;
+}
+
+export interface OrgsByPlan {
+    free: number;
+    starter: number;
+    professional: number;
+    enterprise: number;
+}
+
+export interface PlatformMetrics {
+    totalOrgs: number;
+    totalUsers: number;
+    totalAgents: number;
+    totalTasks: number;
+    totalWallets: number;
+    activeOrgs: number;
+    orgsByPlan: OrgsByPlan;
 }

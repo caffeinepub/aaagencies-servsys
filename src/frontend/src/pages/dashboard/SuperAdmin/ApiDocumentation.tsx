@@ -354,62 +354,134 @@ const API_SECTIONS: ApiSection[] = [
       },
     ],
   },
-  // ─── Core AI (Phase 1A) ─────────────────────────────────────────────────────
+  // ─── Phase 4A ───────────────────────────────────────────────────────────────
   {
-    title: "AI Agents",
-    description: "Register and manage AI agents in the swarm",
+    title: "Agent Registry",
+    description:
+      "Register, update, and manage AI agent definitions with endpoint routing for HTTP outcalls",
     endpoints: [
       {
         method: "POST",
         path: "/api/agents",
-        description: "Register a new AI agent",
+        description:
+          "Register a new AI agent scoped to the caller's organization",
+        requiredRole: "org_admin",
         example:
-          '{"name": "SupportBot", "capabilities": ["ticket-routing"], "modelType": "GPT-4"}',
+          '{"name": "SupportBot", "description": "Handles tier-1 support tickets", "modelType": "GPT-4o", "endpointUrl": "https://api.myagent.ai/v1/chat", "capabilities": ["ticket-routing", "faq-answering", "sentiment-analysis"], "supportedLanguages": ["en", "es", "fr"], "status": "active"}',
       },
       {
-        method: "GET",
+        method: "PUT",
         path: "/api/agents/{id}",
-        description: "Get agent by ID",
+        description:
+          "Partially update an agent — any field can be updated independently",
+        requiredRole: "org_admin",
+        example:
+          '{"endpointUrl": "https://api.myagent.ai/v2/chat", "capabilities": ["ticket-routing", "escalation"], "status": "training"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/agents/{id}/deactivate",
+        description:
+          "Deactivate an agent (sets status to inactive). Agent data is preserved.",
+        requiredRole: "org_admin",
       },
       {
         method: "GET",
         path: "/api/agents/org/{orgId}",
-        description: "List all agents for an org",
+        description:
+          "List all agents for an organization, sorted by creation date",
+        requiredRole: "org_admin",
       },
       {
-        method: "PUT",
-        path: "/api/agents/{id}/status",
-        description: "Update agent status (active/inactive/training)",
+        method: "GET",
+        path: "/api/agents/{id}",
+        description: "Get a single agent definition by ID",
+        requiredRole: "authenticated",
       },
     ],
   },
+  // ─── Phase 4B ───────────────────────────────────────────────────────────────
   {
-    title: "Tasks",
-    description: "Multi-agent task routing and management",
+    title: "Task Management",
+    description:
+      "Create, assign, and track tasks across agents and team members. All authenticated roles can create tasks.",
     endpoints: [
       {
         method: "POST",
         path: "/api/tasks",
-        description: "Create a new task",
-        example:
-          '{"title": "Process tickets", "priority": "high", "assignedAgentId": "agent-001"}',
-      },
-      { method: "GET", path: "/api/tasks/{id}", description: "Get task by ID" },
-      {
-        method: "GET",
-        path: "/api/tasks/me",
-        description: "Get tasks assigned to caller",
+        description:
+          "Create a new task. Any authenticated user (org_admin, team_member, end_customer) can create tasks.",
         requiredRole: "authenticated",
+        example:
+          '{"title": "Summarize Q3 support tickets", "description": "Use the SupportBot to summarize all open tickets from Q3.", "priority": "high", "language": "en", "tags": ["support", "q3", "summary"], "assignedAgentId": "agent-001", "assignedTo": "principal-abc123", "inputData": "ticket_export_q3.csv"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/tasks/{id}",
+        description:
+          "Partially update a task (title, description, priority, language, tags, inputData, outputData)",
+        requiredRole: "authenticated",
+        example:
+          '{"priority": "urgent", "tags": ["support", "q3", "escalated"], "outputData": "Summary: 423 tickets, 78% resolved..."}',
       },
       {
         method: "PUT",
         path: "/api/tasks/{id}/status",
-        description: "Update task status",
+        description:
+          "Quick status update. Allowed values: pending, in_progress, completed, failed, cancelled",
+        requiredRole: "authenticated",
+        example: '{"status": "completed"}',
       },
       {
         method: "PUT",
-        path: "/api/tasks/{id}/assign",
-        description: "Assign task to agent",
+        path: "/api/tasks/{id}/assign-agent",
+        description:
+          "Assign a task to a registered agent. Verifies the agent exists before assigning.",
+        requiredRole: "org_admin",
+        example: '{"agentId": "agent-002"}',
+      },
+      {
+        method: "GET",
+        path: "/api/tasks/org/{orgId}",
+        description: "List all tasks for an organization, sorted newest-first",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/tasks/me",
+        description:
+          "Get tasks where the caller is either the creator or the assignee",
+        requiredRole: "authenticated",
+      },
+      {
+        method: "GET",
+        path: "/api/tasks/agent/{agentId}",
+        description: "List all tasks currently assigned to a specific agent",
+        requiredRole: "authenticated",
+      },
+    ],
+  },
+  // ─── Phase 4C ───────────────────────────────────────────────────────────────
+  {
+    title: "Agent Conversations",
+    description:
+      "Persistent, per-user conversation history with AI agents. Messages are stored in the backend and available across sessions.",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/conversations/{agentId}/message",
+        description:
+          'Send a message to an agent. Stores the user message, performs an HTTP outcall to the agent\'s endpoint (POST {"message": "..."}), stores the agent reply, and returns the full updated message list.',
+        requiredRole: "authenticated",
+        example:
+          '{"agentId": "agent-001", "userMessage": "Summarize the open tickets from last week and flag any escalations."}',
+      },
+      {
+        method: "GET",
+        path: "/api/conversations/{agentId}/history",
+        description:
+          "Get full persistent conversation history between the caller and a specific agent. Auto-creates an empty conversation record if none exists yet.",
+        requiredRole: "authenticated",
       },
     ],
   },
@@ -496,6 +568,9 @@ const PHASE_LABELS: Record<string, string> = {
   "Wallets & ICP Transfers": "3B",
   "Subscriptions & Billing": "3C",
   "API Keys": "3D",
+  "Agent Registry": "4A",
+  "Task Management": "4B",
+  "Agent Conversations": "4C",
 };
 
 export default function ApiDocumentation() {
@@ -507,7 +582,7 @@ export default function ApiDocumentation() {
             API Documentation
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            AAAgencies SerVSys REST API reference — Phases 1–3
+            AAAgencies SerVSys REST API reference — Phases 1–4 · 13 sections
           </p>
         </div>
       </div>

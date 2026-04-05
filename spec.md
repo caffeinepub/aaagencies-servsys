@@ -1,48 +1,33 @@
-# AAAgencies SerVSys — Phase 4C-ii: Agent Chat UI
+# AAAgencies SerVSys™
 
 ## Current State
-
-- Backend is fully complete: `ConversationMessage`, `Conversation` types, `getConversationHistory(agentId)`, and `sendAgentMessage(agentId, userMessage)` with HTTP outcall are all live.
-- `AiAgents.tsx` (Org Admin): shows agent cards with Edit / Deactivate buttons only.
-- `ActiveAgents.tsx` (Team Member): shows read-only agent cards, no chat action.
-- `ServicePortal.tsx` (End Customer): fully mock data, "Talk to an Agent" card shows a toast stub.
-- `DashboardLayout.tsx`: renders all pages via `renderPage(pageId)`; no chat page or drawer imported yet.
-- No shared chat component exists anywhere in the codebase.
+- Backend has Organization type with planTier field but no plan limit definitions or enforcement.
+- No PlanLimits type, no stable storage for plan limits, no platform aggregate APIs.
+- PlatformOverview.tsx uses mock metric data — no live getPlatformMetrics() call.
+- 1,978 lines in main.mo; all Phases 1–4 fully live.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `src/frontend/src/components/AgentChatInterface.tsx` — shared inner chat component used by both the full-page view and the drawer. Responsibilities:
-  - Loads `getConversationHistory(agentId)` on mount.
-  - Message input + send → calls `sendAgentMessage(agentId, userMessage)`.
-  - Message bubbles: user messages right-aligned, agent messages left-aligned.
-  - Timestamps (formatted from bigint nanoseconds).
-  - Loading/typing indicator while awaiting backend response.
-  - Error messages (`isError: true`) shown with a red tint.
-  - If agent has no endpoint, shows a banner "No endpoint configured — messages will be echoed back" (graceful).
-  - Auto-scrolls to latest message.
-  - Agent info header: name, status badge, model type.
-- `src/frontend/src/components/AgentChatDrawer.tsx` — slide-in Sheet/drawer wrapping `AgentChatInterface`. Accepts `agent: AgentDefinition`, `open: boolean`, `onClose: () => void`.
-- `src/frontend/src/pages/dashboard/chat/AgentChatPage.tsx` — full-page chat view with agent selector dropdown (if org has multiple active agents). Loads org agents, lets user pick one, renders `AgentChatInterface` below.
+- `PlanLimits` record type: maxUsers, maxBranches, maxAgents, maxApiKeys, maxWallets (all Nat)
+- `PlatformMetrics` record type: totalOrgs, totalUsers, totalAgents, totalTasks, totalWallets, orgsByPlan (breakdown per tier)
+- `planLimitsMap` stable Map<Text, PlanLimits> keyed by plan tier text ("free", "starter", "professional", "enterprise")
+- Default plan limits initialized on first use (Free: 5/2/1/2/2, Starter: 20/5/5/10/5, Professional: 100/20/20/50/20, Enterprise: 999999/999999/999999/999999/999999)
+- `getPlanLimits(tier: PlanTier)` — any authenticated user; returns PlanLimits for the given tier
+- `setPlanLimits(tier: PlanTier, limits: PlanLimits)` — super_admin only; overrides defaults
+- `getPlatformMetrics()` — super_admin only; returns live aggregate counts from stable maps
+- `backend.d.ts` updated with PlanLimits, PlatformMetrics types and all three method signatures
 
 ### Modify
-- `AiAgents.tsx` (Org Admin): Add a "Test Chat" button on each agent card (only for `active` agents). Opens `AgentChatDrawer` with that agent pre-selected.
-- `ActiveAgents.tsx` (Team Member): Add a "Chat" button on each agent card (only for `active` agents). Opens `AgentChatDrawer` with that agent pre-selected.
-- `ServicePortal.tsx` (End Customer): Replace "Talk to an Agent" stub card with a real trigger that opens `AgentChatDrawer`. Load org agents, pick the first active one (or show agent selector). Replace mock recent requests with real `getMyTasks()` data.
-- `DashboardLayout.tsx`:
-  - Import `AgentChatPage` and add `case 'agent-chat'` to `renderPage`.
-  - Add "Agent Chat" nav item to `TEAM_MEMBER_NAV` (MessageSquare icon, id: `agent-chat`).
-  - Add "Agent Chat" nav item to `END_CUSTOMER_NAV` (MessageSquare icon, id: `agent-chat`).
+- Nothing modified in existing functions (enforcement comes in 5A-ii)
 
 ### Remove
-- Mock data usage in `ServicePortal.tsx` (MOCK_TASKS import and usage).
+- Nothing removed
 
 ## Implementation Plan
-
-1. Create `AgentChatInterface.tsx` — the shared inner component with all message, scroll, send, and error logic.
-2. Create `AgentChatDrawer.tsx` — wraps the interface in a shadcn `Sheet` (side panel, slides in from right).
-3. Create `AgentChatPage.tsx` — full-page view with agent selector and embedded interface.
-4. Modify `AiAgents.tsx` — import drawer, add "Test Chat" button to active agent cards.
-5. Modify `ActiveAgents.tsx` — import drawer, add "Chat" button to active agent cards.
-6. Modify `ServicePortal.tsx` — wire "Talk to an Agent" to real drawer, wire recent requests to `getMyTasks()`.
-7. Modify `DashboardLayout.tsx` — add Agent Chat page case, add nav items for Team Member and End Customer.
+1. Add `PlanLimits` and `PlatformMetrics` record types after existing type definitions
+2. Add `planLimitsMap` stable Map after existing stable maps; add `_getDefaultPlanLimits(tier)` private helper
+3. Implement `getPlanLimits(tier)` — looks up planLimitsMap, falls back to defaults
+4. Implement `setPlanLimits(tier, limits)` — super_admin auth check, upsert into planLimitsMap
+5. Implement `getPlatformMetrics()` — super_admin auth check, iterate all stable maps for live counts
+6. Update `backend.d.ts` with new types and three new method signatures

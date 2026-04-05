@@ -29,6 +29,32 @@ actor {
     #enterprise;
   };
 
+
+  type PlanLimits = {
+    maxUsers : Nat;
+    maxBranches : Nat;
+    maxAgents : Nat;
+    maxApiKeys : Nat;
+    maxWallets : Nat;
+  };
+
+  type OrgsByPlan = {
+    free : Nat;
+    starter : Nat;
+    professional : Nat;
+    enterprise : Nat;
+  };
+
+  type PlatformMetrics = {
+    totalOrgs : Nat;
+    totalUsers : Nat;
+    totalAgents : Nat;
+    totalTasks : Nat;
+    totalWallets : Nat;
+    activeOrgs : Nat;
+    orgsByPlan : OrgsByPlan;
+  };
+
   type Organization = {
     id : Text;
     name : Text;
@@ -309,6 +335,9 @@ actor {
   var nextTaskId : Nat = 1;
   var nextConversationId : Nat = 1;
   var _nextMessageId : Nat = 1;
+
+  let planLimitsMap = Map.empty<Text, PlanLimits>();
+
 
   type OrganizationInput = {
     name : Text;
@@ -1973,6 +2002,100 @@ actor {
     };
     conversations.add(convKey, updatedConv);
     #ok(updatedMessages);
+  };
+
+
+
+  // ─── PaaS Plan Limits Helpers ─────────────────────────────────────────────
+
+  func _getDefaultPlanLimits(tier : PlanTier) : PlanLimits {
+    switch (tier) {
+      case (#free)         { { maxUsers = 5;      maxBranches = 2;      maxAgents = 1;      maxApiKeys = 2;      maxWallets = 2      } };
+      case (#starter)      { { maxUsers = 20;     maxBranches = 5;      maxAgents = 5;      maxApiKeys = 10;     maxWallets = 5      } };
+      case (#professional) { { maxUsers = 100;    maxBranches = 20;     maxAgents = 20;     maxApiKeys = 50;     maxWallets = 20     } };
+      case (#enterprise)   { { maxUsers = 999999; maxBranches = 999999; maxAgents = 999999; maxApiKeys = 999999; maxWallets = 999999 } };
+    };
+  };
+
+  func _planTierKey(tier : PlanTier) : Text {
+    switch (tier) {
+      case (#free)         "free";
+      case (#starter)      "starter";
+      case (#professional) "professional";
+      case (#enterprise)   "enterprise";
+    };
+  };
+
+  func _resolvedPlanLimits(tier : PlanTier) : PlanLimits {
+    let key = _planTierKey(tier);
+    switch (planLimitsMap.get(key)) {
+      case (?limits) limits;
+      case null      _getDefaultPlanLimits(tier);
+    };
+  };
+
+  // ─── Plan Limits APIs ─────────────────────────────────────────────────────
+
+  public query ({ caller = _ }) func getPlanLimits(tier : PlanTier) : async PlanLimits {
+    _resolvedPlanLimits(tier);
+  };
+
+  public shared ({ caller }) func setPlanLimits(tier : PlanTier, limits : PlanLimits) : async { #ok : PlanLimits; #err : Text } {
+    let callerUser = switch (users.get(caller)) {
+      case (?u) u;
+      case null return #err("Not registered");
+    };
+    if (callerUser.role != #super_admin) return #err("Only super_admin can set plan limits");
+    let key = _planTierKey(tier);
+    planLimitsMap.add(key, limits);
+    #ok(limits);
+  };
+
+  // ─── Platform Metrics API ─────────────────────────────────────────────────
+
+  public query ({ caller }) func getPlatformMetrics() : async { #ok : PlatformMetrics; #err : Text } {
+    let callerUser = switch (users.get(caller)) {
+      case (?u) u;
+      case null return #err("Not registered");
+    };
+    if (callerUser.role != #super_admin) return #err("Only super_admin can view platform metrics");
+
+    let allOrgs = organizations.values().toArray();
+    let allUsers = users.values().toArray();
+    let allAgents = agents.values().toArray();
+    let allTasks = tasks.values().toArray();
+    let allWallets = wallets.values().toArray();
+
+    var freeCount : Nat = 0;
+    var starterCount : Nat = 0;
+    var proCount : Nat = 0;
+    var enterpriseCount : Nat = 0;
+    var activeCount : Nat = 0;
+
+    for (org in allOrgs.vals()) {
+      if (org.isActive) activeCount += 1;
+      switch (org.planTier) {
+        case (#free)         freeCount += 1;
+        case (#starter)      starterCount += 1;
+        case (#professional) proCount += 1;
+        case (#enterprise)   enterpriseCount += 1;
+      };
+    };
+
+    #ok({
+      totalOrgs = allOrgs.size();
+      totalUsers = allUsers.size();
+      totalAgents = allAgents.size();
+      totalTasks = allTasks.size();
+      totalWallets = allWallets.size();
+      activeOrgs = activeCount;
+      orgsByPlan = {
+        free = freeCount;
+        starter = starterCount;
+        professional = proCount;
+        enterprise = enterpriseCount;
+      };
+    });
   };
 
 
