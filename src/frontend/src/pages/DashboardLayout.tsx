@@ -21,6 +21,7 @@ import {
   ListTodo,
   LogOut,
   Menu,
+  MessageSquare,
   Settings,
   UserCircle,
   Users,
@@ -54,6 +55,7 @@ import PlatformOverview from "./dashboard/SuperAdmin/PlatformOverview";
 import ActiveAgents from "./dashboard/TeamMember/ActiveAgents";
 import MyTasks from "./dashboard/TeamMember/MyTasks";
 import MyWallet from "./dashboard/TeamMember/MyWallet";
+import AgentChatPage from "./dashboard/chat/AgentChatPage";
 
 type NavItem = {
   id: string;
@@ -97,6 +99,7 @@ const ORG_ADMIN_NAV: NavItem[] = [
 const TEAM_MEMBER_NAV: NavItem[] = [
   { id: "my-tasks", label: "My Tasks", icon: ClipboardList },
   { id: "active-agents", label: "Active Agents", icon: Bot },
+  { id: "agent-chat", label: "Agent Chat", icon: MessageSquare },
   { id: "my-wallet", label: "My Wallet", icon: Wallet },
   { id: "settings", label: "Settings", icon: Settings },
   { id: "profile", label: "Profile", icon: UserCircle },
@@ -105,6 +108,7 @@ const TEAM_MEMBER_NAV: NavItem[] = [
 const END_CUSTOMER_NAV: NavItem[] = [
   { id: "service-portal", label: "Service Portal", icon: Headphones },
   { id: "my-requests", label: "My Requests", icon: ClipboardList },
+  { id: "agent-chat", label: "Agent Chat", icon: MessageSquare },
   { id: "customer-wallet", label: "My Wallet", icon: Wallet },
   { id: "profile", label: "Profile", icon: UserCircle },
 ];
@@ -229,6 +233,8 @@ export default function DashboardLayout({
         return <MyTasks />;
       case "active-agents":
         return <ActiveAgents />;
+      case "agent-chat":
+        return <AgentChatPage />;
       case "my-wallet":
         return <MyWallet />;
       case "customer-wallet":

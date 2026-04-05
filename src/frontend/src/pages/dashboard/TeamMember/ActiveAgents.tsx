@@ -1,11 +1,14 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
-import { Bot, Cpu } from "lucide-react";
+import { Bot, Cpu, MessageSquare } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { AgentDefinition } from "../../../backend.d";
+import { AgentStatus } from "../../../backend.d";
+import { AgentChatDrawer } from "../../../components/AgentChatDrawer";
 
 const STATUS_CONFIG: Record<string, string> = {
   active: "bg-teal-500/10 text-teal-400 border-teal-500/30",
@@ -42,6 +45,7 @@ export default function ActiveAgents() {
   const { actor } = useActor();
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatTarget, setChatTarget] = useState<AgentDefinition | null>(null);
 
   const loadAgents = useCallback(async () => {
     if (!actor) return;
@@ -71,6 +75,13 @@ export default function ActiveAgents() {
 
   return (
     <div className="space-y-6">
+      {/* Chat drawer */}
+      <AgentChatDrawer
+        agent={chatTarget}
+        open={!!chatTarget}
+        onClose={() => setChatTarget(null)}
+      />
+
       <div>
         <h1 className="text-2xl font-display font-semibold">Active Agents</h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -154,7 +165,7 @@ export default function ActiveAgents() {
                     )}
 
                     {agent.supportedLanguages.length > 0 && (
-                      <div className="flex items-center gap-1 flex-wrap">
+                      <div className="flex items-center gap-1 flex-wrap mb-3">
                         {agent.supportedLanguages.map((lang) => (
                           <span
                             key={lang}
@@ -163,6 +174,21 @@ export default function ActiveAgents() {
                             {lang.toUpperCase()}
                           </span>
                         ))}
+                      </div>
+                    )}
+
+                    {agent.status === AgentStatus.active && (
+                      <div className="pt-2 border-t border-border/40">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                          data-ocid={`agents.open_modal_button.${idx + 1}`}
+                          onClick={() => setChatTarget(agent)}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                          Chat
+                        </Button>
                       </div>
                     )}
                   </div>

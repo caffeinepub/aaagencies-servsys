@@ -31,11 +31,20 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useActor } from "@/hooks/useActor";
-import { Activity, Bot, Cpu, Pencil, Plus, PowerOff } from "lucide-react";
+import {
+  Activity,
+  Bot,
+  Cpu,
+  MessageSquare,
+  Pencil,
+  Plus,
+  PowerOff,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { AgentDefinition } from "../../../backend.d";
 import { AgentStatus } from "../../../backend.d";
+import { AgentChatDrawer } from "../../../components/AgentChatDrawer";
 
 const STATUS_CONFIG: Record<string, string> = {
   active: "bg-teal-500/10 text-teal-400 border-teal-500/30",
@@ -274,6 +283,7 @@ export default function AiAgents() {
   const [editTarget, setEditTarget] = useState<AgentDefinition | null>(null);
   const [deactivateTarget, setDeactivateTarget] =
     useState<AgentDefinition | null>(null);
+  const [chatTarget, setChatTarget] = useState<AgentDefinition | null>(null);
   const [registerForm, setRegisterForm] =
     useState<AgentFormState>(DEFAULT_FORM);
   const [editForm, setEditForm] = useState<AgentFormState>(DEFAULT_FORM);
@@ -415,6 +425,13 @@ export default function AiAgents() {
 
   return (
     <div className="space-y-6">
+      {/* Chat drawer */}
+      <AgentChatDrawer
+        agent={chatTarget}
+        open={!!chatTarget}
+        onClose={() => setChatTarget(null)}
+      />
+
       {/* Deactivate confirmation */}
       <AlertDialog
         open={!!deactivateTarget}
@@ -625,6 +642,18 @@ export default function AiAgents() {
                 )}
 
                 <div className="flex gap-1.5 pt-2 border-t border-border/40">
+                  {agent.status === AgentStatus.active && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                      data-ocid={`agent.open_modal_button.${idx + 1}`}
+                      onClick={() => setChatTarget(agent)}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                      Test Chat
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
