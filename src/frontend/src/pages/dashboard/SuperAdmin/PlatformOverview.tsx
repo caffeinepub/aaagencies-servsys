@@ -1,11 +1,10 @@
+import type { backendInterface as FullBackend } from "@/../src/backend.d";
 import { PlanTierBadge } from "@/components/PlanTierBadge";
 import { RoleBadge } from "@/components/RoleBadge";
 import { StatCard } from "@/components/StatCard";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
-import { MOCK_ORGS, MOCK_USERS, PLATFORM_METRICS } from "@/lib/mockData";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -16,8 +15,22 @@ import {
   XCircle,
 } from "lucide-react";
 
+const TIER_KEYS = ["free", "starter", "professional", "enterprise"] as const;
+type TierKey = (typeof TIER_KEYS)[number];
+
 export default function PlatformOverview() {
-  const { actor } = useActor();
+  const { actor: _actor } = useActor();
+  const actor = _actor as unknown as FullBackend | null;
+
+  const { data: metrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ["platform-metrics"],
+    queryFn: async () => {
+      const result = await actor!.getPlatformMetrics();
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result.ok;
+    },
+    enabled: !!actor,
+  });
 
   const { data: orgs, isLoading: orgsLoading } = useQuery({
     queryKey: ["all-orgs"],
@@ -31,9 +44,6 @@ export default function PlatformOverview() {
     enabled: !!actor,
   });
 
-  const displayOrgs = orgs && orgs.length > 0 ? orgs : MOCK_ORGS;
-  const displayUsers = users && users.length > 0 ? users : MOCK_USERS;
-
   return (
     <div className="space-y-6">
       <div>
@@ -46,36 +56,78 @@ export default function PlatformOverview() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Organizations"
-          value={PLATFORM_METRICS.totalOrgs}
-          icon={Building2}
-          iconClassName="bg-blue-500/10"
-          trend={{ value: 4.4, label: "this month" }}
-        />
-        <StatCard
-          title="Total Users"
-          value={PLATFORM_METRICS.totalUsers}
-          icon={Users}
-          iconClassName="bg-teal-500/10"
-          trend={{ value: 3.6, label: "this month" }}
-        />
-        <StatCard
-          title="Active Tasks"
-          value={PLATFORM_METRICS.totalTasks}
-          icon={BarChart3}
-          iconClassName="bg-purple-500/10"
-          trend={{ value: 5.5, label: "this month" }}
-        />
-        <StatCard
-          title="Wallets"
-          value={PLATFORM_METRICS.totalWallets}
-          icon={Wallet}
-          iconClassName="bg-amber-500/10"
-          trend={{ value: 2.1, label: "this month" }}
-        />
-      </div>
+      {metricsLoading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard
+            title="Organizations"
+            value={metrics?.totalOrgs ?? 0}
+            icon={Building2}
+            iconClassName="bg-blue-500/10"
+          />
+          <StatCard
+            title="Total Users"
+            value={metrics?.totalUsers ?? 0}
+            icon={Users}
+            iconClassName="bg-teal-500/10"
+          />
+          <StatCard
+            title="Active Tasks"
+            value={metrics?.totalTasks ?? 0}
+            icon={BarChart3}
+            iconClassName="bg-purple-500/10"
+          />
+          <StatCard
+            title="Wallets"
+            value={metrics?.totalWallets ?? 0}
+            icon={Wallet}
+            iconClassName="bg-amber-500/10"
+          />
+          <StatCard
+            title="Active Orgs"
+            value={metrics?.activeOrgs ?? 0}
+            icon={CheckCircle2}
+            iconClassName="bg-green-500/10"
+          />
+        </div>
+      )}
+
+      {/* By Plan Tier breakdown */}
+      <Card className="border-border/60" data-ocid="platform.overview.panel">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-display">
+            Orgs by Plan Tier
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {metricsLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {TIER_KEYS.map((tier) => (
+                <div
+                  key={tier}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <PlanTierBadge tier={tier} />
+                  <span className="text-sm font-medium tabular-nums">
+                    {metrics?.orgsByPlan?.[tier as TierKey] ?? 0}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orgs */}
@@ -92,34 +144,35 @@ export default function PlatformOverview() {
                   <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
+            ) : !orgs || orgs.length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"
+                data-ocid="platform.orgs.empty_state"
+              >
+                <Building2 className="w-8 h-8 opacity-30" />
+                <span className="text-sm">No organizations yet</span>
+              </div>
             ) : (
               <div className="space-y-3">
-                {displayOrgs.slice(0, 5).map((org) => {
+                {orgs.slice(0, 5).map((org) => {
                   const planTier =
                     typeof org.planTier === "object"
                       ? Object.keys(org.planTier)[0]
                       : String(org.planTier);
-                  const name =
-                    "name" in org
-                      ? org.name
-                      : (org as (typeof MOCK_ORGS)[0]).name;
-                  const isActive = "isActive" in org ? org.isActive : true;
                   return (
                     <div
-                      key={
-                        "id" in org ? org.id : (org as (typeof MOCK_ORGS)[0]).id
-                      }
+                      key={org.id}
                       className="flex items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
                         <span className="text-sm font-medium truncate">
-                          {name}
+                          {org.name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <PlanTierBadge tier={planTier} />
-                        {isActive ? (
+                        {org.isActive ? (
                           <CheckCircle2 className="w-4 h-4 text-teal-400" />
                         ) : (
                           <XCircle className="w-4 h-4 text-destructive" />
@@ -147,21 +200,28 @@ export default function PlatformOverview() {
                   <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
+            ) : !users || users.length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"
+                data-ocid="platform.users.empty_state"
+              >
+                <Users className="w-8 h-8 opacity-30" />
+                <span className="text-sm">No users yet</span>
+              </div>
             ) : (
               <div className="space-y-3">
-                {displayUsers.slice(0, 6).map((user) => {
+                {users.slice(0, 6).map((user) => {
                   const role =
                     typeof user.role === "object"
                       ? Object.keys(user.role)[0]
                       : String(user.role);
-                  const name = user.displayName;
                   return (
                     <div
                       key={user.email}
                       className="flex items-center justify-between gap-3"
                     >
                       <span className="text-sm font-medium truncate">
-                        {name}
+                        {user.displayName}
                       </span>
                       <RoleBadge role={role} />
                     </div>
