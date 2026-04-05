@@ -1,37 +1,32 @@
 # AAAgencies SerVSys™
 
 ## Current State
-- `Organizations.tsx` exists as a basic Super Admin page: list of orgs, create org dialog, plan tier badge, active/inactive badge
-- Uses `MOCK_ORGS` as fallback when no real data; real orgs displayed when available
-- No activate/deactivate toggle, no plan override dialog, no per-org resource count indicators
-- Backend has `setOrgActive(orgId, isActive)`, `setOrgPlanOverride(orgId, tier)` APIs (5A-iii)
-- Backend has `getAgentsByOrg`, `getBranchesByOrg`, `getTeamMembersByOrg` for per-org counts
-- `getPlanLimits(tier)` available for limit context
-- `DashboardLayout.tsx` routes `organizations` → `<Organizations />`
+- Phase 5A (backend) is fully complete: PlanLimits type, enforcement, custom domain, platform metrics, org activation/plan override APIs
+- Phase 5B-i: PlatformOverview.tsx shows live metrics from getPlatformMetrics()
+- Phase 5B-ii: Organizations.tsx is full tenant management with activate/deactivate and plan override
+- No `PlatformBilling.tsx` page exists yet
+- DashboardLayout.tsx has no "Platform Billing" nav entry in SUPER_ADMIN_NAV
 
 ## Requested Changes (Diff)
 
 ### Add
-- Activate/Deactivate toggle per org row — calls `setOrgActive(orgId, !isActive)` with confirmation AlertDialog
-- Plan Override dialog — "Change Plan" button per org row, tier selector, calls `setOrgPlanOverride(orgId, tier)`
-- Per-org resource count indicators — users, agents, branches inline in each row
-- Remove `MOCK_ORGS` fallback — show real empty state when no orgs
-- Loading skeletons while data loads
-- Expandable row or side panel for org details (domain, subdomain, owner)
+- `src/frontend/src/pages/dashboard/SuperAdmin/PlatformBilling.tsx` — new Super Admin page:
+  - Revenue Overview section: aggregate MRR estimate per tier (tier org count × plan price), display-only
+  - Plan Limit Configuration section: editable table for all 4 tiers showing all 5 limit fields, loads from getPlanLimits() for all tiers, saves via setPlanLimits()
+  - Loading skeletons for both sections
+- "Platform Billing" nav entry in SUPER_ADMIN_NAV in DashboardLayout.tsx (icon: CreditCard)
+- Import PlatformBilling in DashboardLayout and add case "platform-billing"
 
 ### Modify
-- `Organizations.tsx` — expand from simple list to full tenant management UI
-- Row layout: org name/description + resource counts + plan badge + active badge + action buttons (Change Plan, Activate/Deactivate)
+- DashboardLayout.tsx: add `CreditCard` icon import, add nav item, add import + render case
 
 ### Remove
-- `MOCK_ORGS` fallback import and usage
+- Nothing
 
 ## Implementation Plan
-1. Rewrite `Organizations.tsx` with:
-   - Real data from `getAllOrganizations()` only (no mock fallback)
-   - Per-org sub-queries for user/agent/branch counts (via `getTeamMembersByOrg`, `getAgentsByOrg`, `getBranchesByOrg`)
-   - Activate/Deactivate toggle with AlertDialog confirmation
-   - Plan Override dialog with PlanTier select
-   - Resource count badges inline per row
-   - Loading skeletons
-   - Real empty state
+1. Create PlatformBilling.tsx:
+   - Load all 4 plan limits in parallel with 4x getPlanLimits() calls
+   - Revenue Overview: hardcoded plan prices (Free=$0, Starter=$29, Professional=$99, Enterprise=custom), use getPlatformMetrics() orgsByPlan for counts, show estimated MRR
+   - Plan Limit Config: editable number inputs per tier per field (maxUsers, maxBranches, maxAgents, maxApiKeys, maxWallets), per-tier save button calling setPlanLimits(), success/error toasts
+   - Loading skeletons while data loads
+2. Update DashboardLayout.tsx: add CreditCard to imports, add nav item, add import and switch case

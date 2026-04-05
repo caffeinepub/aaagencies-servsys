@@ -50,6 +50,7 @@ import AllUsers from "./dashboard/SuperAdmin/AllUsers";
 import ApiDocumentation from "./dashboard/SuperAdmin/ApiDocumentation";
 import LeadAdmin from "./dashboard/SuperAdmin/LeadAdmin";
 import Organizations from "./dashboard/SuperAdmin/Organizations";
+import PlatformBilling from "./dashboard/SuperAdmin/PlatformBilling";
 import PlatformMetrics from "./dashboard/SuperAdmin/PlatformMetrics";
 import PlatformOverview from "./dashboard/SuperAdmin/PlatformOverview";
 import ActiveAgents from "./dashboard/TeamMember/ActiveAgents";
@@ -70,6 +71,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
     icon: LayoutDashboard,
   },
   { id: "organizations", label: "Organizations", icon: Building2 },
+  { id: "platform-billing", label: "Platform Billing", icon: CreditCard },
   { id: "all-users", label: "All Users", icon: Users },
   { id: "platform-metrics", label: "Platform Metrics", icon: BarChart3 },
   { id: "leads", label: "Leads", icon: Inbox },
@@ -203,6 +205,9 @@ export default function DashboardLayout({
         return <PlatformOverview />;
       case "organizations":
         return <Organizations />;
+      case "platform-billing":
+        return <PlatformBilling />;
+
       case "all-users":
         return <AllUsers />;
       case "platform-metrics":
