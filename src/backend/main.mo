@@ -412,6 +412,32 @@ actor {
   var _nextNotificationId : Nat = 1;
 
 
+  // ─── Settings Types ───────────────────────────────────────────────────────
+
+  type OrgSettings = {
+    webhookUrl : ?Text;
+    webhookEvents : [Text];
+    notifyOnTaskComplete : Bool;
+    notifyOnUserJoined : Bool;
+    notifyOnAgentDeactivated : Bool;
+    defaultLanguage : Text;
+    timezone : Text;
+  };
+
+  type PlatformSettings = {
+    announcementBanner : ?Text;
+    announcementBannerEnabled : Bool;
+    launchDate : ?Int;
+  };
+
+  let orgSettingsMap = Map.empty<Text, OrgSettings>();
+  var platformSettings : PlatformSettings = {
+    announcementBanner = null;
+    announcementBannerEnabled = false;
+    launchDate = null;
+  };
+
+
   type OrganizationInput = {
     name : Text;
     description : Text;
@@ -1157,6 +1183,8 @@ actor {
             _recordActivity(#userJoined, joinOrgId, input.principal, null, ?input.displayName, input.displayName # " joined via invite link");
             // Notify invite creator
             _sendNotification(link.createdBy, joinOrgId, #inviteRedeemed, "Invite Accepted", input.displayName # " has joined your organization via invite link.", null);
+            // Webhook outcall
+            ignore _triggerWebhook(joinOrgId, "user.joined", "{\"userId\":\"" # input.principal.toText() # "\",\"displayName\":\"" # input.displayName # "\"}");
             let updatedCount = link.redemptionCount + 1;
             let shouldDeactivate = switch (link.maxRedemptions) {
               case (?max) { updatedCount >= max };
@@ -1706,6 +1734,8 @@ actor {
             _sendNotification(u.principal, deactivated.orgId, #agentDeactivated, "Agent Deactivated", "Agent \"" # deactivated.name # "\" has been deactivated.", ?deactivated.id);
           };
         };
+        // Webhook outcall
+        ignore _triggerWebhook(deactivated.orgId, "agent.deactivated", "{\"agentId\":\"" # deactivated.id # "\",\"name\":\"" # deactivated.name # "\"}");
         #ok(deactivated);
       };
     };
@@ -1866,6 +1896,8 @@ actor {
             if (not task.createdBy.equal(caller)) {
               _sendNotification(task.createdBy, task.orgId, #taskStatusChanged, "Task Completed", "Your task \"" # task.title # "\" has been marked complete.", ?task.id);
             };
+            // Webhook outcall
+            ignore _triggerWebhook(task.orgId, "task.completed", "{\"taskId\":\"" # task.id # "\",\"title\":\"" # task.title # "\",\"status\":\"completed\"}");
           };
           case (#failed) {
             _recordActivity(#taskFailed, task.orgId, caller, ?task.id, ?task.title, "Task \"" # task.title # "\" failed");
@@ -1873,6 +1905,8 @@ actor {
             if (not task.createdBy.equal(caller)) {
               _sendNotification(task.createdBy, task.orgId, #taskStatusChanged, "Task Failed", "Your task \"" # task.title # "\" has been marked as failed.", ?task.id);
             };
+            // Webhook outcall
+            ignore _triggerWebhook(task.orgId, "task.failed", "{\"taskId\":\"" # task.id # "\",\"title\":\"" # task.title # "\",\"status\":\"failed\"}");
           };
           case (_) {};
         };
@@ -2562,6 +2596,82 @@ actor {
           Array.tabulate(50, func(i : Nat) : ActivityEvent { filtered[i] })
         } else filtered;
         #ok(limited)
+      };
+    };
+  };
+
+  // ─── Settings APIs ───────────────────────────────────────────────────────
+
+  public query ({ caller }) func getOrgSettings(orgId : Text) : async { #ok : OrgSettings; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and u.orgId == ?orgId);
+        if (not authorized) { return #err("Not authorized") };
+        let defaults : OrgSettings = {
+          webhookUrl = null;
+          webhookEvents = [];
+          notifyOnTaskComplete = true;
+          notifyOnUserJoined = true;
+          notifyOnAgentDeactivated = true;
+          defaultLanguage = "en";
+          timezone = "UTC";
+        };
+        #ok(switch (orgSettingsMap.get(orgId)) {
+          case (?s) s;
+          case null defaults;
+        })
+      };
+    };
+  };
+
+  public shared ({ caller }) func updateOrgSettings(orgId : Text, input : OrgSettings) : async { #ok : OrgSettings; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and u.orgId == ?orgId);
+        if (not authorized) { return #err("Not authorized") };
+        orgSettingsMap.add(orgId, input);
+        #ok(input)
+      };
+    };
+  };
+
+  public query ({ caller }) func getPlatformSettings() : async { #ok : PlatformSettings; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?_) { #ok(platformSettings) };
+    };
+  };
+
+  public shared ({ caller }) func updatePlatformSettings(input : PlatformSettings) : async { #ok : PlatformSettings; #err : Text } {
+    if (not isSuperAdmin(caller)) { return #err("Not authorized") };
+    platformSettings := input;
+    #ok(input)
+  };
+
+  // Internal: fire a webhook outcall if the org has a webhook URL configured for this event
+  func _triggerWebhook(orgId : Text, eventName : Text, payload : Text) : async () {
+    switch (orgSettingsMap.get(orgId)) {
+      case (null) {};
+      case (?settings) {
+        switch (settings.webhookUrl) {
+          case (null) {};
+          case (?url) {
+            // Only fire if eventName is in the webhookEvents list (empty list = all events)
+            let shouldFire = settings.webhookEvents.size() == 0 or
+              settings.webhookEvents.filter(func(e : Text) : Bool { e == eventName }).size() > 0;
+            if (shouldFire) {
+              let headers : [OutCall.Header] = [
+                { name = "Content-Type"; value = "application/json" },
+                { name = "X-AAA-Event";  value = eventName },
+              ];
+              try {
+                ignore await OutCall.httpPostRequest(url, headers, payload, transformHttpResponse);
+              } catch (_) {};
+            };
+          };
+        };
       };
     };
   };

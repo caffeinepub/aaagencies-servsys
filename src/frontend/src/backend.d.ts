@@ -629,6 +629,50 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    getOrgSettings(orgId: string): Promise<{
+        __kind__: "ok";
+        ok: OrgSettings;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    updateOrgSettings(orgId: string, settings: OrgSettings): Promise<{
+        __kind__: "ok";
+        ok: OrgSettings;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getPlatformSettings(): Promise<{
+        __kind__: "ok";
+        ok: PlatformSettings;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    updatePlatformSettings(settings: PlatformSettings): Promise<{
+        __kind__: "ok";
+        ok: PlatformSettings;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+}
+
+export interface OrgSettings {
+    webhookUrl?: string;
+    webhookEvents: Array<string>;
+    notifyOnTaskComplete: boolean;
+    notifyOnUserJoined: boolean;
+    notifyOnAgentDeactivated: boolean;
+    defaultLanguage: string;
+    timezone: string;
+}
+
+export interface PlatformSettings {
+    announcementBanner?: string;
+    announcementBannerEnabled: boolean;
+    launchDate?: bigint;
 }
 
 export enum TaskStatus {

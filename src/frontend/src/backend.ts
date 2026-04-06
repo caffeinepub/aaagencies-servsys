@@ -522,6 +522,10 @@ export interface backendInterface {
     markNotificationRead(id: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").Notification } | { __kind__: "err"; err: string }>;
     markAllNotificationsRead(): Promise<{ __kind__: "ok"; ok: number } | { __kind__: "err"; err: string }>;
     createSystemNotification(userId: import("./backend.d").Principal, title: string, message: string, relatedId?: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").Notification } | { __kind__: "err"; err: string }>;
+    getOrgSettings(orgId: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").OrgSettings } | { __kind__: "err"; err: string }>;
+    updateOrgSettings(orgId: string, settings: import("./backend.d").OrgSettings): Promise<{ __kind__: "ok"; ok: import("./backend.d").OrgSettings } | { __kind__: "err"; err: string }>;
+    getPlatformSettings(): Promise<{ __kind__: "ok"; ok: import("./backend.d").PlatformSettings } | { __kind__: "err"; err: string }>;
+    updatePlatformSettings(settings: import("./backend.d").PlatformSettings): Promise<{ __kind__: "ok"; ok: import("./backend.d").PlatformSettings } | { __kind__: "err"; err: string }>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
 }
 import type { AccountType as _AccountType, Branch as _Branch, BranchInput as _BranchInput, BranchUpdateInput as _BranchUpdateInput, CreateInviteLinkInput as _CreateInviteLinkInput, InviteLink as _InviteLink, Lead as _Lead, LeadInput as _LeadInput, Organization as _Organization, OrganizationInput as _OrganizationInput, PlanTier as _PlanTier, Principal as _Principal, Role as _Role, Transaction as _Transaction, TransactionStatus as _TransactionStatus, TxType as _TxType, UpdateOrgInput as _UpdateOrgInput, UpdateProfileInput as _UpdateProfileInput, User as _User, WalletAccount as _WalletAccount, WalletInput as _WalletInput } from "./declarations/backend.did.d.ts";
@@ -1248,9 +1252,77 @@ export class Backend implements backendInterface {
         if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_Notification(result.ok) }; }
         return { __kind__: "err" as const, err: result.err };
     }
+    async getOrgSettings(orgId: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").OrgSettings } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getOrgSettings(orgId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_OrgSettings(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async updateOrgSettings(orgId: string, settings: import("./backend.d").OrgSettings): Promise<{ __kind__: "ok"; ok: import("./backend.d").OrgSettings } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).updateOrgSettings(orgId, to_candid_OrgSettings(settings));
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_OrgSettings(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async getPlatformSettings(): Promise<{ __kind__: "ok"; ok: import("./backend.d").PlatformSettings } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getPlatformSettings();
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_PlatformSettings(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async updatePlatformSettings(settings: import("./backend.d").PlatformSettings): Promise<{ __kind__: "ok"; ok: import("./backend.d").PlatformSettings } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).updatePlatformSettings(to_candid_PlatformSettings(settings));
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_PlatformSettings(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
     async _initializeAccessControlWithSecret(userSecret: string): Promise<void> {
         await (this.actor as any)._initializeAccessControlWithSecret(userSecret);
     }
+}
+
+// OrgSettings helpers
+function from_candid_OrgSettings(value: any): import("./backend.d").OrgSettings {
+    return {
+        webhookUrl: Array.isArray(value.webhookUrl ?? value.webhook_url)
+            ? ((value.webhookUrl ?? value.webhook_url).length > 0 ? (value.webhookUrl ?? value.webhook_url)[0] : undefined)
+            : (value.webhookUrl ?? value.webhook_url ?? undefined),
+        webhookEvents: value.webhookEvents ?? value.webhook_events ?? [],
+        notifyOnTaskComplete: value.notifyOnTaskComplete ?? value.notify_on_task_complete ?? true,
+        notifyOnUserJoined: value.notifyOnUserJoined ?? value.notify_on_user_joined ?? true,
+        notifyOnAgentDeactivated: value.notifyOnAgentDeactivated ?? value.notify_on_agent_deactivated ?? true,
+        defaultLanguage: value.defaultLanguage ?? value.default_language ?? "en",
+        timezone: value.timezone ?? "UTC",
+    };
+}
+
+function to_candid_OrgSettings(s: import("./backend.d").OrgSettings): any {
+    return {
+        webhook_url: s.webhookUrl !== undefined ? [s.webhookUrl] : [],
+        webhook_events: s.webhookEvents,
+        notify_on_task_complete: s.notifyOnTaskComplete,
+        notify_on_user_joined: s.notifyOnUserJoined,
+        notify_on_agent_deactivated: s.notifyOnAgentDeactivated,
+        default_language: s.defaultLanguage,
+        timezone: s.timezone,
+    };
+}
+
+// PlatformSettings helpers
+function from_candid_PlatformSettings(value: any): import("./backend.d").PlatformSettings {
+    return {
+        announcementBanner: Array.isArray(value.announcementBanner ?? value.announcement_banner)
+            ? ((value.announcementBanner ?? value.announcement_banner).length > 0 ? (value.announcementBanner ?? value.announcement_banner)[0] : undefined)
+            : (value.announcementBanner ?? value.announcement_banner ?? undefined),
+        announcementBannerEnabled: value.announcementBannerEnabled ?? value.announcement_banner_enabled ?? false,
+        launchDate: Array.isArray(value.launchDate ?? value.launch_date)
+            ? ((value.launchDate ?? value.launch_date).length > 0 ? (value.launchDate ?? value.launch_date)[0] : undefined)
+            : (value.launchDate ?? value.launch_date ?? undefined),
+    };
+}
+
+function to_candid_PlatformSettings(s: import("./backend.d").PlatformSettings): any {
+    return {
+        announcement_banner: s.announcementBanner !== undefined ? [s.announcementBanner] : [],
+        announcement_banner_enabled: s.announcementBannerEnabled,
+        launch_date: s.launchDate !== undefined ? [s.launchDate] : [],
+    };
 }
 function from_candid_AccountType_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AccountType): AccountType {
     return from_candid_variant_n36(_uploadFile, _downloadFile, value);
