@@ -601,6 +601,34 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    getMyNotifications(): Promise<{
+        __kind__: "ok";
+        ok: Array<Notification>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    markNotificationRead(id: string): Promise<{
+        __kind__: "ok";
+        ok: Notification;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    markAllNotificationsRead(): Promise<{
+        __kind__: "ok";
+        ok: number;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createSystemNotification(userId: Principal, title: string, message: string, relatedId?: string): Promise<{
+        __kind__: "ok";
+        ok: Notification;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
 }
 
 export enum TaskStatus {
@@ -706,4 +734,23 @@ export interface PlatformMetrics {
     totalWallets: number;
     activeOrgs: number;
     orgsByPlan: OrgsByPlan;
+}
+
+export type NotificationType =
+    | "taskStatusChanged"
+    | "inviteRedeemed"
+    | "agentDeactivated"
+    | "systemMessage"
+    | "orgCreated";
+
+export interface Notification {
+    id: string;
+    userId: Principal;
+    orgId: string;
+    notificationType: NotificationType;
+    title: string;
+    message: string;
+    isRead: boolean;
+    createdAt: bigint;
+    relatedId?: string;
 }

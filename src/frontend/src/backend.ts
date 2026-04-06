@@ -518,6 +518,10 @@ export interface backendInterface {
     getTasksByOrg(orgId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }>;
     getMyTasks(): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }>;
     getTasksByAgent(agentId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }>;
+    getMyNotifications(): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Notification> } | { __kind__: "err"; err: string }>;
+    markNotificationRead(id: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").Notification } | { __kind__: "err"; err: string }>;
+    markAllNotificationsRead(): Promise<{ __kind__: "ok"; ok: number } | { __kind__: "err"; err: string }>;
+    createSystemNotification(userId: import("./backend.d").Principal, title: string, message: string, relatedId?: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").Notification } | { __kind__: "err"; err: string }>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
 }
 import type { AccountType as _AccountType, Branch as _Branch, BranchInput as _BranchInput, BranchUpdateInput as _BranchUpdateInput, CreateInviteLinkInput as _CreateInviteLinkInput, InviteLink as _InviteLink, Lead as _Lead, LeadInput as _LeadInput, Organization as _Organization, OrganizationInput as _OrganizationInput, PlanTier as _PlanTier, Principal as _Principal, Role as _Role, Transaction as _Transaction, TransactionStatus as _TransactionStatus, TxType as _TxType, UpdateOrgInput as _UpdateOrgInput, UpdateProfileInput as _UpdateProfileInput, User as _User, WalletAccount as _WalletAccount, WalletInput as _WalletInput } from "./declarations/backend.did.d.ts";
@@ -1220,6 +1224,28 @@ export class Backend implements backendInterface {
     async getTasksByAgent(agentId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Task> } | { __kind__: "err"; err: string }> {
         const result = await (this.actor as any).getTasksByAgent(agentId);
         if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map((t: any) => from_candid_Task(t)) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async getMyNotifications(): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").Notification> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getMyNotifications();
+        if ("ok" in result) {
+            return { __kind__: "ok" as const, ok: result.ok.map((n: any) => from_candid_Notification(n)) };
+        }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async markNotificationRead(id: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").Notification } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).markNotificationRead(id);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_Notification(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async markAllNotificationsRead(): Promise<{ __kind__: "ok"; ok: number } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).markAllNotificationsRead();
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: Number(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async createSystemNotification(userId: import("./backend.d").Principal, title: string, message: string, relatedId?: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").Notification } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).createSystemNotification(userId, title, message, relatedId ? [relatedId] : []);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_Notification(result.ok) }; }
         return { __kind__: "err" as const, err: result.err };
     }
     async _initializeAccessControlWithSecret(userSecret: string): Promise<void> {
@@ -2164,6 +2190,32 @@ function from_candid_Task(value: any): import("./backend.d").Task {
             : (value.output_data ?? value.outputData ?? undefined),
         createdAt: value.created_at ?? value.createdAt,
         updatedAt: value.updated_at ?? value.updatedAt,
+    };
+}
+
+
+// Notification helper - converts raw Candid response to Notification TypeScript type
+function from_candid_Notification(value: any): import("./backend.d").Notification {
+    const typeMap: Record<string, import("./backend.d").NotificationType> = {
+        taskStatusChanged: "taskStatusChanged",
+        inviteRedeemed: "inviteRedeemed",
+        agentDeactivated: "agentDeactivated",
+        systemMessage: "systemMessage",
+        orgCreated: "orgCreated",
+    };
+    const rawType = typeof value.notificationType === "object" ? Object.keys(value.notificationType)[0] : String(value.notificationType ?? value.notification_type);
+    return {
+        id: value.id,
+        userId: value.userId ?? value.user_id,
+        orgId: value.orgId ?? value.org_id,
+        notificationType: typeMap[rawType] ?? "systemMessage",
+        title: value.title,
+        message: value.message,
+        isRead: value.isRead ?? value.is_read ?? false,
+        createdAt: value.createdAt ?? value.created_at,
+        relatedId: Array.isArray(value.relatedId ?? value.related_id)
+            ? ((value.relatedId ?? value.related_id).length > 0 ? (value.relatedId ?? value.related_id)[0] : undefined)
+            : (value.relatedId ?? value.related_id ?? undefined),
     };
 }
 

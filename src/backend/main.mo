@@ -386,6 +386,30 @@ actor {
   let activityEvents = Map.empty<Text, ActivityEvent>();
   var _nextActivityId : Nat = 1;
 
+  // ─── Notification Types ───────────────────────────────────────────────────
+
+  type NotificationType = {
+    #taskStatusChanged;
+    #inviteRedeemed;
+    #agentDeactivated;
+    #systemMessage;
+    #orgCreated;
+  };
+
+  type Notification = {
+    id : Text;
+    userId : Principal.Principal;
+    orgId : Text;
+    notificationType : NotificationType;
+    title : Text;
+    message : Text;
+    isRead : Bool;
+    createdAt : Int;
+    relatedId : ?Text;
+  };
+
+  let notifications = Map.empty<Text, Notification>();
+  var _nextNotificationId : Nat = 1;
 
 
   type OrganizationInput = {
@@ -1131,6 +1155,8 @@ actor {
             users.add(input.principal, newUser);
             let joinOrgId = switch (link.orgId) { case (?oid) { oid }; case null { "platform" } };
             _recordActivity(#userJoined, joinOrgId, input.principal, null, ?input.displayName, input.displayName # " joined via invite link");
+            // Notify invite creator
+            _sendNotification(link.createdBy, joinOrgId, #inviteRedeemed, "Invite Accepted", input.displayName # " has joined your organization via invite link.", null);
             let updatedCount = link.redemptionCount + 1;
             let shouldDeactivate = switch (link.maxRedemptions) {
               case (?max) { updatedCount >= max };
@@ -1674,6 +1700,12 @@ actor {
         agents.remove(id);
         agents.add(id, deactivated);
         _recordActivity(#agentDeactivated, deactivated.orgId, caller, ?deactivated.id, ?deactivated.name, "Agent \"" # deactivated.name # "\" was deactivated");
+        // Notify all org_admins in the same org (except caller)
+        for ((_, u) in users.entries()) {
+          if (u.role == #org_admin and u.orgId == ?deactivated.orgId and not u.principal.equal(caller)) {
+            _sendNotification(u.principal, deactivated.orgId, #agentDeactivated, "Agent Deactivated", "Agent \"" # deactivated.name # "\" has been deactivated.", ?deactivated.id);
+          };
+        };
         #ok(deactivated);
       };
     };
@@ -1830,9 +1862,17 @@ actor {
         switch (newStatus) {
           case (#completed) {
             _recordActivity(#taskCompleted, task.orgId, caller, ?task.id, ?task.title, "Task \"" # task.title # "\" was completed");
+            // Notify task creator if different from caller
+            if (not task.createdBy.equal(caller)) {
+              _sendNotification(task.createdBy, task.orgId, #taskStatusChanged, "Task Completed", "Your task \"" # task.title # "\" has been marked complete.", ?task.id);
+            };
           };
           case (#failed) {
             _recordActivity(#taskFailed, task.orgId, caller, ?task.id, ?task.title, "Task \"" # task.title # "\" failed");
+            // Notify task creator if different from caller
+            if (not task.createdBy.equal(caller)) {
+              _sendNotification(task.createdBy, task.orgId, #taskStatusChanged, "Task Failed", "Your task \"" # task.title # "\" has been marked as failed.", ?task.id);
+            };
           };
           case (_) {};
         };
@@ -2329,6 +2369,135 @@ actor {
     };
   };
 
+
+  // ─── Notification Internal Helper ────────────────────────────────────────
+
+  func _sendNotification(
+    userId : Principal.Principal,
+    orgId : Text,
+    notifType : NotificationType,
+    title : Text,
+    message : Text,
+    relatedId : ?Text,
+  ) {
+    let nid = "NOTIF" # _nextNotificationId.toText();
+    _nextNotificationId += 1;
+    let notif : Notification = {
+      id = nid;
+      userId = userId;
+      orgId = orgId;
+      notificationType = notifType;
+      title = title;
+      message = message;
+      isRead = false;
+      createdAt = Time.now();
+      relatedId = relatedId;
+    };
+    notifications.add(nid, notif);
+  };
+
+  // ─── Notification APIs ────────────────────────────────────────────────────
+
+  public query ({ caller }) func getMyNotifications() : async { #ok : [Notification]; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?_) {
+        let all = notifications.values().toArray().filter(
+          func(n : Notification) : Bool { n.userId.equal(caller) }
+        );
+        let sorted = all.sort(func(a : Notification, b : Notification) : Order.Order {
+          Int.compare(b.createdAt, a.createdAt)
+        });
+        let limited : [Notification] = if (sorted.size() > 50) {
+          Array.tabulate(50, func(i : Nat) : Notification { sorted[i] })
+        } else sorted;
+        #ok(limited)
+      };
+    };
+  };
+
+  public shared ({ caller }) func markNotificationRead(id : Text) : async { #ok : Notification; #err : Text } {
+    switch (notifications.get(id)) {
+      case (null) { #err("Notification not found") };
+      case (?notif) {
+        if (not notif.userId.equal(caller)) { return #err("Not authorized") };
+        let updated : Notification = {
+          id = notif.id;
+          userId = notif.userId;
+          orgId = notif.orgId;
+          notificationType = notif.notificationType;
+          title = notif.title;
+          message = notif.message;
+          isRead = true;
+          createdAt = notif.createdAt;
+          relatedId = notif.relatedId;
+        };
+        notifications.remove(id);
+        notifications.add(id, updated);
+        #ok(updated)
+      };
+    };
+  };
+
+  public shared ({ caller }) func markAllNotificationsRead() : async { #ok : Nat; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?_) {
+        var count : Nat = 0;
+        for ((nid, notif) in notifications.entries()) {
+          if (notif.userId.equal(caller) and not notif.isRead) {
+            let updated : Notification = {
+              id = notif.id;
+              userId = notif.userId;
+              orgId = notif.orgId;
+              notificationType = notif.notificationType;
+              title = notif.title;
+              message = notif.message;
+              isRead = true;
+              createdAt = notif.createdAt;
+              relatedId = notif.relatedId;
+            };
+            notifications.remove(nid);
+            notifications.add(nid, updated);
+            count += 1;
+          };
+        };
+        #ok(count)
+      };
+    };
+  };
+
+  public shared ({ caller }) func createSystemNotification(
+    userId : Principal.Principal,
+    title : Text,
+    message : Text,
+    relatedId : ?Text,
+  ) : async { #ok : Notification; #err : Text } {
+    if (not isSuperAdmin(caller) and not isOrgAdmin(caller)) {
+      return #err("Not authorized");
+    };
+    switch (users.get(userId)) {
+      case (null) { #err("Target user not found") };
+      case (?targetUser) {
+        let orgId = switch (targetUser.orgId) { case (?oid) { oid }; case null { "platform" } };
+        let nid = "NOTIF" # _nextNotificationId.toText();
+        _nextNotificationId += 1;
+        let notif : Notification = {
+          id = nid;
+          userId = userId;
+          orgId = orgId;
+          notificationType = #systemMessage;
+          title = title;
+          message = message;
+          isRead = false;
+          createdAt = Time.now();
+          relatedId = relatedId;
+        };
+        notifications.add(nid, notif);
+        #ok(notif)
+      };
+    };
+  };
 
   // ─── Activity Feed Internal Helper ──────────────────────────────────────────
 
