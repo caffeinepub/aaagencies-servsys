@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useActor } from "@/hooks/useActor";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { cn } from "@/lib/utils";
 import {
@@ -28,7 +29,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "../backend.d";
 import { NotificationCenter } from "../components/NotificationCenter";
 import { WelcomeModal } from "../components/WelcomeModal";
@@ -47,6 +48,7 @@ import SubscriptionBilling from "./dashboard/OrgAdmin/SubscriptionBilling";
 import TaskManagement from "./dashboard/OrgAdmin/TaskManagement";
 import TeamInvites from "./dashboard/OrgAdmin/TeamInvites";
 import WalletsFinance from "./dashboard/OrgAdmin/WalletsFinance";
+import SettingsPage from "./dashboard/SettingsPage";
 import AllUsers from "./dashboard/SuperAdmin/AllUsers";
 import ApiDocumentation from "./dashboard/SuperAdmin/ApiDocumentation";
 import LeadAdmin from "./dashboard/SuperAdmin/LeadAdmin";
@@ -146,25 +148,6 @@ function getDefaultPage(role: string): string {
   }
 }
 
-function SettingsPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-semibold">Settings</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Manage your preferences and account settings
-        </p>
-      </div>
-      <div className="rounded-lg border border-border/60 p-8 text-center">
-        <Settings className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-        <p className="text-muted-foreground text-sm">
-          Settings panel coming in Phase 1B
-        </p>
-      </div>
-    </div>
-  );
-}
-
 interface DashboardLayoutProps {
   user: User;
   isNewUser?: boolean;
@@ -177,6 +160,7 @@ export default function DashboardLayout({
   onOnboardingComplete,
 }: DashboardLayoutProps) {
   const { clear } = useInternetIdentity();
+  const { actor } = useActor();
   const role =
     typeof user.role === "object"
       ? Object.keys(user.role as object)[0]
@@ -187,6 +171,24 @@ export default function DashboardLayout({
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(!!isNewUser);
+
+  // Announcement banner state
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [announcementBanner, setAnnouncementBanner] = useState<
+    string | undefined
+  >(undefined);
+  const [announcementBannerEnabled, setAnnouncementBannerEnabled] =
+    useState(false);
+
+  useEffect(() => {
+    if (!actor) return;
+    actor.getPlatformSettings().then((res) => {
+      if ("__kind__" in res && res.__kind__ === "ok") {
+        setAnnouncementBanner(res.ok.announcementBanner);
+        setAnnouncementBannerEnabled(res.ok.announcementBannerEnabled);
+      }
+    });
+  }, [actor]);
 
   const handleCloseWelcome = () => {
     setShowWelcome(false);
@@ -252,7 +254,7 @@ export default function DashboardLayout({
       case "profile":
         return <ProfilePage />;
       case "settings":
-        return <SettingsPage />;
+        return <SettingsPage user={user} />;
       default:
         return <PlatformOverview />;
     }
@@ -401,6 +403,26 @@ export default function DashboardLayout({
             <NotificationCenter />
           </div>
         </header>
+
+        {/* Announcement banner */}
+        {announcementBanner &&
+          announcementBannerEnabled &&
+          !bannerDismissed && (
+            <div className="bg-primary/10 border-b border-primary/20 px-6 py-2 flex items-center justify-between gap-4 shrink-0">
+              <p className="text-sm text-primary font-medium flex-1">
+                {announcementBanner}
+              </p>
+              <button
+                type="button"
+                onClick={() => setBannerDismissed(true)}
+                className="text-muted-foreground hover:text-foreground shrink-0"
+                aria-label="Dismiss announcement"
+                data-ocid="announcement.close_button"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
         {/* Page content */}
         <ScrollArea className="flex-1">
