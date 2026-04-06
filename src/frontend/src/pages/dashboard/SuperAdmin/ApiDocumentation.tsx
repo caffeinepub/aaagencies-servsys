@@ -550,6 +550,37 @@ const API_SECTIONS: ApiSection[] = [
       },
     ],
   },
+  // ─── Phase 5B ───────────────────────────────────────────────────────────────
+  {
+    title: "Platform Billing",
+    description:
+      "Super Admin platform revenue overview and per-tier plan limit configuration. Aggregate billing data across all tenant orgs.",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/platform/billing/overview",
+        description:
+          "Get aggregate revenue overview: org counts per plan tier × plan pricing = estimated MRR. Super Admin only.",
+        requiredRole: "super_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/platform/limits",
+        description:
+          "Get plan limit configurations for all four tiers (free, starter, professional, enterprise) in a single call. Super Admin only.",
+        requiredRole: "super_admin",
+      },
+      {
+        method: "PUT",
+        path: "/api/platform/limits/{tier}",
+        description:
+          "Update plan limits for a specific tier. Changes apply immediately to all orgs on that tier without requiring individual org updates.",
+        requiredRole: "super_admin",
+        example:
+          '{"maxUsers": 200, "maxBranches": 30, "maxAgents": 30, "maxApiKeys": 100, "maxWallets": 30}',
+      },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<string, string> = {
@@ -638,6 +669,7 @@ const PHASE_LABELS: Record<string, string> = {
   "Agent Conversations": "4C",
   "Plan Limits & Platform Metrics": "5A",
   "Tenant Management": "5A",
+  "Platform Billing": "5B",
 };
 
 export default function ApiDocumentation() {
@@ -649,7 +681,7 @@ export default function ApiDocumentation() {
             API Documentation
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            AAAgencies SerVSys REST API reference — Phases 1–5 · 15 sections
+            AAAgencies SerVSys REST API reference — Phases 1–5 · 16 sections
           </p>
         </div>
       </div>
