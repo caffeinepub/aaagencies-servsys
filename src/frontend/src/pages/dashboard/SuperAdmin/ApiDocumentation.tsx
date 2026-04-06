@@ -485,6 +485,71 @@ const API_SECTIONS: ApiSection[] = [
       },
     ],
   },
+  // ─── Phase 5A ───────────────────────────────────────────────────────────────
+  {
+    title: "Plan Limits & Platform Metrics",
+    description:
+      "PaaS plan limit configuration and live platform-wide aggregate metrics for Super Admins",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/platform/limits/{tier}",
+        description:
+          "Get the current plan limits for a given tier (free, starter, professional, enterprise). Returns custom overrides if set, otherwise defaults.",
+        requiredRole: "authenticated",
+        example: '{"tier": "professional"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/platform/limits/{tier}",
+        description:
+          "Override the default plan limits for a given tier. Super Admin only. Changes apply immediately to all orgs on that tier.",
+        requiredRole: "super_admin",
+        example:
+          '{"maxUsers": 150, "maxBranches": 25, "maxAgents": 25, "maxApiKeys": 75, "maxWallets": 25}',
+      },
+      {
+        method: "GET",
+        path: "/api/platform/metrics",
+        description:
+          "Get live aggregate platform metrics: total orgs, users, agents, tasks, wallets, active orgs, and breakdown by plan tier. Super Admin only.",
+        requiredRole: "super_admin",
+      },
+    ],
+  },
+  // ─── Phase 5A-iii ───────────────────────────────────────────────────────────
+  {
+    title: "Tenant Management",
+    description:
+      "Super Admin controls for tenant activation, plan overrides, and white-label domain configuration per org",
+    endpoints: [
+      {
+        method: "PUT",
+        path: "/api/organizations/{orgId}/domain",
+        description:
+          "Set or update the custom domain and subdomain for a tenant org's white-label branded portal. Callable by org_admin (own org) or super_admin.",
+        requiredRole: "org_admin",
+        example:
+          '{"customDomain": "myagency.com", "customSubdomain": "myagency"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/organizations/{orgId}/plan",
+        description:
+          "Override the plan tier for a specific tenant org (e.g. upgrade free org to professional). Super Admin only.",
+        requiredRole: "super_admin",
+        example: '{"tier": "enterprise"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/organizations/{orgId}/active",
+        description:
+          "Activate or deactivate a tenant org. Deactivated orgs are blocked from creating resources. Super Admin only.",
+        requiredRole: "super_admin",
+        example: '{"isActive": false}',
+      },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<string, string> = {
@@ -571,6 +636,8 @@ const PHASE_LABELS: Record<string, string> = {
   "Agent Registry": "4A",
   "Task Management": "4B",
   "Agent Conversations": "4C",
+  "Plan Limits & Platform Metrics": "5A",
+  "Tenant Management": "5A",
 };
 
 export default function ApiDocumentation() {
@@ -582,7 +649,7 @@ export default function ApiDocumentation() {
             API Documentation
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            AAAgencies SerVSys REST API reference — Phases 1–4 · 13 sections
+            AAAgencies SerVSys REST API reference — Phases 1–5 · 15 sections
           </p>
         </div>
       </div>
