@@ -1,27 +1,30 @@
 # AAAgencies SerVSys™
 
 ## Current State
-Phases 1–4 are fully complete. Phase 5A (backend plan limits, enforcement, custom domain, platform metrics) and 5B (Super Admin platform overview, tenant management, platform billing) are live.
-
-`SubscriptionBilling.tsx` (Org Admin) has a full Stripe-ready UI — current plan card, 4-tier plan comparison grid with static hardcoded feature text, billing history, and cancel section — but has no live usage bars or real limit data from the backend.
-
-`MyOrganization.tsx` (Org Admin) shows org details and language settings wired to `getMyOrganization()`, but still uses a `MOCK_ORGS` fallback in `toDisplayOrg()` and has no custom domain/branding section.
+`MyOrganization.tsx` (Org Admin) shows org details and a language settings card, with an Edit form for name/description/logo/language fields. It still falls back to `MOCK_ORGS[0]` when `getMyOrganization()` returns null, rather than showing a proper empty/loading state. The `Organization` type in `backend.d.ts` already has `customDomain?: string` and `customSubdomain?: string` fields. The `updateOrgDomain(orgId, customDomain, customSubdomain)` API is live in the backend.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Real-time usage bars section in `SubscriptionBilling.tsx`: fetch `getPlanLimits(tier)` and live resource counts (users via `getTeamMembersByOrg`, branches via `getBranchesByOrg`, agents via `getAgentsByOrg`, API keys via `listApiKeys`, wallets via `getWalletsByOrg`); render a Progress bar per resource with amber warning at ≥80%, red "At limit" at 100%, and an upgrade CTA when at 100%.
-- Live limit values on plan comparison cards in `SubscriptionBilling.tsx`: replace hardcoded feature strings with real values from `getPlanLimits()` for all 4 tiers.
-- Custom Domain & Branding card in `MyOrganization.tsx`: two inputs (`customDomain`, `customSubdomain`), pre-populated from org data, saved via `updateOrgDomain()`, read-only display with a "Branded Portal" badge when set.
+- New "Custom Domain & Branding" card in the view state (read-only display of current domain/subdomain, with a "Branded Portal" badge when set)
+- Domain edit fields (`customDomain`, `customSubdomain`) in the existing Edit form — saved via `updateOrgDomain()` mutation with loading spinner and success/error toasts
+- Proper empty/loading state when org is null (remove `MOCK_ORGS` fallback)
 
 ### Modify
-- `toDisplayOrg()` in `MyOrganization.tsx`: remove `MOCK_ORGS` fallback; return a null/empty state when org is not available.
-- `SubscriptionBilling.tsx` plan feature lists: driven by live `getPlanLimits()` data instead of hardcoded strings.
+- `toDisplayOrg` helper — remove `MOCK_ORGS` fallback; return null/empty when no real org
+- `DisplayOrg` type — add `customDomain` and `customSubdomain` optional fields
+- `EditForm` type — add `customDomain` and `customSubdomain` fields
+- Edit form `startEditing` — pre-populate domain fields from current org
+- Save flow — when domain fields have changed, call `updateOrgDomain()` in addition to (or instead of) `updateOrganization()`
+- View state grid — add a third card for Custom Domain & Branding
 
 ### Remove
-- `MOCK_ORGS` import and usage from `MyOrganization.tsx`.
+- `MOCK_ORGS` import and fallback usage in `toDisplayOrg`
+- `MockOrg` type import
 
 ## Implementation Plan
-1. In `SubscriptionBilling.tsx`: fetch org → derive `planTier` → call `getPlanLimits(tier)` plus four parallel resource-count queries. Render a new "Resource Usage" card above the plan comparison grid with one row per resource (Progress bar, count label, warning/limit badge, upgrade CTA link).
-2. In `SubscriptionBilling.tsx`: pass live `PlanLimits` values into a dynamic plan feature builder so each tier's card shows real numbers.
-3. In `MyOrganization.tsx`: remove mock fallback; add a third card "Custom Domain & Branding" with `customDomain` and `customSubdomain` inputs wired to `updateOrgDomain()`; show read-only display with code-style labels and badge when values are set.
+1. Update `DisplayOrg` and `EditForm` types to include `customDomain` and `customSubdomain`
+2. Remove `MOCK_ORGS` / `MockOrg` fallback; show proper empty state when org is null
+3. Add domain fields to the Edit form
+4. Add a `updateDomainMutation` that calls `updateOrgDomain()`; on Save, call both `updateMutation` and `updateDomainMutation` if domain fields changed
+5. Add "Custom Domain & Branding" read-only card in view mode

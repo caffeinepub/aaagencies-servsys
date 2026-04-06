@@ -6,10 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
-import type { MockOrg } from "@/lib/mockData";
-import { MOCK_ORGS } from "@/lib/mockData";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Languages, Loader2, Pencil } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, Globe, Languages, Loader2, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Organization } from "../../../backend.d";
@@ -22,21 +20,18 @@ type DisplayOrg = {
   supportedLanguages: string[];
   planTier: string;
   logoUrl?: string;
+  customDomain?: string;
+  customSubdomain?: string;
 };
 
-function toDisplayOrg(org: Organization | null | undefined): DisplayOrg {
-  if (!org) {
-    const mock: MockOrg = MOCK_ORGS[0];
-    return {
-      name: mock.name,
-      description: mock.description,
-      isActive: mock.isActive,
-      primaryLanguage: mock.primaryLanguage,
-      supportedLanguages: mock.supportedLanguages,
-      planTier: mock.planTier,
-      logoUrl: undefined,
-    };
-  }
+function unwrapOptional(val: unknown): string | undefined {
+  if (Array.isArray(val)) return val[0] ?? undefined;
+  if (val === null || val === undefined) return undefined;
+  return val as string;
+}
+
+function toDisplayOrg(org: Organization | null | undefined): DisplayOrg | null {
+  if (!org) return null;
   const planTier =
     typeof org.planTier === "object"
       ? (Object.keys(org.planTier)[0] ?? "free")
@@ -49,6 +44,8 @@ function toDisplayOrg(org: Organization | null | undefined): DisplayOrg {
     supportedLanguages: org.supportedLanguages,
     planTier,
     logoUrl: org.logoUrl,
+    customDomain: unwrapOptional(org.customDomain),
+    customSubdomain: unwrapOptional(org.customSubdomain),
   };
 }
 
@@ -58,18 +55,23 @@ type EditForm = {
   logoUrl: string;
   primaryLanguage: string;
   supportedLanguages: string; // comma-separated
+  customDomain: string;
+  customSubdomain: string;
 };
 
 export default function MyOrganization() {
   const { actor, isFetching } = useActor();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState<EditForm>({
     name: "",
     description: "",
     logoUrl: "",
     primaryLanguage: "",
     supportedLanguages: "",
+    customDomain: "",
+    customSubdomain: "",
   });
 
   const { data: org, isLoading } = useQuery({
@@ -81,44 +83,76 @@ export default function MyOrganization() {
   const displayOrg = toDisplayOrg(org);
 
   const startEditing = () => {
+    if (!displayOrg) return;
     setForm({
       name: displayOrg.name,
       description: displayOrg.description,
       logoUrl: displayOrg.logoUrl ?? "",
       primaryLanguage: displayOrg.primaryLanguage,
       supportedLanguages: displayOrg.supportedLanguages.join(", "),
+      customDomain: displayOrg.customDomain ?? "",
+      customSubdomain: displayOrg.customSubdomain ?? "",
     });
     setEditing(true);
   };
 
-  const updateMutation = useMutation({
-    mutationFn: async (editForm: EditForm) => {
-      if (!actor || !org?.id) throw new Error("Not connected");
+  const handleSave = async () => {
+    if (!actor || !org?.id) return;
+    setIsSaving(true);
+    try {
       const input = {
-        name: editForm.name,
-        description: editForm.description,
-        logoUrl: editForm.logoUrl ? editForm.logoUrl : undefined,
-        primaryLanguage: editForm.primaryLanguage,
-        supportedLanguages: editForm.supportedLanguages
+        name: form.name,
+        description: form.description,
+        logoUrl: form.logoUrl ? form.logoUrl : undefined,
+        primaryLanguage: form.primaryLanguage,
+        supportedLanguages: form.supportedLanguages
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
       };
-      const result = await (actor as any).updateOrganization(org.id, input);
-      if (result.__kind__ === "err") throw new Error(result.err);
-      return result.ok;
-    },
-    onSuccess: () => {
+      const [orgResult, domainResult] = await Promise.all([
+        (actor as any).updateOrganization(org.id, input),
+        (actor as any).updateOrgDomain(
+          org.id,
+          form.customDomain.trim() || null,
+          form.customSubdomain.trim() || null,
+        ),
+      ]);
+      if (orgResult.__kind__ === "err") throw new Error(orgResult.err);
+      if (domainResult.__kind__ === "err") throw new Error(domainResult.err);
       queryClient.invalidateQueries({ queryKey: ["my-org"] });
       setEditing(false);
       toast.success("Organization updated successfully");
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
-  });
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to save changes");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
+
+  if (!displayOrg) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-display font-semibold">
+            My Organization
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Organization settings and configuration
+          </p>
+        </div>
+        <Card className="border-border/60">
+          <CardContent className="py-10 text-center">
+            <p className="text-muted-foreground text-sm">
+              No organization found. Contact your Super Admin.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -219,17 +253,43 @@ export default function MyOrganization() {
                   data-ocid="org.input"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Custom Domain</Label>
+                <Input
+                  value={form.customDomain}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, customDomain: e.target.value }))
+                  }
+                  placeholder="myagency.com"
+                  data-ocid="org.input"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your branded domain (optional)
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Custom Subdomain</Label>
+                <Input
+                  value={form.customSubdomain}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, customSubdomain: e.target.value }))
+                  }
+                  placeholder="myagency"
+                  data-ocid="org.input"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your branded subdomain on this platform (optional)
+                </p>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
-                onClick={() => updateMutation.mutate(form)}
-                disabled={
-                  updateMutation.isPending || !form.name || !form.description
-                }
+                onClick={handleSave}
+                disabled={isSaving || !form.name || !form.description}
                 data-ocid="org.save_button"
               >
-                {updateMutation.isPending ? (
+                {isSaving ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                     Saving...
@@ -250,7 +310,8 @@ export default function MyOrganization() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {/* Card 1: Organization Details */}
           <Card className="border-border/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-display flex items-center gap-2">
@@ -297,6 +358,7 @@ export default function MyOrganization() {
             </CardContent>
           </Card>
 
+          {/* Card 2: Language Settings */}
           <Card className="border-border/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-display flex items-center gap-2">
@@ -324,6 +386,59 @@ export default function MyOrganization() {
                   ))}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 3: Custom Domain & Branding */}
+          <Card className="border-border/60 md:col-span-2 xl:col-span-1">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-display flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" /> Custom Domain &amp;
+                Branding
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {displayOrg.customDomain || displayOrg.customSubdomain ? (
+                <>
+                  {displayOrg.customDomain && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Custom Domain
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <code className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded border border-border/40">
+                          {displayOrg.customDomain}
+                        </code>
+                        <Badge
+                          className="bg-teal-500/10 text-teal-400 border-teal-500/30 text-xs"
+                          variant="outline"
+                        >
+                          Branded Portal
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                  {displayOrg.customSubdomain && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Subdomain</p>
+                      <div className="mt-1">
+                        <code className="font-mono text-sm bg-muted/50 px-2 py-0.5 rounded border border-border/40">
+                          {displayOrg.customSubdomain}
+                        </code>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-1.5">
+                  <p className="text-sm text-muted-foreground">
+                    No custom domain configured.
+                  </p>
+                  <p className="text-xs text-muted-foreground/70">
+                    Configure a branded portal domain in Edit mode.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
