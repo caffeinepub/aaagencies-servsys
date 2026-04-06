@@ -676,6 +676,146 @@ const API_SECTIONS: ApiSection[] = [
       },
     ],
   },
+  {
+    title: "FFF Assets",
+    description:
+      "FinFracFran™ fractional asset management. Create and manage assets that can be divided into fractional ownership shares. Assets can represent real estate, businesses, intellectual property, revenue streams, or custom asset types.",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/fff/assets",
+        description:
+          "Create a new fractional asset for an org. org_admin creates assets for their own org; super_admin can create for any org. Requires assetType, totalShares, and valuationUsd.",
+        requiredRole: "org_admin",
+        example:
+          '{"orgId": "org-1", "name": "Downtown Office Building", "description": "Commercial property at 123 Main St", "assetType": "realEstate", "totalShares": 1000, "valuationUsd": 2500000}',
+      },
+      {
+        method: "GET",
+        path: "/api/fff/assets/{orgId}",
+        description:
+          "Get all fractional assets belonging to an org. Accessible by org members (org_admin, team_member) or super_admin.",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/fff/assets/id/{id}",
+        description:
+          "Get a single fractional asset by its ID. Returns full asset details including totalShares, valuationUsd, and isActive status.",
+        requiredRole: "authenticated",
+      },
+      {
+        method: "PUT",
+        path: "/api/fff/assets/{id}",
+        description:
+          "Update a fractional asset's name, description, valuation, or active status. org_admin (own org) or super_admin only.",
+        requiredRole: "org_admin",
+        example:
+          '{"name": "Downtown Office Building (Updated)", "valuationUsd": 2750000, "isActive": true}',
+      },
+    ],
+  },
+  {
+    title: "FFF Ownership",
+    description:
+      "Fractional ownership share management. Issue shares of an asset to users and query ownership portfolios. Ownership records track who holds how many shares of each fractional asset.",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/fff/ownership/issue",
+        description:
+          "Issue fractional ownership shares of an asset to a user. org_admin (own org) or super_admin. Validates asset exists and belongs to the org. Creates an ownership record linking the user to the asset.",
+        requiredRole: "org_admin",
+        example:
+          '{"assetId": "fff-asset-1", "userId": "principal-abc123", "shares": 100}',
+      },
+      {
+        method: "GET",
+        path: "/api/fff/ownership/asset/{assetId}",
+        description:
+          "Get all ownership records for a specific asset. Returns an array of FractionalOwnership objects showing each holder's shares and issuance date.",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/fff/ownership/me",
+        description:
+          "Get the caller's full ownership portfolio — all assets the authenticated user holds shares in, across all orgs. Returns array of FractionalOwnership records.",
+        requiredRole: "authenticated",
+      },
+    ],
+  },
+  // ─── Phase 7B (Revenue Splits) ──────────────────────────────────────────────
+  {
+    title: "Revenue Splits",
+    description:
+      "FinFracFran™ revenue distribution management. Create and distribute revenue split events across fractional asset owners. Each split records a total amount and per-recipient allocation; distributing a split marks it as paid and credits each recipient.",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/fff/revenue-splits",
+        description:
+          "Create a pending revenue split for a fractional asset. Provide the total amount and a distribution array with per-recipient shares. org_admin (own org) or super_admin.",
+        requiredRole: "org_admin",
+        example:
+          '{"assetId": "fff-asset-1", "totalAmountUsd": 50000, "distribution": [{"userId": "principal-abc123", "amountUsd": 30000}, {"userId": "principal-def456", "amountUsd": 20000}]}',
+      },
+      {
+        method: "PUT",
+        path: "/api/fff/revenue-splits/{splitId}/distribute",
+        description:
+          "Mark a revenue split as distributed and credit each recipient. Idempotent — re-calling on an already-distributed split is a no-op. org_admin (own org) or super_admin.",
+        requiredRole: "org_admin",
+        example: '{"splitId": "fff-split-1"}',
+      },
+      {
+        method: "GET",
+        path: "/api/fff/revenue-splits/{assetId}",
+        description:
+          "List all revenue splits for a specific fractional asset, sorted newest-first. Shows status (pending, distributed, cancelled) and full distribution breakdown per split.",
+        requiredRole: "org_admin",
+      },
+    ],
+  },
+  // ─── Phase 7B (Franchise Links) ─────────────────────────────────────────────
+  {
+    title: "Franchise Links",
+    description:
+      "FinFracFran™ franchise relationship management between organizations. Establish franchisor\u2013franchisee relationships with royalty percentages, terms URLs, and lifecycle status tracking (pending \u2192 active \u2192 terminated).",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/fff/franchise-links",
+        description:
+          "Create a new franchise relationship between two orgs. The franchisorOrgId org grants the franchiseeOrgId org franchise rights with a specified royaltyPct (0\u2013100). org_admin (own org as franchisor) or super_admin.",
+        requiredRole: "org_admin",
+        example:
+          '{"franchisorOrgId": "org-1", "franchiseeOrgId": "org-2", "royaltyPct": 12.5, "termsUrl": "https://acme.com/franchise-terms"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/fff/franchise-links/{id}/status",
+        description:
+          "Update the status of a franchise link. Allowed values: active (accept the relationship), terminated (end the relationship). Both parties (franchisor or franchisee org_admin) or super_admin are authorized.",
+        requiredRole: "org_admin",
+        example: '{"status": "active"}',
+      },
+      {
+        method: "GET",
+        path: "/api/fff/franchise-links/org/{orgId}",
+        description:
+          "Get all franchise links where the given org is either the franchisor or the franchisee. Returns both incoming and outgoing franchise relationships for the org.",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "GET",
+        path: "/api/fff/franchise-links/platform",
+        description:
+          "Get all franchise links across the entire platform. Super Admin only. Use for platform-wide franchise network visualization and oversight.",
+        requiredRole: "super_admin",
+      },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<string, string> = {
@@ -768,6 +908,10 @@ const PHASE_LABELS: Record<string, string> = {
   "Activity Feed": "6B",
   "Notification Center": "6C",
   "Settings & Webhook": "6D",
+  "FFF Assets": "7B",
+  "FFF Ownership": "7B",
+  "Revenue Splits": "7B",
+  "Franchise Links": "7B",
 };
 
 export default function ApiDocumentation() {
@@ -779,7 +923,7 @@ export default function ApiDocumentation() {
             API Documentation
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            AAAgencies SerVSys REST API reference — Phases 1–6 · 19 sections
+            AAAgencies SerVSys REST API reference — Phases 1–7 · 23 sections
           </p>
         </div>
       </div>

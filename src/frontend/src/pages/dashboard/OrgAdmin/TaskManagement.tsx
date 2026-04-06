@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useActor } from "@/hooks/useActor";
-import { Bot, ClipboardList, ListTodo, Pencil, Plus } from "lucide-react";
+import {
+  Bot,
+  Check,
+  ClipboardList,
+  ListTodo,
+  Pencil,
+  Plus,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type {
@@ -295,6 +304,9 @@ function TaskFormFields({
 function RowSkeleton() {
   return (
     <tr>
+      <td className="px-3 py-3">
+        <Skeleton className="h-4 w-4 rounded" />
+      </td>
       <td className="px-4 py-3">
         <Skeleton className="h-4 w-40" />
       </td>
@@ -324,6 +336,11 @@ export default function TaskManagement() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<TaskStatus>(TaskStatus.pending);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   // Dialogs
   const [createOpen, setCreateOpen] = useState(false);
@@ -377,10 +394,92 @@ export default function TaskManagement() {
     loadData();
   }, [loadData]);
 
+  const setStatusFilterAndClear = (value: string) => {
+    setStatusFilter(value);
+    setSelectedIds(new Set());
+  };
+
+  const setPriorityFilterAndClear = (value: string) => {
+    setPriorityFilter(value);
+    setSelectedIds(new Set());
+  };
+
   const agentName = (agentId?: string) =>
     agentId
       ? (agents.find((a) => a.id === agentId)?.name ?? "Unknown Agent")
       : null;
+
+  const filtered = tasks.filter((t) => {
+    const statusMatch = statusFilter === "all" || t.status === statusFilter;
+    const priorityMatch =
+      priorityFilter === "all" || t.priority === priorityFilter;
+    return statusMatch && priorityMatch;
+  });
+
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((t) => selectedIds.has(t.id));
+  const someFilteredSelected = filtered.some((t) => selectedIds.has(t.id));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((t) => t.id)));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (!actor || selectedIds.size === 0) return;
+    setBulkUpdating(true);
+    const ids = Array.from(selectedIds);
+    let updatedCount = 0;
+    try {
+      // Try bulk API first
+      try {
+        const result = await (actor as any).bulkUpdateTaskStatus(
+          ids,
+          bulkStatus,
+        );
+        if (
+          result &&
+          (result.updated !== undefined || result.__kind__ === "ok")
+        ) {
+          updatedCount = result.updated ?? ids.length;
+        } else {
+          throw new Error("bulk API unavailable");
+        }
+      } catch {
+        // Fallback: update individually
+        const results = await Promise.allSettled(
+          ids.map((id) => actor.updateTaskStatus(id, bulkStatus)),
+        );
+        updatedCount = results.filter(
+          (r) => r.status === "fulfilled" && (r.value as any).__kind__ === "ok",
+        ).length;
+      }
+      await loadData();
+      setSelectedIds(new Set());
+      toast.success(
+        `${updatedCount} task${updatedCount !== 1 ? "s" : ""} updated`,
+      );
+    } catch (_e) {
+      toast.error("Failed to update tasks");
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!actor) return;
@@ -510,15 +609,8 @@ export default function TaskManagement() {
     }
   };
 
-  const filtered = tasks.filter((t) => {
-    const statusMatch = statusFilter === "all" || t.status === statusFilter;
-    const priorityMatch =
-      priorityFilter === "all" || t.priority === priorityFilter;
-    return statusMatch && priorityMatch;
-  });
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       {/* Confirm status change */}
       <AlertDialog
         open={!!confirmStatus}
@@ -720,7 +812,7 @@ export default function TaskManagement() {
               variant={statusFilter === s ? "default" : "outline"}
               size="sm"
               className="text-xs h-7"
-              onClick={() => setStatusFilter(s)}
+              onClick={() => setStatusFilterAndClear(s)}
               data-ocid="task.tab"
             >
               {s === "all" ? "All" : (STATUS_CONFIG[s]?.label ?? s)}
@@ -737,7 +829,7 @@ export default function TaskManagement() {
               variant={priorityFilter === p ? "default" : "outline"}
               size="sm"
               className="text-xs h-7"
-              onClick={() => setPriorityFilter(p)}
+              onClick={() => setPriorityFilterAndClear(p)}
               data-ocid="task.tab"
             >
               {p === "all" ? "All" : (PRIORITY_CONFIG[p]?.label ?? p)}
@@ -745,6 +837,22 @@ export default function TaskManagement() {
           ))}
         </div>
       </div>
+
+      {/* Selection info bar */}
+      {someFilteredSelected && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>
+            {selectedIds.size} task{selectedIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <button
+            type="button"
+            className="underline hover:text-foreground transition-colors"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
 
       {/* Task table */}
       {loading ? (
@@ -755,6 +863,7 @@ export default function TaskManagement() {
           <table className="w-full">
             <thead className="bg-muted/30">
               <tr>
+                <th className="px-3 py-2.5 w-10" />
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">
                   Title
                 </th>
@@ -804,6 +913,19 @@ export default function TaskManagement() {
           <table className="w-full">
             <thead className="bg-muted/30">
               <tr>
+                <th className="px-3 py-2.5 w-10">
+                  <Checkbox
+                    checked={allFilteredSelected}
+                    data-state={
+                      someFilteredSelected && !allFilteredSelected
+                        ? "indeterminate"
+                        : undefined
+                    }
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Select all tasks"
+                    data-ocid="task.checkbox"
+                  />
+                </th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">
                   Title
                 </th>
@@ -828,9 +950,19 @@ export default function TaskManagement() {
               {filtered.map((task, idx) => (
                 <tr
                   key={task.id}
-                  className="hover:bg-muted/10 transition-colors"
+                  className={`hover:bg-muted/10 transition-colors ${
+                    selectedIds.has(task.id) ? "bg-primary/5" : ""
+                  }`}
                   data-ocid={`task.row.${idx + 1}`}
                 >
+                  <td className="px-3 py-3">
+                    <Checkbox
+                      checked={selectedIds.has(task.id)}
+                      onCheckedChange={() => toggleSelectOne(task.id)}
+                      aria-label={`Select task ${task.title}`}
+                      data-ocid={`task.checkbox.${idx + 1}`}
+                    />
+                  </td>
                   <td className="px-4 py-3 max-w-xs">
                     <div>
                       <p className="text-sm font-medium truncate">
@@ -943,6 +1075,71 @@ export default function TaskManagement() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Floating bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-xl border border-border/80 bg-card shadow-2xl shadow-black/40"
+          data-ocid="task.panel"
+        >
+          <span className="text-sm font-medium text-foreground whitespace-nowrap">
+            {selectedIds.size} task{selectedIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <div className="w-px h-5 bg-border" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              Change Status:
+            </span>
+            <Select
+              value={bulkStatus}
+              onValueChange={(v) => setBulkStatus(v as TaskStatus)}
+            >
+              <SelectTrigger
+                className="h-8 text-xs w-36"
+                data-ocid="task.select"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(TaskStatus).map((s) => (
+                  <SelectItem key={s} value={s} className="text-xs">
+                    {STATUS_CONFIG[s]?.label ?? s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            size="sm"
+            className="h-8 px-3 text-xs gap-1.5"
+            disabled={bulkUpdating}
+            onClick={handleBulkStatusUpdate}
+            data-ocid="task.primary_button"
+          >
+            {bulkUpdating ? (
+              <span className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                Updating...
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" />
+                Apply
+              </span>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0"
+            onClick={() => setSelectedIds(new Set())}
+            aria-label="Clear selection"
+            data-ocid="task.cancel_button"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
       )}
     </div>
