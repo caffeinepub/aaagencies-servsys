@@ -1,6 +1,7 @@
 import { RoleBadge } from "@/components/RoleBadge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -12,8 +13,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
 import { MOCK_USERS } from "@/lib/mockData";
+import { exportToCSV } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Users } from "lucide-react";
+import { Download, Users } from "lucide-react";
 import { useState } from "react";
 import type { User } from "../../../backend.d";
 
@@ -65,6 +67,20 @@ export default function AllUsers() {
     roleFilter === "all" ? true : u.role === roleFilter,
   );
 
+  function handleExport() {
+    exportToCSV(
+      filteredUsers as unknown as Record<string, unknown>[],
+      "all-users",
+      [
+        { key: "displayName", label: "Name" },
+        { key: "email", label: "Email" },
+        { key: "role", label: "Role" },
+        { key: "orgName", label: "Organization" },
+        { key: "isActive", label: "Active" },
+      ],
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -74,18 +90,29 @@ export default function AllUsers() {
             {displayUsers.length} registered users on the platform
           </p>
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filter by role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="super_admin">Super Admin</SelectItem>
-            <SelectItem value="org_admin">Org Admin</SelectItem>
-            <SelectItem value="team_member">Team Member</SelectItem>
-            <SelectItem value="end_customer">Customer</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            title="Export CSV"
+            data-ocid="users.secondary_button"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="super_admin">Super Admin</SelectItem>
+              <SelectItem value="org_admin">Org Admin</SelectItem>
+              <SelectItem value="team_member">Team Member</SelectItem>
+              <SelectItem value="end_customer">Customer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card className="border-border/60">

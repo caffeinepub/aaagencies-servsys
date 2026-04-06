@@ -32,6 +32,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { exportToCSV } from "@/lib/utils";
 import {
   useMutation,
   useQueries,
@@ -41,6 +42,7 @@ import {
 import {
   Bot,
   Building2,
+  Download,
   GitBranch,
   Loader2,
   Plus,
@@ -419,98 +421,124 @@ export default function Organizations() {
             Manage all tenant organizations — plans, status, and resource usage
           </p>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" data-ocid="orgs.open_modal_button">
-              <Plus className="w-4 h-4 mr-1.5" /> New Organization
-            </Button>
-          </DialogTrigger>
-          <DialogContent data-ocid="orgs.dialog">
-            <DialogHeader>
-              <DialogTitle className="font-display">
-                Create Organization
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div className="space-y-2">
-                <Label>Organization Name</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                  placeholder="e.g. TechVentures Global"
-                  data-ocid="orgs.input"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Input
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, description: e.target.value }))
-                  }
-                  placeholder="Brief description"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Plan Tier</Label>
-                <Select
-                  value={form.planTier}
-                  onValueChange={(v) => setForm((f) => ({ ...f, planTier: v }))}
-                >
-                  <SelectTrigger data-ocid="orgs.select">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PLAN_TIERS.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t.charAt(0).toUpperCase() + t.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Primary Language</Label>
-                <Select
-                  value={form.primaryLanguage}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, primaryLanguage: v }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
-                    <SelectItem value="zh">普通话</SelectItem>
-                    <SelectItem value="ar">العربية</SelectItem>
-                    <SelectItem value="pt">Português</SelectItem>
-                    <SelectItem value="sw">Kiswahili</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => createMutation.mutate()}
-                disabled={createMutation.isPending || !form.name}
-                data-ocid="orgs.submit_button"
-              >
-                {createMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Organization"
-                )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              exportToCSV(
+                (orgs ?? []) as unknown as Record<string, unknown>[],
+                "organizations",
+                [
+                  { key: "name", label: "Name" },
+                  { key: "description", label: "Description" },
+                  { key: "planTier", label: "Plan" },
+                  { key: "isActive", label: "Active" },
+                  { key: "customDomain", label: "Domain" },
+                  { key: "customSubdomain", label: "Subdomain" },
+                ],
+              )
+            }
+            title="Export CSV"
+            data-ocid="orgs.secondary_button"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" data-ocid="orgs.open_modal_button">
+                <Plus className="w-4 h-4 mr-1.5" /> New Organization
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent data-ocid="orgs.dialog">
+              <DialogHeader>
+                <DialogTitle className="font-display">
+                  Create Organization
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <div className="space-y-2">
+                  <Label>Organization Name</Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
+                    }
+                    placeholder="e.g. TechVentures Global"
+                    data-ocid="orgs.input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Input
+                    value={form.description}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, description: e.target.value }))
+                    }
+                    placeholder="Brief description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Plan Tier</Label>
+                  <Select
+                    value={form.planTier}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, planTier: v }))
+                    }
+                  >
+                    <SelectTrigger data-ocid="orgs.select">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PLAN_TIERS.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t.charAt(0).toUpperCase() + t.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Primary Language</Label>
+                  <Select
+                    value={form.primaryLanguage}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, primaryLanguage: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="zh">普通话</SelectItem>
+                      <SelectItem value="ar">العربية</SelectItem>
+                      <SelectItem value="pt">Português</SelectItem>
+                      <SelectItem value="sw">Kiswahili</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => createMutation.mutate()}
+                  disabled={createMutation.isPending || !form.name}
+                  data-ocid="orgs.submit_button"
+                >
+                  {createMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Organization"
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Org count summary */}

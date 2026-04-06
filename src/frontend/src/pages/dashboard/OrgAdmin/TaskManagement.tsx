@@ -30,10 +30,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useActor } from "@/hooks/useActor";
+import { exportToCSV } from "@/lib/utils";
 import {
   Bot,
   Check,
   ClipboardList,
+  Download,
   ListTodo,
   Pencil,
   Plus,
@@ -835,6 +837,34 @@ export default function TaskManagement() {
               {p === "all" ? "All" : (PRIORITY_CONFIG[p]?.label ?? p)}
             </Button>
           ))}
+        </div>
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const exportData = filtered.map((t) => ({
+                title: t.title,
+                status: t.status,
+                priority: t.priority,
+                assignedAgentId: t.assignedAgentId ?? "",
+                createdAt: new Date(
+                  Number(t.createdAt) / 1_000_000,
+                ).toISOString(),
+              }));
+              exportToCSV(exportData, "tasks", [
+                { key: "title", label: "Title" },
+                { key: "status", label: "Status" },
+                { key: "priority", label: "Priority" },
+                { key: "assignedAgentId", label: "Agent ID" },
+                { key: "createdAt", label: "Created At" },
+              ]);
+            }}
+            title="Export CSV"
+            data-ocid="task.secondary_button"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 

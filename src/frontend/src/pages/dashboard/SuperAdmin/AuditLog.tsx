@@ -8,8 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
+import { exportToCSV } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Filter, Search, X } from "lucide-react";
+import { ClipboardList, Download, Filter, Search, X } from "lucide-react";
 import { useState } from "react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -21,6 +22,12 @@ function formatTimestamp(ts: bigint): string {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function tsToISO(ts: bigint): string {
+  const ms = Number(ts / 1_000_000n);
+  if (!ms) return "";
+  return new Date(ms).toISOString();
 }
 
 const TARGET_KIND_COLORS: Record<string, string> = {
@@ -109,6 +116,25 @@ export default function AuditLog() {
     setDateTo("");
   }
 
+  function handleExport() {
+    const exportData = filteredEntries.map((entry) => ({
+      timestamp: tsToISO(entry.timestamp),
+      actorName: entry.actorName,
+      action: entry.action,
+      targetKind: entry.targetKind,
+      targetId: entry.targetId,
+      description: entry.description,
+    }));
+    exportToCSV(exportData, "audit-log", [
+      { key: "timestamp", label: "Timestamp" },
+      { key: "actorName", label: "Actor" },
+      { key: "action", label: "Action" },
+      { key: "targetKind", label: "Target Type" },
+      { key: "targetId", label: "Target ID" },
+      { key: "description", label: "Description" },
+    ]);
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -122,15 +148,27 @@ export default function AuditLog() {
             users
           </p>
         </div>
-        {!isLoading && filteredEntries.length > 0 && (
-          <Badge
+        <div className="flex items-center gap-2 shrink-0 mt-1">
+          {!isLoading && filteredEntries.length > 0 && (
+            <Badge
+              variant="outline"
+              className="text-xs bg-muted/30 border-border"
+            >
+              {filteredEntries.length} entr
+              {filteredEntries.length === 1 ? "y" : "ies"}
+            </Badge>
+          )}
+          <Button
             variant="outline"
-            className="text-xs bg-muted/30 border-border shrink-0 mt-1"
+            size="sm"
+            onClick={handleExport}
+            title="Export CSV"
+            disabled={filteredEntries.length === 0}
+            data-ocid="audit.secondary_button"
           >
-            {filteredEntries.length} entr
-            {filteredEntries.length === 1 ? "y" : "ies"}
-          </Badge>
-        )}
+            <Download className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Filter bar */}
@@ -231,7 +269,7 @@ export default function AuditLog() {
                 <div
                   key={entry.id}
                   className="grid md:grid-cols-[180px_160px_150px_160px_1fr] gap-3 px-5 py-3.5 hover:bg-muted/10 transition-colors text-sm items-start"
-                  data-ocid={`audit.row.${idx}`}
+                  data-ocid={`audit.row.${idx + 1}`}
                 >
                   {/* Timestamp */}
                   <span className="text-xs text-muted-foreground tabular-nums">
