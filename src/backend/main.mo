@@ -2891,4 +2891,205 @@ actor {
   };
 
 
+
+  // ─── FinFracFran™ Ownership APIs ──────────────────────────────────────────
+
+  public shared ({ caller }) func issueShares(assetId : Text, userId : Principal, shares : Nat) : async { #ok : FractionalOwnership; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        switch (fffAssets.get(assetId)) {
+          case (null) { #err("Asset not found") };
+          case (?asset) {
+            let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and u.orgId == ?asset.orgId);
+            if (not authorized) { return #err("Not authorized") };
+            let targetName = switch (users.get(userId)) {
+              case (null) { userId.toText() };
+              case (?tu) { tu.displayName };
+            };
+            let id = "fff-own-" # _nextFFFOwnershipId.toText();
+            _nextFFFOwnershipId += 1;
+            let ownership : FractionalOwnership = {
+              id;
+              assetId;
+              orgId = asset.orgId;
+              userId;
+              userName = targetName;
+              shares;
+              issuedAt = Time.now();
+            };
+            _fffOwnerships.add(id, ownership);
+            #ok(ownership)
+          };
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getOwnershipByAsset(assetId : Text) : async { #ok : [FractionalOwnership]; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?_) {
+        let results = _fffOwnerships.values().toArray().filter(func(o : FractionalOwnership) : Bool { o.assetId == assetId });
+        #ok(results)
+      };
+    };
+  };
+
+  public query ({ caller }) func getMyOwnership() : async { #ok : [FractionalOwnership]; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?_) {
+        let results = _fffOwnerships.values().toArray().filter(func(o : FractionalOwnership) : Bool { o.userId == caller });
+        #ok(results)
+      };
+    };
+  };
+
+  // ─── FinFracFran™ Revenue Split APIs ──────────────────────────────────────
+
+  public shared ({ caller }) func createRevenueSplit(assetId : Text, totalAmountUsd : Nat, distribution : [RevenueSplitEntry]) : async { #ok : RevenueSplit; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        switch (fffAssets.get(assetId)) {
+          case (null) { #err("Asset not found") };
+          case (?asset) {
+            let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and u.orgId == ?asset.orgId);
+            if (not authorized) { return #err("Not authorized") };
+            let id = "fff-split-" # _nextFFFSplitId.toText();
+            _nextFFFSplitId += 1;
+            let split : RevenueSplit = {
+              id;
+              assetId;
+              orgId = asset.orgId;
+              totalAmountUsd;
+              distribution;
+              status = #pending;
+              createdBy = caller;
+              createdAt = Time.now();
+              distributedAt = null;
+            };
+            _fffRevenueSplits.add(id, split);
+            #ok(split)
+          };
+        };
+      };
+    };
+  };
+
+  public shared ({ caller }) func distributeRevenueSplit(splitId : Text) : async { #ok : RevenueSplit; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        switch (_fffRevenueSplits.get(splitId)) {
+          case (null) { #err("Revenue split not found") };
+          case (?split) {
+            let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and u.orgId == ?split.orgId);
+            if (not authorized) { return #err("Not authorized") };
+            if (split.status != #pending) { return #err("Split is not pending") };
+            let updated : RevenueSplit = {
+              id = split.id;
+              assetId = split.assetId;
+              orgId = split.orgId;
+              totalAmountUsd = split.totalAmountUsd;
+              distribution = split.distribution;
+              status = #distributed;
+              createdBy = split.createdBy;
+              createdAt = split.createdAt;
+              distributedAt = ?Time.now();
+            };
+            _fffRevenueSplits.add(splitId, updated);
+            #ok(updated)
+          };
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getRevenueSplits(assetId : Text) : async { #ok : [RevenueSplit]; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?_) {
+        let results = _fffRevenueSplits.values().toArray().filter(func(s : RevenueSplit) : Bool { s.assetId == assetId });
+        #ok(results)
+      };
+    };
+  };
+
+  // ─── FinFracFran™ Franchise Link APIs ─────────────────────────────────────
+
+  public shared ({ caller }) func createFranchiseLink(franchisorOrgId : Text, franchiseeOrgId : Text, royaltyPct : Nat, termsUrl : ?Text) : async { #ok : FranchiseLink; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and u.orgId == ?franchisorOrgId);
+        if (not authorized) { return #err("Not authorized") };
+        if (royaltyPct > 100) { return #err("Royalty percentage cannot exceed 100") };
+        let id = "fff-link-" # _nextFFFLinkId.toText();
+        _nextFFFLinkId += 1;
+        let now = Time.now();
+        let link : FranchiseLink = {
+          id;
+          franchisorOrgId;
+          franchiseeOrgId;
+          royaltyPct;
+          termsUrl;
+          status = #pending;
+          createdBy = caller;
+          createdAt = now;
+          updatedAt = now;
+        };
+        _fffFranchiseLinks.add(id, link);
+        #ok(link)
+      };
+    };
+  };
+
+  public shared ({ caller }) func updateFranchiseLinkStatus(id : Text, newStatus : FranchiseLinkStatus) : async { #ok : FranchiseLink; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        switch (_fffFranchiseLinks.get(id)) {
+          case (null) { #err("Franchise link not found") };
+          case (?link) {
+            let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and (u.orgId == ?link.franchisorOrgId or u.orgId == ?link.franchiseeOrgId));
+            if (not authorized) { return #err("Not authorized") };
+            let updated : FranchiseLink = {
+              id = link.id;
+              franchisorOrgId = link.franchisorOrgId;
+              franchiseeOrgId = link.franchiseeOrgId;
+              royaltyPct = link.royaltyPct;
+              termsUrl = link.termsUrl;
+              status = newStatus;
+              createdBy = link.createdBy;
+              createdAt = link.createdAt;
+              updatedAt = Time.now();
+            };
+            _fffFranchiseLinks.add(id, updated);
+            #ok(updated)
+          };
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getFranchiseLinks(orgId : Text) : async { #ok : [FranchiseLink]; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?_) {
+        let results = _fffFranchiseLinks.values().toArray().filter(func(l : FranchiseLink) : Bool {
+          l.franchisorOrgId == orgId or l.franchiseeOrgId == orgId
+        });
+        #ok(results)
+      };
+    };
+  };
+
+  public query ({ caller }) func getPlatformFranchiseLinks() : async { #ok : [FranchiseLink]; #err : Text } {
+    if (not isSuperAdmin(caller)) { return #err("Not authorized") };
+    let results = _fffFranchiseLinks.values().toArray();
+    #ok(results)
+  };
+
 };

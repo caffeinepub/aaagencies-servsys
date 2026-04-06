@@ -18,11 +18,14 @@ import {
   Headphones,
   Inbox,
   Key,
+  Layers,
   LayoutDashboard,
+  LayoutTemplate,
   ListTodo,
   LogOut,
   Menu,
   MessageSquare,
+  Network,
   Settings,
   UserCircle,
   Users,
@@ -31,6 +34,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { User } from "../backend.d";
+import { GlobalSearch } from "../components/GlobalSearch";
 import { NotificationCenter } from "../components/NotificationCenter";
 import { WelcomeModal } from "../components/WelcomeModal";
 import GettingStartedPage from "./GettingStartedPage";
@@ -42,6 +46,7 @@ import ServicePortal from "./dashboard/EndCustomer/ServicePortal";
 import AiAgents from "./dashboard/OrgAdmin/AiAgents";
 import ApiKeys from "./dashboard/OrgAdmin/ApiKeys";
 import BranchesSites from "./dashboard/OrgAdmin/BranchesSites";
+import FinFracFranPage from "./dashboard/OrgAdmin/FinFracFranPage";
 import MyOrganization from "./dashboard/OrgAdmin/MyOrganization";
 import OrgDashboard from "./dashboard/OrgAdmin/OrgDashboard";
 import SubscriptionBilling from "./dashboard/OrgAdmin/SubscriptionBilling";
@@ -49,11 +54,13 @@ import TaskManagement from "./dashboard/OrgAdmin/TaskManagement";
 import TeamInvites from "./dashboard/OrgAdmin/TeamInvites";
 import WalletsFinance from "./dashboard/OrgAdmin/WalletsFinance";
 import SettingsPage from "./dashboard/SettingsPage";
+import AgentTemplates from "./dashboard/SuperAdmin/AgentTemplates";
 import AllUsers from "./dashboard/SuperAdmin/AllUsers";
 import ApiDocumentation from "./dashboard/SuperAdmin/ApiDocumentation";
 import LeadAdmin from "./dashboard/SuperAdmin/LeadAdmin";
 import Organizations from "./dashboard/SuperAdmin/Organizations";
 import PlatformBilling from "./dashboard/SuperAdmin/PlatformBilling";
+import PlatformFFF from "./dashboard/SuperAdmin/PlatformFFF";
 import PlatformMetrics from "./dashboard/SuperAdmin/PlatformMetrics";
 import PlatformOverview from "./dashboard/SuperAdmin/PlatformOverview";
 import ActiveAgents from "./dashboard/TeamMember/ActiveAgents";
@@ -75,6 +82,8 @@ const SUPER_ADMIN_NAV: NavItem[] = [
   },
   { id: "organizations", label: "Organizations", icon: Building2 },
   { id: "platform-billing", label: "Platform Billing", icon: CreditCard },
+  { id: "platform-fff", label: "FFF Platform", icon: Network },
+  { id: "agent-templates", label: "Agent Templates", icon: LayoutTemplate },
   { id: "all-users", label: "All Users", icon: Users },
   { id: "platform-metrics", label: "Platform Metrics", icon: BarChart3 },
   { id: "leads", label: "Leads", icon: Inbox },
@@ -96,6 +105,7 @@ const ORG_ADMIN_NAV: NavItem[] = [
   },
   { id: "ai-agents", label: "AI Agents", icon: Bot },
   { id: "task-management", label: "Task Management", icon: ListTodo },
+  { id: "fff-dashboard", label: "Ownership & Franchising", icon: Layers },
   { id: "api-keys", label: "API Keys", icon: Key },
   { id: "settings", label: "Settings", icon: Settings },
   { id: "profile", label: "Profile", icon: UserCircle },
@@ -165,6 +175,12 @@ export default function DashboardLayout({
     typeof user.role === "object"
       ? Object.keys(user.role as object)[0]
       : String(user.role);
+  const orgId =
+    typeof user.orgId === "string"
+      ? user.orgId
+      : Array.isArray(user.orgId)
+        ? user.orgId[0]
+        : undefined;
   const navItems = getNavForRole(role);
   const [activePage, setActivePage] = useState(
     isNewUser ? "getting-started" : getDefaultPage(role),
@@ -210,6 +226,10 @@ export default function DashboardLayout({
         return <Organizations />;
       case "platform-billing":
         return <PlatformBilling />;
+      case "platform-fff":
+        return <PlatformFFF />;
+      case "agent-templates":
+        return <AgentTemplates />;
 
       case "all-users":
         return <AllUsers />;
@@ -235,6 +255,8 @@ export default function DashboardLayout({
         return <AiAgents />;
       case "task-management":
         return <TaskManagement />;
+      case "fff-dashboard":
+        return <FinFracFranPage user={user} />;
       case "api-keys":
         return <ApiKeys />;
       case "my-tasks":
@@ -400,6 +422,11 @@ export default function DashboardLayout({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <GlobalSearch
+              role={role}
+              orgId={orgId}
+              onNavigate={setActivePage}
+            />
             <NotificationCenter />
           </div>
         </header>

@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -34,7 +35,15 @@ import { useActor } from "@/hooks/useActor";
 import {
   Activity,
   Bot,
+  ChevronDown,
+  ChevronRight,
   Cpu,
+  Globe,
+  Hash,
+  LayoutTemplate,
+  Link,
+  Loader2,
+  Lock,
   MessageSquare,
   Pencil,
   Plus,
@@ -42,7 +51,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { AgentDefinition } from "../../../backend.d";
+import type { AgentDefinition, AgentTemplate } from "../../../backend.d";
 import { AgentStatus } from "../../../backend.d";
 import { AgentChatDrawer } from "../../../components/AgentChatDrawer";
 
@@ -275,6 +284,144 @@ function AgentCardSkeleton() {
   );
 }
 
+function TemplateCardSkeleton() {
+  return (
+    <Card className="border-border/60 min-w-[220px] max-w-[260px]">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <Skeleton className="w-8 h-8 rounded-lg" />
+          <Skeleton className="h-4 w-12 rounded-full" />
+        </div>
+        <Skeleton className="h-4 w-28 mb-1.5" />
+        <Skeleton className="h-3 w-full mb-1" />
+        <Skeleton className="h-3 w-3/4 mb-3" />
+        <Skeleton className="h-7 w-full rounded" />
+      </CardContent>
+    </Card>
+  );
+}
+
+interface CloneDialogProps {
+  template: AgentTemplate;
+  orgId: string;
+  onCloneSuccess: (agent: AgentDefinition) => void;
+  onClose: () => void;
+}
+
+function CloneDialog({
+  template,
+  orgId,
+  onCloneSuccess,
+  onClose,
+}: CloneDialogProps) {
+  const { actor } = useActor();
+  const [cloneName, setCloneName] = useState(template.name);
+  const [cloneEndpoint, setCloneEndpoint] = useState(
+    template.endpointUrl ?? "",
+  );
+  const [cloning, setCloning] = useState(false);
+
+  const handleClone = async () => {
+    if (!actor) return;
+    setCloning(true);
+    try {
+      const result = await actor.cloneAgentFromTemplate(
+        template.id,
+        orgId,
+        cloneName.trim() !== template.name ? cloneName.trim() : null,
+        cloneEndpoint.trim() !== (template.endpointUrl ?? "")
+          ? cloneEndpoint.trim() || null
+          : null,
+      );
+      if (result.__kind__ === "ok") {
+        onCloneSuccess(result.ok);
+        toast.success(`Agent "${result.ok.name}" created from template`);
+        onClose();
+      } else {
+        toast.error(result.err);
+      }
+    } catch (_e) {
+      toast.error("Failed to clone template");
+    } finally {
+      setCloning(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 mt-2">
+      <div className="space-y-2">
+        <Label>Template Description</Label>
+        <p className="text-xs text-muted-foreground bg-muted/40 rounded-md p-2.5 border border-border/40">
+          {template.description}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="clone-name">Agent Name</Label>
+        <Input
+          id="clone-name"
+          data-ocid="template_clone.input"
+          value={cloneName}
+          onChange={(e) => setCloneName(e.target.value)}
+          placeholder={template.name}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="clone-endpoint">Endpoint URL</Label>
+        <Input
+          id="clone-endpoint"
+          value={cloneEndpoint}
+          onChange={(e) => setCloneEndpoint(e.target.value)}
+          placeholder={
+            template.endpointUrl ?? "https://api.example.com/v1/chat"
+          }
+        />
+        <p className="text-xs text-muted-foreground">
+          Override the default endpoint for this agent instance
+        </p>
+      </div>
+
+      {template.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {template.tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="text-xs">
+              <Hash className="w-2.5 h-2.5 mr-0.5" />
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-2 pt-1">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={onClose}
+          disabled={cloning}
+        >
+          Cancel
+        </Button>
+        <Button
+          className="flex-1"
+          data-ocid="template_clone.submit_button"
+          onClick={handleClone}
+          disabled={cloning || !cloneName.trim()}
+        >
+          {cloning ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            "Create Agent"
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AiAgents() {
   const { actor } = useActor();
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
@@ -290,6 +437,14 @@ export default function AiAgents() {
   const [submitting, setSubmitting] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
 
+  // Template section state
+  const [templates, setTemplates] = useState<AgentTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [templateSectionOpen, setTemplateSectionOpen] = useState(true);
+  const [cloneDialogTemplate, setCloneDialogTemplate] =
+    useState<AgentTemplate | null>(null);
+  const [orgId, setOrgId] = useState<string>("");
+
   const loadAgents = useCallback(async () => {
     if (!actor) return;
     try {
@@ -299,16 +454,25 @@ export default function AiAgents() {
         setLoading(false);
         return;
       }
-      const result = await actor.getAgentsByOrg(orgResult.id);
-      if (result.__kind__ === "ok") {
-        setAgents(result.ok);
+      setOrgId(orgResult.id);
+      const [agentResult, templateResult] = await Promise.all([
+        actor.getAgentsByOrg(orgResult.id),
+        actor.getAgentTemplates(orgResult.id),
+      ]);
+      if (agentResult.__kind__ === "ok") {
+        setAgents(agentResult.ok);
       } else {
-        toast.error(result.err);
+        toast.error(agentResult.err);
       }
+      if (templateResult.__kind__ === "ok") {
+        setTemplates(templateResult.ok);
+      }
+      // silently ignore template errors
     } catch (_e) {
       toast.error("Failed to load agents");
     } finally {
       setLoading(false);
+      setTemplatesLoading(false);
     }
   }, [actor]);
 
@@ -504,6 +668,33 @@ export default function AiAgents() {
         </DialogContent>
       </Dialog>
 
+      {/* Clone template dialog */}
+      {cloneDialogTemplate && (
+        <Dialog
+          open={!!cloneDialogTemplate}
+          onOpenChange={(open) => !open && setCloneDialogTemplate(null)}
+        >
+          <DialogContent className="max-w-md" data-ocid="template_clone.dialog">
+            <DialogHeader>
+              <DialogTitle className="font-display">
+                Clone Template: {cloneDialogTemplate.name}
+              </DialogTitle>
+              <DialogDescription>
+                Customize this agent before creating it in your organization.
+              </DialogDescription>
+            </DialogHeader>
+            <CloneDialog
+              template={cloneDialogTemplate}
+              orgId={orgId}
+              onCloneSuccess={(agent) => {
+                setAgents((prev) => [agent, ...prev]);
+              }}
+              onClose={() => setCloneDialogTemplate(null)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -554,6 +745,137 @@ export default function AiAgents() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Template Section */}
+      {(templatesLoading || templates.length > 0) && (
+        <div className="space-y-3">
+          {/* Section header */}
+          <button
+            type="button"
+            className="flex items-center gap-2 group w-full text-left"
+            data-ocid="agent_templates.toggle"
+            onClick={() => setTemplateSectionOpen((v) => !v)}
+          >
+            <div className="p-1.5 rounded bg-primary/10">
+              <LayoutTemplate className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <span className="font-display font-semibold text-sm">
+              Start from a Template
+            </span>
+            {!templatesLoading && (
+              <Badge variant="secondary" className="text-xs">
+                {templates.length}{" "}
+                {templates.length === 1 ? "template" : "templates"}
+              </Badge>
+            )}
+            <div className="ml-auto text-muted-foreground group-hover:text-foreground transition-colors">
+              {templateSectionOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </div>
+          </button>
+
+          {/* Template cards */}
+          {templateSectionOpen && (
+            <div className="flex gap-3 overflow-x-auto pb-2 flex-wrap md:flex-nowrap">
+              {templatesLoading ? (
+                <>
+                  {[1, 2, 3].map((i) => (
+                    <TemplateCardSkeleton key={i} />
+                  ))}
+                </>
+              ) : (
+                templates.map((tpl) => (
+                  <Card
+                    key={tpl.id}
+                    className="border-border/60 min-w-[220px] max-w-[260px] shrink-0 hover:border-primary/40 transition-colors"
+                  >
+                    <CardContent className="p-4">
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-2.5">
+                        <div className="p-1.5 rounded-md bg-primary/10">
+                          <LayoutTemplate className="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        {tpl.isPublic ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-teal-500/10 text-teal-400 border-teal-500/30"
+                          >
+                            <Globe className="w-2 h-2 mr-0.5" />
+                            Public
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-muted text-muted-foreground"
+                          >
+                            <Lock className="w-2 h-2 mr-0.5" />
+                            Private
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Name */}
+                      <p className="font-display font-semibold text-sm mb-1 line-clamp-1">
+                        {tpl.name}
+                      </p>
+
+                      {/* Description */}
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                        {tpl.description}
+                      </p>
+
+                      {/* Endpoint indicator */}
+                      {tpl.endpointUrl && (
+                        <div className="flex items-center gap-1 text-[10px] text-teal-400 mb-2">
+                          <Link className="w-2.5 h-2.5" />
+                          <span className="truncate max-w-[140px] font-mono">
+                            {tpl.endpointUrl}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      {tpl.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {tpl.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                          {tpl.tags.length > 3 && (
+                            <span className="text-[10px] text-muted-foreground">
+                              +{tpl.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Use Template button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full h-7 text-xs"
+                        data-ocid="agent_templates.open_modal_button"
+                        onClick={() => setCloneDialogTemplate(tpl)}
+                        disabled={!orgId}
+                      >
+                        Use Template
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Agent grid */}
       {loading ? (

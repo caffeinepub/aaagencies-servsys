@@ -527,6 +527,10 @@ export interface backendInterface {
     getPlatformSettings(): Promise<{ __kind__: "ok"; ok: import("./backend.d").PlatformSettings } | { __kind__: "err"; err: string }>;
     updatePlatformSettings(settings: import("./backend.d").PlatformSettings): Promise<{ __kind__: "ok"; ok: import("./backend.d").PlatformSettings } | { __kind__: "err"; err: string }>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    getAgentTemplates(orgId?: string | null): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").AgentTemplate> } | { __kind__: "err"; err: string }>;
+    createAgentTemplate(input: import("./backend.d").AgentTemplateInput): Promise<{ __kind__: "ok"; ok: import("./backend.d").AgentTemplate } | { __kind__: "err"; err: string }>;
+    deleteAgentTemplate(id: string): Promise<{ __kind__: "ok"; ok: string } | { __kind__: "err"; err: string }>;
+    cloneAgentFromTemplate(templateId: string, orgId: string, nameOverride?: string | null, endpointUrlOverride?: string | null): Promise<{ __kind__: "ok"; ok: import("./backend.d").AgentDefinition } | { __kind__: "err"; err: string }>;
 }
 import type { AccountType as _AccountType, Branch as _Branch, BranchInput as _BranchInput, BranchUpdateInput as _BranchUpdateInput, CreateInviteLinkInput as _CreateInviteLinkInput, InviteLink as _InviteLink, Lead as _Lead, LeadInput as _LeadInput, Organization as _Organization, OrganizationInput as _OrganizationInput, PlanTier as _PlanTier, Principal as _Principal, Role as _Role, Transaction as _Transaction, TransactionStatus as _TransactionStatus, TxType as _TxType, UpdateOrgInput as _UpdateOrgInput, UpdateProfileInput as _UpdateProfileInput, User as _User, WalletAccount as _WalletAccount, WalletInput as _WalletInput } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -1307,6 +1311,107 @@ export class Backend implements backendInterface {
         if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_FractionalAsset(result.ok) }; }
         return { __kind__: "err" as const, err: result.err };
     }
+
+    async issueShares(assetId: string, userId: import("./backend.d").Principal, shares: number): Promise<{ __kind__: "ok"; ok: import("./backend.d").FractionalOwnership } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).issueShares(assetId, userId, shares);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_FractionalOwnership(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async getOwnershipByAsset(assetId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").FractionalOwnership> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getOwnershipByAsset(assetId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map(from_candid_FractionalOwnership) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async getMyOwnership(): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").FractionalOwnership> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getMyOwnership();
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map(from_candid_FractionalOwnership) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async createRevenueSplit(assetId: string, totalAmountUsd: number, distribution: Array<import("./backend.d").RevenueSplitEntryInput>): Promise<{ __kind__: "ok"; ok: import("./backend.d").RevenueSplit } | { __kind__: "err"; err: string }> {
+        const candid_dist = distribution.map((e) => ({
+            userId: e.userId,
+            userName: e.userName,
+            shares: e.shares,
+            amountUsd: e.amountUsd,
+        }));
+        const result = await (this.actor as any).createRevenueSplit(assetId, totalAmountUsd, candid_dist);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_RevenueSplit(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async distributeRevenueSplit(splitId: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").RevenueSplit } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).distributeRevenueSplit(splitId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_RevenueSplit(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async getRevenueSplits(assetId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").RevenueSplit> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getRevenueSplits(assetId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map(from_candid_RevenueSplit) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async createFranchiseLink(franchisorOrgId: string, franchiseeOrgId: string, royaltyPct: number, termsUrl?: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").FranchiseLink } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).createFranchiseLink(franchisorOrgId, franchiseeOrgId, royaltyPct, termsUrl !== undefined ? [termsUrl] : []);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_FranchiseLink(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async updateFranchiseLinkStatus(id: string, newStatus: import("./backend.d").FranchiseLinkStatus): Promise<{ __kind__: "ok"; ok: import("./backend.d").FranchiseLink } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).updateFranchiseLinkStatus(id, { [newStatus]: null });
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_FranchiseLink(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async getFranchiseLinks(orgId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").FranchiseLink> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getFranchiseLinks(orgId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map(from_candid_FranchiseLink) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async getPlatformFranchiseLinks(): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").FranchiseLink> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getPlatformFranchiseLinks();
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map(from_candid_FranchiseLink) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async getAgentTemplates(orgId?: string | null): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").AgentTemplate> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getAgentTemplates(orgId !== undefined && orgId !== null ? [orgId] : []);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map(from_candid_AgentTemplate) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async createAgentTemplate(input: import("./backend.d").AgentTemplateInput): Promise<{ __kind__: "ok"; ok: import("./backend.d").AgentTemplate } | { __kind__: "err"; err: string }> {
+        const candid = {
+            name: input.name,
+            description: input.description,
+            system_prompt: input.systemPrompt !== undefined ? [input.systemPrompt] : [],
+            endpoint_url: input.endpointUrl !== undefined ? [input.endpointUrl] : [],
+            endpoint_headers: input.endpointHeaders !== undefined ? [input.endpointHeaders] : [],
+            tags: input.tags,
+            is_public: input.isPublic,
+            org_id: input.orgId !== undefined ? [input.orgId] : [],
+        };
+        const result = await (this.actor as any).createAgentTemplate(candid);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_AgentTemplate(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async deleteAgentTemplate(id: string): Promise<{ __kind__: "ok"; ok: string } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).deleteAgentTemplate(id);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
+    async cloneAgentFromTemplate(templateId: string, orgId: string, nameOverride?: string | null, endpointUrlOverride?: string | null): Promise<{ __kind__: "ok"; ok: import("./backend.d").AgentDefinition } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).cloneAgentFromTemplate(templateId, orgId, nameOverride != null ? [nameOverride] : [], endpointUrlOverride != null ? [endpointUrlOverride] : []);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_AgentDefinition(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
 
     async _initializeAccessControlWithSecret(userSecret: string): Promise<void> {
         await (this.actor as any)._initializeAccessControlWithSecret(userSecret);
@@ -2379,3 +2484,92 @@ function from_candid_FractionalAsset(value: any): import("./backend.d").Fraction
     };
 }
 
+function from_candid_FractionalOwnership(value: any): import("./backend.d").FractionalOwnership {
+    return {
+        id: value.id,
+        assetId: value.assetId ?? value.asset_id,
+        orgId: value.orgId ?? value.org_id,
+        userId: value.userId ?? value.user_id,
+        userName: value.userName ?? value.user_name ?? "",
+        shares: Number(value.shares ?? 0),
+        issuedAt: value.issuedAt ?? value.issued_at,
+    };
+}
+
+function from_candid_RevenueSplitEntry(value: any): import("./backend.d").RevenueSplitEntry {
+    return {
+        userId: value.userId ?? value.user_id,
+        userName: value.userName ?? value.user_name ?? "",
+        shares: Number(value.shares ?? 0),
+        amountUsd: Number(value.amountUsd ?? value.amount_usd ?? 0),
+    };
+}
+
+function from_candid_RevenueSplit(value: any): import("./backend.d").RevenueSplit {
+    const statusMap: Record<string, import("./backend.d").RevenueSplitStatus> = {
+        pending: "pending",
+        distributed: "distributed",
+        cancelled: "cancelled",
+    };
+    const rawStatus = typeof value.status === "object" ? Object.keys(value.status)[0] : String(value.status ?? "pending");
+    return {
+        id: value.id,
+        assetId: value.assetId ?? value.asset_id,
+        orgId: value.orgId ?? value.org_id,
+        totalAmountUsd: Number(value.totalAmountUsd ?? value.total_amount_usd ?? 0),
+        distribution: (value.distribution ?? []).map(from_candid_RevenueSplitEntry),
+        status: statusMap[rawStatus] ?? "pending",
+        createdBy: value.createdBy ?? value.created_by,
+        createdAt: value.createdAt ?? value.created_at,
+        distributedAt: Array.isArray(value.distributedAt ?? value.distributed_at)
+            ? ((value.distributedAt ?? value.distributed_at).length > 0 ? (value.distributedAt ?? value.distributed_at)[0] : undefined)
+            : (value.distributedAt ?? value.distributed_at ?? undefined),
+    };
+}
+
+function from_candid_FranchiseLink(value: any): import("./backend.d").FranchiseLink {
+    const statusMap: Record<string, import("./backend.d").FranchiseLinkStatus> = {
+        pending: "pending",
+        active: "active",
+        terminated: "terminated",
+    };
+    const rawStatus = typeof value.status === "object" ? Object.keys(value.status)[0] : String(value.status ?? "pending");
+    return {
+        id: value.id,
+        franchisorOrgId: value.franchisorOrgId ?? value.franchisor_org_id,
+        franchiseeOrgId: value.franchiseeOrgId ?? value.franchisee_org_id,
+        royaltyPct: Number(value.royaltyPct ?? value.royalty_pct ?? 0),
+        termsUrl: Array.isArray(value.termsUrl ?? value.terms_url)
+            ? ((value.termsUrl ?? value.terms_url).length > 0 ? (value.termsUrl ?? value.terms_url)[0] : undefined)
+            : (value.termsUrl ?? value.terms_url ?? undefined),
+        status: statusMap[rawStatus] ?? "pending",
+        createdBy: value.createdBy ?? value.created_by,
+        createdAt: value.createdAt ?? value.created_at,
+        updatedAt: value.updatedAt ?? value.updated_at,
+    };
+}
+
+
+function from_candid_AgentTemplate(value: any): import("./backend.d").AgentTemplate {
+    return {
+        id: value.id,
+        name: value.name,
+        description: value.description,
+        systemPrompt: Array.isArray(value.systemPrompt ?? value.system_prompt)
+            ? ((value.systemPrompt ?? value.system_prompt).length > 0 ? (value.systemPrompt ?? value.system_prompt)[0] : undefined)
+            : (value.systemPrompt ?? value.system_prompt ?? undefined),
+        endpointUrl: Array.isArray(value.endpointUrl ?? value.endpoint_url)
+            ? ((value.endpointUrl ?? value.endpoint_url).length > 0 ? (value.endpointUrl ?? value.endpoint_url)[0] : undefined)
+            : (value.endpointUrl ?? value.endpoint_url ?? undefined),
+        endpointHeaders: Array.isArray(value.endpointHeaders ?? value.endpoint_headers)
+            ? ((value.endpointHeaders ?? value.endpoint_headers).length > 0 ? (value.endpointHeaders ?? value.endpoint_headers)[0] : undefined)
+            : (value.endpointHeaders ?? value.endpoint_headers ?? undefined),
+        tags: value.tags ?? [],
+        isPublic: value.isPublic ?? value.is_public ?? false,
+        orgId: Array.isArray(value.orgId ?? value.org_id)
+            ? ((value.orgId ?? value.org_id).length > 0 ? (value.orgId ?? value.org_id)[0] : undefined)
+            : (value.orgId ?? value.org_id ?? undefined),
+        createdBy: value.createdBy ?? value.created_by ?? "",
+        createdAt: value.createdAt ?? value.created_at ?? BigInt(0),
+    };
+}

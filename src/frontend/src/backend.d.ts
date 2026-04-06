@@ -686,6 +686,105 @@ export interface backendInterface {
         err: string;
     }>;
 
+    issueShares(assetId: string, userId: Principal, shares: number): Promise<{
+        __kind__: "ok";
+        ok: FractionalOwnership;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getOwnershipByAsset(assetId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<FractionalOwnership>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getMyOwnership(): Promise<{
+        __kind__: "ok";
+        ok: Array<FractionalOwnership>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createRevenueSplit(assetId: string, totalAmountUsd: number, distribution: Array<RevenueSplitEntryInput>): Promise<{
+        __kind__: "ok";
+        ok: RevenueSplit;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    distributeRevenueSplit(splitId: string): Promise<{
+        __kind__: "ok";
+        ok: RevenueSplit;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getRevenueSplits(assetId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<RevenueSplit>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createFranchiseLink(franchisorOrgId: string, franchiseeOrgId: string, royaltyPct: number, termsUrl?: string): Promise<{
+        __kind__: "ok";
+        ok: FranchiseLink;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    updateFranchiseLinkStatus(id: string, newStatus: FranchiseLinkStatus): Promise<{
+        __kind__: "ok";
+        ok: FranchiseLink;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getFranchiseLinks(orgId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<FranchiseLink>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getPlatformFranchiseLinks(): Promise<{
+        __kind__: "ok";
+        ok: Array<FranchiseLink>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+
+    getAgentTemplates(orgId?: string | null): Promise<{
+        __kind__: "ok";
+        ok: Array<AgentTemplate>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createAgentTemplate(input: AgentTemplateInput): Promise<{
+        __kind__: "ok";
+        ok: AgentTemplate;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    deleteAgentTemplate(id: string): Promise<{
+        __kind__: "ok";
+        ok: string;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    cloneAgentFromTemplate(templateId: string, orgId: string, nameOverride?: string | null, endpointUrlOverride?: string | null): Promise<{
+        __kind__: "ok";
+        ok: AgentDefinition;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
 }
 
 export interface OrgSettings {
@@ -910,3 +1009,35 @@ export interface FractionalAssetUpdateInput {
     isActive?: boolean;
 }
 
+export interface RevenueSplitEntryInput {
+    userId: Principal;
+    userName: string;
+    shares: number;
+    amountUsd: number;
+}
+
+
+export interface AgentTemplate {
+    id: string;
+    name: string;
+    description: string;
+    systemPrompt?: string;
+    endpointUrl?: string;
+    endpointHeaders?: string;
+    tags: string[];
+    isPublic: boolean;
+    orgId?: string;
+    createdBy: string;
+    createdAt: bigint;
+}
+
+export interface AgentTemplateInput {
+    name: string;
+    description: string;
+    systemPrompt?: string;
+    endpointUrl?: string;
+    endpointHeaders?: string;
+    tags: string[];
+    isPublic: boolean;
+    orgId?: string;
+}
