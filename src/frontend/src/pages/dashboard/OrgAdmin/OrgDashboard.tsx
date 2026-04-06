@@ -1,25 +1,19 @@
+import type { AgentDefinition, Organization, Task } from "@/backend.d";
+import { AgentStatus, TaskStatus } from "@/backend.d";
 import { PlanTierBadge } from "@/components/PlanTierBadge";
 import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
-import type { MockOrg } from "@/lib/mockData";
-import { MOCK_AGENTS, MOCK_ORGS, MOCK_TASKS } from "@/lib/mockData";
 import { useQuery } from "@tanstack/react-query";
 import { Bot, Building2, ClipboardList, Users } from "lucide-react";
-import type { Organization } from "../../../backend.d";
 
 type DisplayOrg = { name: string; description: string; planTier: string };
 
 function toDisplayOrg(org: Organization | null | undefined): DisplayOrg {
   if (!org) {
-    const mock: MockOrg = MOCK_ORGS[0];
-    return {
-      name: mock.name,
-      description: mock.description,
-      planTier: mock.planTier,
-    };
+    return { name: "", description: "", planTier: "free" };
   }
   const planTier =
     typeof org.planTier === "object"
@@ -41,7 +35,7 @@ export default function OrgDashboard() {
     queryKey: ["team-members", org?.id],
     queryFn: async () => {
       if (!actor || !org?.id) return [];
-      return (actor as any).getTeamMembersByOrg(org.id);
+      return actor.getTeamMembersByOrg(org.id);
     },
     enabled: !!actor && !!org?.id && !isFetching,
   });
@@ -50,7 +44,25 @@ export default function OrgDashboard() {
     queryKey: ["branches", org?.id],
     queryFn: async () => {
       if (!actor || !org?.id) return [];
-      return (actor as any).getBranchesByOrg(org.id);
+      return actor.getBranchesByOrg(org.id);
+    },
+    enabled: !!actor && !!org?.id && !isFetching,
+  });
+
+  const { data: agentsResult, isLoading: agentsLoading } = useQuery({
+    queryKey: ["agents", org?.id],
+    queryFn: async () => {
+      if (!actor || !org?.id) return null;
+      return actor.getAgentsByOrg(org.id);
+    },
+    enabled: !!actor && !!org?.id && !isFetching,
+  });
+
+  const { data: tasksResult, isLoading: tasksLoading } = useQuery({
+    queryKey: ["tasks", org?.id],
+    queryFn: async () => {
+      if (!actor || !org?.id) return null;
+      return actor.getTasksByOrg(org.id);
     },
     enabled: !!actor && !!org?.id && !isFetching,
   });
@@ -59,11 +71,29 @@ export default function OrgDashboard() {
   const teamCount = Array.isArray(teamMembers) ? teamMembers.length : 0;
   const branchCount = Array.isArray(branches) ? branches.length : 0;
 
+  const agents: AgentDefinition[] =
+    agentsResult?.__kind__ === "ok" ? agentsResult.ok : [];
+  const tasks: Task[] = tasksResult?.__kind__ === "ok" ? tasksResult.ok : [];
+
+  const agentCount = agents.filter(
+    (a) => a.status === AgentStatus.active || (a.status as string) === "active",
+  ).length;
+
+  const taskCount = tasks.filter(
+    (t) =>
+      t.status !== TaskStatus.completed &&
+      t.status !== TaskStatus.cancelled &&
+      (t.status as string) !== "completed" &&
+      (t.status as string) !== "cancelled",
+  ).length;
+
+  const recentTasks = tasks.slice(0, 5);
+
   return (
     <div className="space-y-6">
       {isLoading ? (
         <Skeleton className="h-24 w-full" />
-      ) : (
+      ) : org ? (
         <Card className="border-border/60 bg-gradient-to-r from-primary/5 to-transparent">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
@@ -81,7 +111,7 @@ export default function OrgDashboard() {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -98,13 +128,13 @@ export default function OrgDashboard() {
         />
         <StatCard
           title="Active Agents"
-          value={MOCK_AGENTS.filter((a) => a.status === "active").length}
+          value={agentsLoading ? "—" : agentCount}
           icon={Bot}
           iconClassName="bg-purple-500/10"
         />
         <StatCard
           title="Open Tasks"
-          value={MOCK_TASKS.filter((t) => t.status !== "completed").length}
+          value={tasksLoading ? "—" : taskCount}
           icon={ClipboardList}
           iconClassName="bg-amber-500/10"
         />
@@ -115,22 +145,44 @@ export default function OrgDashboard() {
           <CardTitle className="text-base font-display">Recent Tasks</CardTitle>
         </CardHeader>
         <CardContent className="p-0 pb-2">
-          <div className="divide-y divide-border/40">
-            {MOCK_TASKS.slice(0, 5).map((task) => (
-              <div key={task.id} className="flex items-center gap-3 px-5 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{task.title}</p>
-                  {task.assignedAgentName && (
-                    <p className="text-xs text-muted-foreground">
-                      Agent: {task.assignedAgentName}
-                    </p>
-                  )}
+          {tasksLoading ? (
+            <div className="divide-y divide-border/40">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-5 py-3">
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-5 w-14" />
                 </div>
-                <TaskStatusBadge status={task.status} />
-                <PriorityBadge priority={task.priority} />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : recentTasks.length === 0 ? (
+            <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+              No tasks yet
+            </div>
+          ) : (
+            <div className="divide-y divide-border/40">
+              {recentTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-center gap-3 px-5 py-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{task.title}</p>
+                    {task.assignedAgentId && (
+                      <p className="text-xs text-muted-foreground">
+                        Agent: {task.assignedAgentId}
+                      </p>
+                    )}
+                  </div>
+                  <TaskStatusBadge status={task.status as string} />
+                  <PriorityBadge priority={task.priority as string} />
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
