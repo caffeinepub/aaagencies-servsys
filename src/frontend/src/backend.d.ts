@@ -657,6 +657,35 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    createFractionalAsset(input: FractionalAssetInput): Promise<{
+        __kind__: "ok";
+        ok: FractionalAsset;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getFractionalAssets(orgId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<FractionalAsset>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getFractionalAssetById(id: string): Promise<{
+        __kind__: "ok";
+        ok: FractionalAsset;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    updateFractionalAsset(id: string, input: FractionalAssetUpdateInput): Promise<{
+        __kind__: "ok";
+        ok: FractionalAsset;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+
 }
 
 export interface OrgSettings {
@@ -798,3 +827,86 @@ export interface Notification {
     createdAt: bigint;
     relatedId?: string;
 }
+
+export type FFFAssetType =
+    | "realEstate"
+    | "business"
+    | "intellectualProperty"
+    | "revenueStream"
+    | "custom";
+
+export interface FractionalAsset {
+    id: string;
+    orgId: string;
+    name: string;
+    description: string;
+    assetType: FFFAssetType;
+    totalShares: number;
+    valuationUsd: number;
+    isActive: boolean;
+    createdBy: Principal;
+    createdAt: bigint;
+    updatedAt: bigint;
+}
+
+export interface FractionalOwnership {
+    id: string;
+    assetId: string;
+    orgId: string;
+    userId: Principal;
+    userName: string;
+    shares: number;
+    issuedAt: bigint;
+}
+
+export type RevenueSplitStatus = "pending" | "distributed" | "cancelled";
+
+export interface RevenueSplitEntry {
+    userId: Principal;
+    userName: string;
+    shares: number;
+    amountUsd: number;
+}
+
+export interface RevenueSplit {
+    id: string;
+    assetId: string;
+    orgId: string;
+    totalAmountUsd: number;
+    distribution: Array<RevenueSplitEntry>;
+    status: RevenueSplitStatus;
+    createdBy: Principal;
+    createdAt: bigint;
+    distributedAt?: bigint;
+}
+
+export type FranchiseLinkStatus = "pending" | "active" | "terminated";
+
+export interface FranchiseLink {
+    id: string;
+    franchisorOrgId: string;
+    franchiseeOrgId: string;
+    royaltyPct: number;
+    termsUrl?: string;
+    status: FranchiseLinkStatus;
+    createdBy: Principal;
+    createdAt: bigint;
+    updatedAt: bigint;
+}
+
+export interface FractionalAssetInput {
+    orgId: string;
+    name: string;
+    description: string;
+    assetType: FFFAssetType;
+    totalShares: number;
+    valuationUsd: number;
+}
+
+export interface FractionalAssetUpdateInput {
+    name?: string;
+    description?: string;
+    valuationUsd?: number;
+    isActive?: boolean;
+}
+

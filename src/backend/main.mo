@@ -2701,4 +2701,194 @@ actor {
     };
   };
 
+
+  // ─── FinFracFran™ Types ────────────────────────────────────────────────────
+
+  type FFFAssetType = {
+    #realEstate;
+    #business;
+    #intellectualProperty;
+    #revenueStream;
+    #custom;
+  };
+
+  type FractionalAsset = {
+    id : Text;
+    orgId : Text;
+    name : Text;
+    description : Text;
+    assetType : FFFAssetType;
+    totalShares : Nat;
+    valuationUsd : Nat;
+    isActive : Bool;
+    createdBy : Principal.Principal;
+    createdAt : Int;
+    updatedAt : Int;
+  };
+
+  type FractionalOwnership = {
+    id : Text;
+    assetId : Text;
+    orgId : Text;
+    userId : Principal.Principal;
+    userName : Text;
+    shares : Nat;
+    issuedAt : Int;
+  };
+
+  type RevenueSplitStatus = {
+    #pending;
+    #distributed;
+    #cancelled;
+  };
+
+  type RevenueSplitEntry = {
+    userId : Principal.Principal;
+    userName : Text;
+    shares : Nat;
+    amountUsd : Nat;
+  };
+
+  type RevenueSplit = {
+    id : Text;
+    assetId : Text;
+    orgId : Text;
+    totalAmountUsd : Nat;
+    distribution : [RevenueSplitEntry];
+    status : RevenueSplitStatus;
+    createdBy : Principal.Principal;
+    createdAt : Int;
+    distributedAt : ?Int;
+  };
+
+  type FranchiseLinkStatus = {
+    #pending;
+    #active;
+    #terminated;
+  };
+
+  type FranchiseLink = {
+    id : Text;
+    franchisorOrgId : Text;
+    franchiseeOrgId : Text;
+    royaltyPct : Nat;
+    termsUrl : ?Text;
+    status : FranchiseLinkStatus;
+    createdBy : Principal.Principal;
+    createdAt : Int;
+    updatedAt : Int;
+  };
+
+  type FractionalAssetInput = {
+    orgId : Text;
+    name : Text;
+    description : Text;
+    assetType : FFFAssetType;
+    totalShares : Nat;
+    valuationUsd : Nat;
+  };
+
+  type FractionalAssetUpdateInput = {
+    name : ?Text;
+    description : ?Text;
+    valuationUsd : ?Nat;
+    isActive : ?Bool;
+  };
+
+  // ─── FinFracFran™ Storage ──────────────────────────────────────────────────
+
+  let fffAssets = Map.empty<Text, FractionalAsset>();
+  let _fffOwnerships = Map.empty<Text, FractionalOwnership>();
+  let _fffRevenueSplits = Map.empty<Text, RevenueSplit>();
+  let _fffFranchiseLinks = Map.empty<Text, FranchiseLink>();
+  var _nextFFFAssetId : Nat = 1;
+  var _nextFFFOwnershipId : Nat = 1;
+  var _nextFFFSplitId : Nat = 1;
+  var _nextFFFLinkId : Nat = 1;
+
+  // ─── FinFracFran™ Asset APIs ───────────────────────────────────────────────
+
+  public shared ({ caller }) func createFractionalAsset(input : FractionalAssetInput) : async { #ok : FractionalAsset; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and u.orgId == ?input.orgId);
+        if (not authorized) { return #err("Not authorized") };
+        let id = "fff-asset-" # _nextFFFAssetId.toText();
+        _nextFFFAssetId += 1;
+        let now = Time.now();
+        let asset : FractionalAsset = {
+          id;
+          orgId = input.orgId;
+          name = input.name;
+          description = input.description;
+          assetType = input.assetType;
+          totalShares = input.totalShares;
+          valuationUsd = input.valuationUsd;
+          isActive = true;
+          createdBy = caller;
+          createdAt = now;
+          updatedAt = now;
+        };
+        fffAssets.add(id, asset);
+        #ok(asset)
+      };
+    };
+  };
+
+  public query ({ caller }) func getFractionalAssets(orgId : Text) : async { #ok : [FractionalAsset]; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        let authorized = isSuperAdmin(caller) or u.orgId == ?orgId;
+        if (not authorized) { return #err("Not authorized") };
+        let results = fffAssets.values().toArray().filter(func(a : FractionalAsset) : Bool { a.orgId == orgId });
+        #ok(results)
+      };
+    };
+  };
+
+  public query ({ caller }) func getFractionalAssetById(id : Text) : async { #ok : FractionalAsset; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?_) {
+        switch (fffAssets.get(id)) {
+          case (null) { #err("Asset not found") };
+          case (?asset) { #ok(asset) };
+        };
+      };
+    };
+  };
+
+  public shared ({ caller }) func updateFractionalAsset(id : Text, input : FractionalAssetUpdateInput) : async { #ok : FractionalAsset; #err : Text } {
+    switch (users.get(caller)) {
+      case (null) { #err("Not registered") };
+      case (?u) {
+        switch (fffAssets.get(id)) {
+          case (null) { #err("Asset not found") };
+          case (?asset) {
+            let authorized = isSuperAdmin(caller) or (isOrgAdmin(caller) and u.orgId == ?asset.orgId);
+            if (not authorized) { return #err("Not authorized") };
+            let updated : FractionalAsset = {
+              id = asset.id;
+              orgId = asset.orgId;
+              name = switch (input.name) { case (?n) n; case null asset.name };
+              description = switch (input.description) { case (?d) d; case null asset.description };
+              assetType = asset.assetType;
+              totalShares = asset.totalShares;
+              valuationUsd = switch (input.valuationUsd) { case (?v) v; case null asset.valuationUsd };
+              isActive = switch (input.isActive) { case (?b) b; case null asset.isActive };
+              createdBy = asset.createdBy;
+              createdAt = asset.createdAt;
+              updatedAt = Time.now();
+            };
+            fffAssets.add(id, updated);
+            #ok(updated)
+          };
+        };
+      };
+    };
+  };
+
+
 };

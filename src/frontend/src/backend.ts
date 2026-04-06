@@ -1272,6 +1272,42 @@ export class Backend implements backendInterface {
         if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_PlatformSettings(result.ok) }; }
         return { __kind__: "err" as const, err: result.err };
     }
+
+    async createFractionalAsset(input: import("./backend.d").FractionalAssetInput): Promise<{ __kind__: "ok"; ok: import("./backend.d").FractionalAsset } | { __kind__: "err"; err: string }> {
+        const candid_input = {
+            orgId: input.orgId,
+            name: input.name,
+            description: input.description,
+            assetType: { [input.assetType]: null },
+            totalShares: input.totalShares,
+            valuationUsd: input.valuationUsd,
+        };
+        const result = await (this.actor as any).createFractionalAsset(candid_input);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_FractionalAsset(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async getFractionalAssets(orgId: string): Promise<{ __kind__: "ok"; ok: Array<import("./backend.d").FractionalAsset> } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getFractionalAssets(orgId);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: result.ok.map(from_candid_FractionalAsset) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async getFractionalAssetById(id: string): Promise<{ __kind__: "ok"; ok: import("./backend.d").FractionalAsset } | { __kind__: "err"; err: string }> {
+        const result = await (this.actor as any).getFractionalAssetById(id);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_FractionalAsset(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+    async updateFractionalAsset(id: string, input: import("./backend.d").FractionalAssetUpdateInput): Promise<{ __kind__: "ok"; ok: import("./backend.d").FractionalAsset } | { __kind__: "err"; err: string }> {
+        const candid_input = {
+            name: input.name !== undefined ? [input.name] : [],
+            description: input.description !== undefined ? [input.description] : [],
+            valuationUsd: input.valuationUsd !== undefined ? [input.valuationUsd] : [],
+            isActive: input.isActive !== undefined ? [input.isActive] : [],
+        };
+        const result = await (this.actor as any).updateFractionalAsset(id, candid_input);
+        if ("ok" in result) { return { __kind__: "ok" as const, ok: from_candid_FractionalAsset(result.ok) }; }
+        return { __kind__: "err" as const, err: result.err };
+    }
+
     async _initializeAccessControlWithSecret(userSecret: string): Promise<void> {
         await (this.actor as any)._initializeAccessControlWithSecret(userSecret);
     }
@@ -2318,3 +2354,28 @@ function to_candid_TaskUpdateInput(input: import("./backend.d").TaskUpdateInput)
         status: input.status !== undefined ? [{ [input.status]: null }] : [],
     };
 }
+
+function from_candid_FractionalAsset(value: any): import("./backend.d").FractionalAsset {
+    const assetTypeMap: Record<string, import("./backend.d").FFFAssetType> = {
+        realEstate: "realEstate",
+        business: "business",
+        intellectualProperty: "intellectualProperty",
+        revenueStream: "revenueStream",
+        custom: "custom",
+    };
+    const rawType = typeof value.assetType === "object" ? Object.keys(value.assetType)[0] : String(value.assetType ?? "custom");
+    return {
+        id: value.id,
+        orgId: value.orgId ?? value.org_id,
+        name: value.name,
+        description: value.description,
+        assetType: assetTypeMap[rawType] ?? "custom",
+        totalShares: Number(value.totalShares ?? value.total_shares ?? 0),
+        valuationUsd: Number(value.valuationUsd ?? value.valuation_usd ?? 0),
+        isActive: value.isActive ?? value.is_active ?? true,
+        createdBy: value.createdBy ?? value.created_by,
+        createdAt: value.createdAt ?? value.created_at,
+        updatedAt: value.updatedAt ?? value.updated_at,
+    };
+}
+
