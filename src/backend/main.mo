@@ -357,6 +357,36 @@ actor {
 
   let planLimitsMap = Map.empty<Text, PlanLimits>();
 
+  // ─── Activity Feed Types ───────────────────────────────────────────────────
+
+  type ActivityEventType = {
+    #taskCreated;
+    #taskCompleted;
+    #taskFailed;
+    #agentRegistered;
+    #agentDeactivated;
+    #userInvited;
+    #userJoined;
+    #walletCreated;
+    #orgCreated;
+  };
+
+  type ActivityEvent = {
+    id : Text;
+    eventType : ActivityEventType;
+    orgId : Text;
+    actorId : Principal.Principal;
+    actorName : Text;
+    targetId : ?Text;
+    targetName : ?Text;
+    description : Text;
+    timestamp : Int;
+  };
+
+  let activityEvents = Map.empty<Text, ActivityEvent>();
+  var _nextActivityId : Nat = 1;
+
+
 
   type OrganizationInput = {
     name : Text;
@@ -2281,6 +2311,43 @@ actor {
     };
   };
 
+
+  // ─── Activity Feed API ────────────────────────────────────────────────────
+
+  public query ({ caller }) func getActivityFeed(orgId : ?Text) : async { #ok : [ActivityEvent]; #err : Text } {
+    let callerUser = switch (users.get(caller)) {
+      case (?u) u;
+      case null return #err("Not registered");
+    };
+
+    let allEvents = activityEvents.values().toArray();
+
+    // Sort newest-first
+    let sorted = allEvents.sort(func(a : ActivityEvent, b : ActivityEvent) : Order.Order {
+      Int.compare(b.timestamp, a.timestamp)
+    });
+
+    switch (orgId) {
+      case (null) {
+        // Platform-wide feed: super_admin only, 100 most recent
+        if (callerUser.role != #super_admin) return #err("Only super_admin can view platform-wide feed");
+        let limited : [ActivityEvent] = if (sorted.size() > 100) {
+          Array.tabulate(100, func(i : Nat) : ActivityEvent { sorted[i] })
+        } else sorted;
+        #ok(limited)
+      };
+      case (?oid) {
+        // Org-scoped feed: any authenticated user who belongs to that org, 50 most recent
+        let authorized = callerUser.role == #super_admin or callerUser.orgId == ?oid;
+        if (not authorized) return #err("Not authorized to view this org's activity feed");
+        let filtered = sorted.filter(func(e : ActivityEvent) : Bool { e.orgId == oid });
+        let limited : [ActivityEvent] = if (filtered.size() > 50) {
+          Array.tabulate(50, func(i : Nat) : ActivityEvent { filtered[i] })
+        } else filtered;
+        #ok(limited)
+      };
+    };
+  };
 
   // ── Migration: 5A-iii — copy legacy orgs (no domain fields) into typed map ──
   system func postupgrade() {

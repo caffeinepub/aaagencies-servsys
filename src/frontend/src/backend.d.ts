@@ -252,6 +252,29 @@ export interface AgentUpdateInput {
     status?: AgentStatus;
     endpointUrl?: string;
 }
+export type ActivityEventType =
+    | "taskCreated"
+    | "taskCompleted"
+    | "taskFailed"
+    | "agentRegistered"
+    | "agentDeactivated"
+    | "userInvited"
+    | "userJoined"
+    | "walletCreated"
+    | "orgCreated";
+
+export interface ActivityEvent {
+    id: string;
+    eventType: ActivityEventType;
+    orgId: string;
+    actorId: Principal;
+    actorName: string;
+    targetId: string | null;
+    targetName: string | null;
+    description: string;
+    timestamp: bigint;
+}
+
 export interface backendInterface {
     createBranch(input: BranchInput): Promise<{
         __kind__: "ok";
@@ -567,6 +590,13 @@ export interface backendInterface {
     setOrgActive(orgId: string, isActive: boolean): Promise<{
         __kind__: "ok";
         ok: Organization;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getActivityFeed(orgId: string | null): Promise<{
+        __kind__: "ok";
+        ok: Array<ActivityEvent>;
     } | {
         __kind__: "err";
         err: string;
