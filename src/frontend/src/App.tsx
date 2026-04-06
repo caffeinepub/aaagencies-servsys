@@ -8,6 +8,7 @@ import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import AuthPage from "./pages/AuthPage";
 import DashboardLayout from "./pages/DashboardLayout";
+import LaunchPage from "./pages/LaunchPage";
 import PortalInterstitialPage from "./pages/PortalInterstitialPage";
 import PublicLandingPage from "./pages/PublicLandingPage";
 
@@ -178,6 +179,16 @@ export default function App() {
         <PublicLandingPage />
         <Toaster richColors />
       </I18nProvider>
+    );
+  }
+
+  // Route: /launch → Launch campaign page
+  if (pathname === "/launch") {
+    return (
+      <>
+        <LaunchPage />
+        <Toaster richColors />
+      </>
     );
   }
 

@@ -10,9 +10,11 @@ import {
   Building2,
   Check,
   CheckCircle2,
+  Download,
   ExternalLink,
   Globe,
   Loader2,
+  Mail,
   ShieldCheck,
   Zap,
 } from "lucide-react";
@@ -312,6 +314,19 @@ function LeadForm() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Partner logo placeholder data
+// ─────────────────────────────────────────────────────────────
+
+const PARTNER_SLOTS = [
+  { name: "Innovate Labs" },
+  { name: "NexGen AI" },
+  { name: "FinTech Global" },
+  { name: "AgileSys" },
+  { name: "CloudBridge" },
+  { name: "DataForge" },
+];
+
+// ─────────────────────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────────────────────
 
@@ -511,10 +526,10 @@ export default function PublicLandingPage() {
     {
       heading: t("footer.company"),
       links: [
-        { label: t("footer.links.contact") },
+        { label: t("footer.links.contact"), href: "#lead-capture" },
         { label: t("footer.links.blog") },
         { label: t("footer.links.careers") },
-        { label: t("footer.links.press") },
+        { label: t("footer.links.press"), href: "#partner-press" },
       ],
     },
   ];
@@ -1089,6 +1104,207 @@ export default function PublicLandingPage() {
             </motion.div>
           ))}
         </div>
+      </section>
+
+      {/* ── Partners & Press ── */}
+      <section
+        id="partner-press"
+        className="px-6 md:px-10 lg:px-16 py-24"
+        aria-label="Partners and Press"
+        data-ocid="partner.section"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          {/* Section header */}
+          <div className="mb-10">
+            <div
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1 mb-4 text-xs font-medium"
+              style={{
+                backgroundColor: "rgba(33,199,183,0.1)",
+                border: "1px solid rgba(33,199,183,0.25)",
+                color: "#21C7B7",
+              }}
+            >
+              Ecosystem
+            </div>
+            <h2
+              className="font-display font-bold text-3xl md:text-4xl mb-3"
+              style={{ color: "#EAF2F8" }}
+            >
+              Partners &amp; Press
+            </h2>
+            <p
+              style={{ color: "#A9B8C6", fontSize: "15px", maxWidth: "560px" }}
+            >
+              We collaborate with forward-thinking organizations shaping the
+              future of AI-powered services.
+            </p>
+          </div>
+
+          {/* Two-column layout: partner grid left, press info right */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            {/* Partner logos grid — takes 3 out of 5 columns on desktop */}
+            <div className="lg:col-span-3 flex flex-col gap-6">
+              <div
+                className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+                data-ocid="partner.list"
+              >
+                {PARTNER_SLOTS.map((partner, i) => (
+                  <motion.div
+                    key={partner.name}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{
+                      duration: 0.4,
+                      delay: i * 0.07,
+                      ease: "easeOut",
+                    }}
+                    className="flex flex-col items-center gap-2 rounded-xl py-6 px-4 transition-colors cursor-default"
+                    style={{
+                      backgroundColor: "#091827",
+                      border: "1px solid #163244",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor =
+                        "rgba(33,199,183,0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "#163244";
+                    }}
+                    data-ocid={`partner.item.${i + 1}`}
+                  >
+                    <Building2
+                      className="w-7 h-7"
+                      style={{ color: "#21C7B7" }}
+                    />
+                    <span
+                      className="text-xs font-medium text-center leading-snug"
+                      style={{ color: "#A9B8C6" }}
+                    >
+                      {partner.name}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Become a Partner CTA */}
+              <div className="flex justify-center sm:justify-start">
+                <button
+                  type="button"
+                  onClick={handleScrollToLead}
+                  className="inline-flex items-center gap-2 h-11 px-6 rounded-[8px] text-sm font-semibold transition-colors"
+                  style={{
+                    backgroundColor: "#21C7B7",
+                    color: "#07131F",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#2de0ce";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#21C7B7";
+                  }}
+                  data-ocid="partner.primary_button"
+                >
+                  <Building2 className="w-4 h-4" />
+                  Become a Partner
+                </button>
+              </div>
+            </div>
+
+            {/* Press / Media card — takes 2 out of 5 columns on desktop */}
+            <div className="lg:col-span-2">
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+                className="rounded-[16px] p-6 md:p-8 h-full flex flex-col gap-5"
+                style={{
+                  backgroundColor: "#091827",
+                  border: "1px solid #163244",
+                }}
+              >
+                {/* Icon */}
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{
+                    backgroundColor: "rgba(33,199,183,0.10)",
+                    border: "1px solid rgba(33,199,183,0.25)",
+                  }}
+                >
+                  <Mail className="w-5 h-5" style={{ color: "#21C7B7" }} />
+                </div>
+
+                <div>
+                  <h3
+                    className="font-display font-bold text-xl mb-2"
+                    style={{ color: "#EAF2F8" }}
+                  >
+                    Media &amp; Press
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: "#A9B8C6" }}
+                  >
+                    For press inquiries, partnership opportunities, and media
+                    resources, reach out to our team.
+                  </p>
+                </div>
+
+                <div
+                  className="flex-1"
+                  style={{
+                    borderTop: "1px solid #163244",
+                    paddingTop: "1.25rem",
+                  }}
+                >
+                  <p
+                    className="text-xs font-semibold uppercase tracking-wider mb-3"
+                    style={{ color: "#A9B8C6" }}
+                  >
+                    Media Contact
+                  </p>
+                  <a
+                    href="mailto:press@aaagencies.com"
+                    className="inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-80"
+                    style={{ color: "#21C7B7" }}
+                    data-ocid="partner.link"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    press@aaagencies.com
+                  </a>
+                </div>
+
+                {/* Download press kit */}
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-[8px] text-sm font-semibold transition-colors"
+                  style={{
+                    backgroundColor: "transparent",
+                    border: "1px solid #21C7B7",
+                    color: "#21C7B7",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(33,199,183,0.10)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
+                  data-ocid="partner.secondary_button"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Download Press Kit
+                </button>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
       {/* ── Lead Capture ── */}

@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useActor } from "@/hooks/useActor";
 import {
+  CalendarClock,
   Globe,
   Loader2,
   Megaphone,
@@ -611,7 +612,7 @@ function PlatformTab() {
     if (!actor) return;
     setSaving(true);
     try {
-      // Preserve launchDate — only update banner fields
+      // Sends full settings including launchDate
       const result = await actor.updatePlatformSettings(settings);
       if ("__kind__" in result && result.__kind__ === "ok") {
         toast.success("Platform settings saved");
@@ -705,6 +706,60 @@ function PlatformTab() {
             </p>
           </div>
         )}
+
+        <Separator />
+
+        {/* Campaign Launch Date */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="w-4 h-4 text-muted-foreground" />
+            <Label htmlFor="launchDate">Campaign Launch Date</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Set the countdown target for the /launch campaign page. Leave empty
+            to show 'Coming Soon'.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              id="launchDate"
+              type="datetime-local"
+              value={
+                settings.launchDate
+                  ? new Date(Number(settings.launchDate) / 1_000_000)
+                      .toISOString()
+                      .slice(0, 16)
+                  : ""
+              }
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  setSettings((prev) => ({ ...prev, launchDate: undefined }));
+                } else {
+                  const ms = new Date(val).getTime();
+                  setSettings((prev) => ({
+                    ...prev,
+                    launchDate: BigInt(ms) * BigInt(1_000_000),
+                  }));
+                }
+              }}
+              className="flex-1"
+              data-ocid="settings.platform.input"
+            />
+            {settings.launchDate && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setSettings((prev) => ({ ...prev, launchDate: undefined }))
+                }
+                data-ocid="settings.platform.button"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
 
         <Separator />
 

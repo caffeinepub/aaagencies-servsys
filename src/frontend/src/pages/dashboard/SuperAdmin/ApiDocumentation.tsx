@@ -581,6 +581,101 @@ const API_SECTIONS: ApiSection[] = [
       },
     ],
   },
+  // ─── Phase 6B ───────────────────────────────────────────────────────────────
+  {
+    title: "Activity Feed",
+    description:
+      "Org-scoped and platform-wide activity feed showing real-time events across agents, tasks, users, and organizations",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/activity/feed",
+        description:
+          "Get the activity feed. org_admin and team_member receive their org-scoped feed (50 most recent events). super_admin with no orgId receives the platform-wide feed (100 most recent). Events include: taskCreated, taskCompleted, taskFailed, agentRegistered, agentDeactivated, userInvited, userJoined, walletCreated, orgCreated.",
+        requiredRole: "authenticated",
+        example: '{"orgId": null}',
+      },
+    ],
+  },
+  // ─── Phase 6C ───────────────────────────────────────────────────────────────
+  {
+    title: "Notification Center",
+    description:
+      "In-app notification system with per-user delivery, read tracking, and admin broadcast. Auto-generates notifications on key platform events.",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/notifications",
+        description:
+          "Get up to 50 most recent notifications for the caller, sorted newest-first. Includes unread count for badge display.",
+        requiredRole: "authenticated",
+      },
+      {
+        method: "PUT",
+        path: "/api/notifications/{id}/read",
+        description:
+          "Mark a single notification as read. Caller must own the notification.",
+        requiredRole: "authenticated",
+        example: '{"id": "notif-042"}',
+      },
+      {
+        method: "PUT",
+        path: "/api/notifications/read-all",
+        description:
+          "Mark all of the caller's notifications as read in a single call. Returns the count of notifications marked.",
+        requiredRole: "authenticated",
+      },
+      {
+        method: "POST",
+        path: "/api/notifications/system",
+        description:
+          "Push a system notification to a specific user. Super Admin or Org Admin only. Used for announcements, alerts, or manual nudges.",
+        requiredRole: "org_admin",
+        example:
+          '{"userId": "principal-abc123", "title": "Action Required", "message": "Your plan limit is almost reached. Upgrade to avoid disruption.", "relatedId": "org-001"}',
+      },
+    ],
+  },
+  // ─── Phase 6D ───────────────────────────────────────────────────────────────
+  {
+    title: "Settings & Webhook",
+    description:
+      "Org-level and platform-level settings including webhook configuration for real HTTP outcalls on key events, and announcement banners for all users",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/settings/org/{orgId}",
+        description:
+          "Get org-level settings: webhook URL, webhook events, notification toggles, default language, timezone. Callable by org_admin (own org) or super_admin.",
+        requiredRole: "org_admin",
+      },
+      {
+        method: "PUT",
+        path: "/api/settings/org/{orgId}",
+        description:
+          "Update org-level settings. Webhook URL is stored and triggers real HTTP POST outcalls when events in webhookEvents occur (task.completed, task.failed, user.joined, agent.deactivated).",
+        requiredRole: "org_admin",
+        example:
+          '{"webhookUrl": "https://hooks.myapp.com/events", "webhookEvents": ["task.completed", "user.joined"], "notifyOnTaskComplete": true, "notifyOnUserJoined": true, "notifyOnAgentDeactivated": false, "defaultLanguage": "en", "timezone": "America/New_York"}',
+      },
+      {
+        method: "GET",
+        path: "/api/settings/platform",
+        description:
+          "Get platform-level settings: announcement banner text, enabled flag, and campaign launch date. Available to all authenticated users (banner must be shown to all roles).",
+        requiredRole: "authenticated",
+      },
+      {
+        method: "PUT",
+        path: "/api/settings/platform",
+        description:
+          "Update platform-level settings: announcement banner content, enabled toggle, and campaign launch date (Unix nanoseconds). Super Admin only.",
+        requiredRole: "super_admin",
+        example:
+          '{"announcementBanner": "\ud83d\ude80 Phase 7 is live \u2014 check out the new automation features!", "announcementBannerEnabled": true, "launchDate": 1780000000000000000}',
+      },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<string, string> = {
@@ -670,6 +765,9 @@ const PHASE_LABELS: Record<string, string> = {
   "Plan Limits & Platform Metrics": "5A",
   "Tenant Management": "5A",
   "Platform Billing": "5B",
+  "Activity Feed": "6B",
+  "Notification Center": "6C",
+  "Settings & Webhook": "6D",
 };
 
 export default function ApiDocumentation() {
@@ -681,7 +779,7 @@ export default function ApiDocumentation() {
             API Documentation
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            AAAgencies SerVSys REST API reference — Phases 1–5 · 16 sections
+            AAAgencies SerVSys REST API reference — Phases 1–6 · 19 sections
           </p>
         </div>
       </div>
