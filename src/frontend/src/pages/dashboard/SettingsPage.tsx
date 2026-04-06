@@ -22,8 +22,10 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useActor } from "@/hooks/useActor";
+import { useQuery } from "@tanstack/react-query";
 import {
   CalendarClock,
+  ClipboardList,
   Globe,
   Loader2,
   Megaphone,
@@ -35,6 +37,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type {
+  AuditEntry,
   OrgSettings,
   PlatformSettings,
   User as UserType,
@@ -574,6 +577,89 @@ function OrgTab() {
           {saving ? "Saving..." : "Save Organization Settings"}
         </Button>
       </div>
+
+      {/* Recent Activity */}
+      <RecentActivitySection orgId={orgId} actor={actor} />
+    </div>
+  );
+}
+
+// ─── Recent Activity Section ──────────────────────────────────────────────────
+
+function RecentActivitySection({
+  orgId,
+  actor,
+}: { orgId: string | null; actor: any }) {
+  const { data: entries = [], isLoading } = useQuery<AuditEntry[]>({
+    queryKey: ["audit-log-org", orgId],
+    queryFn: async () => {
+      if (!actor || !orgId) return [];
+      try {
+        const res = await actor.getAuditLog([orgId]);
+        if (res && "ok" in res) return res.ok as AuditEntry[];
+        return [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!actor && !!orgId,
+  });
+
+  return (
+    <div className="space-y-3" data-ocid="settings.org.panel">
+      <Separator className="my-2" />
+      <div className="flex items-center gap-2">
+        <ClipboardList className="w-4 h-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold">Recent Activity</h3>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      ) : entries.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-2">
+          No activity recorded yet.
+        </p>
+      ) : (
+        <div className="rounded-lg border border-border/40 bg-muted/5 divide-y divide-border/40">
+          {entries.slice(0, 10).map((entry) => {
+            const ms = Number(entry.timestamp / 1_000_000n);
+            const dateStr = new Date(ms).toLocaleString(undefined, {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            return (
+              <div key={entry.id} className="flex flex-col gap-0.5 px-3 py-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                    {dateStr}
+                  </span>
+                  <span className="text-xs font-semibold">
+                    {entry.actorName}
+                  </span>
+                  <span className="text-[10px] font-mono text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded">
+                    {entry.action}
+                  </span>
+                </div>
+                {entry.description && (
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    {entry.description}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="text-[11px] text-muted-foreground/60 italic">
+        Only Super Admins can view the full platform audit log.
+      </p>
     </div>
   );
 }
