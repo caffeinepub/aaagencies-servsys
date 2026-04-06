@@ -597,6 +597,7 @@ actor {
       customSubdomain = null;
     };
     organizationsNew.add(input.name, newOrg);
+    _recordActivity(#orgCreated, newOrg.id, newOrg.ownerId, ?newOrg.id, ?newOrg.name, "Organization \"" # newOrg.name # "\" was created");
     #ok(newOrg);
   };
 
@@ -1024,6 +1025,8 @@ actor {
     };
     inviteLinks.add(idText, newLink);
     inviteLinksByCode.add(code, idText);
+    let inviteOrgId = switch (input.orgId) { case (?oid) { oid }; case null { "platform" } };
+    _recordActivity(#userInvited, inviteOrgId, caller, ?idText, null, "Invite link created for role access");
     #ok(newLink);
   };
 
@@ -1126,6 +1129,8 @@ actor {
               stripeCustomerId = null;
             };
             users.add(input.principal, newUser);
+            let joinOrgId = switch (link.orgId) { case (?oid) { oid }; case null { "platform" } };
+            _recordActivity(#userJoined, joinOrgId, input.principal, null, ?input.displayName, input.displayName # " joined via invite link");
             let updatedCount = link.redemptionCount + 1;
             let shouldDeactivate = switch (link.maxRedemptions) {
               case (?max) { updatedCount >= max };
@@ -1250,6 +1255,7 @@ actor {
       createdAt = Time.now();
     };
     wallets.add(id, newWallet);
+    _recordActivity(#walletCreated, input.orgId, caller, ?id, ?input.name, "Wallet \"" # input.name # "\" was created");
     #ok(newWallet);
   };
 
@@ -1590,6 +1596,7 @@ actor {
       createdBy = caller;
     };
     agents.add(id, agent);
+    _recordActivity(#agentRegistered, agent.orgId, caller, ?agent.id, ?agent.name, "Agent \"" # agent.name # "\" was registered");
     #ok(agent);
   };
 
@@ -1666,6 +1673,7 @@ actor {
         };
         agents.remove(id);
         agents.add(id, deactivated);
+        _recordActivity(#agentDeactivated, deactivated.orgId, caller, ?deactivated.id, ?deactivated.name, "Agent \"" # deactivated.name # "\" was deactivated");
         #ok(deactivated);
       };
     };
@@ -1738,6 +1746,7 @@ actor {
       updatedAt = now;
     };
     tasks.add(id, task);
+    _recordActivity(#taskCreated, task.orgId, caller, ?task.id, ?task.title, "Task \"" # task.title # "\" was created");
     #ok(task);
   };
 
@@ -1818,6 +1827,15 @@ actor {
         };
         tasks.remove(id);
         tasks.add(id, updated);
+        switch (newStatus) {
+          case (#completed) {
+            _recordActivity(#taskCompleted, task.orgId, caller, ?task.id, ?task.title, "Task \"" # task.title # "\" was completed");
+          };
+          case (#failed) {
+            _recordActivity(#taskFailed, task.orgId, caller, ?task.id, ?task.title, "Task \"" # task.title # "\" failed");
+          };
+          case (_) {};
+        };
         #ok(updated);
       };
     };
@@ -2311,6 +2329,36 @@ actor {
     };
   };
 
+
+  // ─── Activity Feed Internal Helper ──────────────────────────────────────────
+
+  func _recordActivity(
+    eventType : ActivityEventType,
+    orgId : Text,
+    actorPrincipal : Principal.Principal,
+    targetId : ?Text,
+    targetName : ?Text,
+    description : Text,
+  ) {
+    let actorName = switch (users.get(actorPrincipal)) {
+      case (?u) { u.displayName };
+      case null { "System" };
+    };
+    let evId = "ACT" # _nextActivityId.toText();
+    _nextActivityId += 1;
+    let event : ActivityEvent = {
+      id = evId;
+      eventType = eventType;
+      orgId = orgId;
+      actorId = actorPrincipal;
+      actorName = actorName;
+      targetId = targetId;
+      targetName = targetName;
+      description = description;
+      timestamp = Time.now();
+    };
+    activityEvents.add(evId, event);
+  };
 
   // ─── Activity Feed API ────────────────────────────────────────────────────
 
