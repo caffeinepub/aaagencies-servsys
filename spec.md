@@ -1,39 +1,32 @@
 # AAAgencies SerVSys™
 
 ## Current State
-- Backend has `ActivityEventType` variant, `ActivityEvent` type, `activityEvents` map, `_nextActivityId` counter, and `getActivityFeed(orgId?)` query API — all added in 6B-i-1.
-- No `_recordActivity` internal helper exists yet.
-- None of the existing mutation APIs (registerAgent, deactivateAgent, createTask, updateTaskStatus, createInviteLink, redeemInviteLink, createWallet, createOrganization) emit activity events.
-- `backend.d.ts` has `ActivityEvent`, `ActivityEventType`, and `getActivityFeed` signatures from 6B-i-1.
+- `OrgDashboard.tsx` — live data for agents/tasks/stats, has Recent Tasks card but no activity feed or trend charts
+- `PlatformOverview.tsx` — live data from `getPlatformMetrics()`, has Recent Orgs/Recent Users panels, no activity feed
+- `PlatformMetrics.tsx` — still uses `PLATFORM_METRICS` mock data from `mockData.ts`, has a BarChart with mock monthly growth data
+- `backend.d.ts` — has `ActivityEvent`, `ActivityEventType`, and `getActivityFeed(orgId: string | null)` already defined
+- `ActivityFeed` component — does not exist yet
+- recharts is available in the project (already used in PlatformMetrics)
 
 ## Requested Changes (Diff)
 
 ### Add
-- `_recordActivity(event)` internal helper function that stores an `ActivityEvent` in `activityEvents` map using the `_nextActivityId` counter.
-- Activity recording calls wired into 8 existing APIs:
-  - `registerAgent` → `#agentRegistered`
-  - `deactivateAgent` → `#agentDeactivated`
-  - `createTask` → `#taskCreated`
-  - `updateTaskStatus` → `#taskCompleted` (only when newStatus is `#completed`) and `#taskFailed` (only when newStatus is `#failed`)
-  - `createInviteLink` → `#userInvited`
-  - `redeemInviteLink` → `#userJoined`
-  - `createWallet` → `#walletCreated`
-  - `createOrganization` → `#orgCreated`
-- Each call resolves actor name from `users` map for a readable description.
+- New shared `ActivityFeed.tsx` component in `src/frontend/src/components/` — live event list with icon per event type, actor name, description, relative timestamp; accepts orgId prop (null = platform-wide)
+- Trend chart in `OrgDashboard.tsx` — bar chart showing tasks bucketed by day for last 7 days using tasks data already fetched
+- Activity feed section in `OrgDashboard.tsx` — below Recent Tasks, calls `getActivityFeed(org.id)`
+- Activity feed section in `PlatformOverview.tsx` — below existing panels, calls `getActivityFeed(null)` (platform-wide)
 
 ### Modify
-- `registerAgent`, `deactivateAgent`, `createTask`, `updateTaskStatus`, `createInviteLink`, `redeemInviteLink`, `createWallet`, `createOrganization` — each gets a `_recordActivity(...)` call appended after the successful write, before the `#ok(...)` return.
+- `PlatformMetrics.tsx` — replace all `PLATFORM_METRICS` mock data with real calls to `getPlatformMetrics()` + `getActivityFeed(null)` for trend chart (use real task/org counts from metrics; keep the BarChart but populate with real monthly-ish data derived from actual activity event timestamps)
+- `OrgDashboard.tsx` — add ActivityFeed component + a 7-day task trend chart
+- `PlatformOverview.tsx` — add ActivityFeed at the bottom
 
 ### Remove
-- Nothing removed.
+- `PLATFORM_METRICS` mock import from `PlatformMetrics.tsx`
 
 ## Implementation Plan
-1. Add `_recordActivity` private helper function after the existing Activity Feed type declarations.
-2. Wire `_recordActivity` into `createOrganization` after `organizationsNew.add(...)` with `#orgCreated` event.
-3. Wire `_recordActivity` into `createInviteLink` after `inviteLinks.add(...)` with `#userInvited` event (actor = caller; description includes role).
-4. Wire `_recordActivity` into `redeemInviteLink` after `users.add(input.principal, newUser)` with `#userJoined` event (actor = new user principal).
-5. Wire `_recordActivity` into `createWallet` after `wallets.add(...)` with `#walletCreated` event.
-6. Wire `_recordActivity` into `registerAgent` after `agents.add(...)` with `#agentRegistered` event (targetId = agent.id, targetName = agent.name).
-7. Wire `_recordActivity` into `deactivateAgent` after `agents.add(id, deactivated)` with `#agentDeactivated` event.
-8. Wire `_recordActivity` into `createTask` after `tasks.add(id, task)` with `#taskCreated` event (targetId = task.id, targetName = task.title).
-9. Wire `_recordActivity` into `updateTaskStatus` after `tasks.add(id, updated)` for `#completed` → `#taskCompleted` and `#failed` → `#taskFailed` transitions only.
+1. Create `src/frontend/src/components/ActivityFeed.tsx` — reusable component; accepts `orgId: string | null`; calls `getActivityFeed(orgId)` internally; shows event-type icon, actor name, description, relative timestamp; loading skeleton; empty state; max 20 items displayed
+2. Update `OrgDashboard.tsx` — add a 7-day tasks trend bar chart (bucket tasks already fetched by `createdAt` day), add `<ActivityFeed orgId={org.id} />` below the Recent Tasks card
+3. Update `PlatformOverview.tsx` — add `<ActivityFeed orgId={null} />` section at the bottom of the page
+4. Update `PlatformMetrics.tsx` — wire `getPlatformMetrics()` for stat cards, use `getActivityFeed(null)` to derive trend data (count events by day for last 7 days, plot as bar chart); remove PLATFORM_METRICS mock import
+5. Validate (typecheck + lint + build)

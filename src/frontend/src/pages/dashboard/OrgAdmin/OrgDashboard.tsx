@@ -1,5 +1,6 @@
 import type { AgentDefinition, Organization, Task } from "@/backend.d";
 import { AgentStatus, TaskStatus } from "@/backend.d";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { PlanTierBadge } from "@/components/PlanTierBadge";
 import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useActor } from "@/hooks/useActor";
 import { useQuery } from "@tanstack/react-query";
 import { Bot, Building2, ClipboardList, Users } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type DisplayOrg = { name: string; description: string; planTier: string };
 
@@ -20,6 +30,37 @@ function toDisplayOrg(org: Organization | null | undefined): DisplayOrg {
       ? (Object.keys(org.planTier)[0] ?? "free")
       : String(org.planTier);
   return { name: org.name, description: org.description, planTier };
+}
+
+function getDayLabel(date: Date): string {
+  return date.toLocaleDateString("en-US", { weekday: "short" });
+}
+
+function buildTaskTrend(tasks: Task[]): { day: string; tasks: number }[] {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const days: { day: string; date: Date; tasks: number }[] = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+    days.push({ day: getDayLabel(d), date: d, tasks: 0 });
+  }
+
+  for (const task of tasks) {
+    const taskMs = Number(task.createdAt) / 1_000_000;
+    const taskDate = new Date(taskMs);
+    taskDate.setHours(0, 0, 0, 0);
+    for (const bucket of days) {
+      if (taskDate.getTime() === bucket.date.getTime()) {
+        bucket.tasks++;
+        break;
+      }
+    }
+  }
+
+  return days.map(({ day, tasks }) => ({ day, tasks }));
 }
 
 export default function OrgDashboard() {
@@ -88,6 +129,7 @@ export default function OrgDashboard() {
   ).length;
 
   const recentTasks = tasks.slice(0, 5);
+  const taskTrendData = buildTaskTrend(tasks);
 
   return (
     <div className="space-y-6">
@@ -185,6 +227,60 @@ export default function OrgDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* 7-Day Task Trend Chart */}
+      <Card className="border-border/60" data-ocid="org.task_trend.card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-display">
+            Task Trend (Last 7 Days)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {tasksLoading ? (
+            <Skeleton className="h-52 w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={taskTrendData}
+                margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="oklch(1 0 0 / 8%)"
+                />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 11 }}
+                  stroke="oklch(0.6 0.015 265)"
+                />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  stroke="oklch(0.6 0.015 265)"
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "oklch(0.165 0.022 265)",
+                    border: "1px solid oklch(1 0 0 / 10%)",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                  }}
+                  cursor={{ fill: "oklch(1 0 0 / 4%)" }}
+                />
+                <Bar
+                  dataKey="tasks"
+                  name="Tasks Created"
+                  fill="oklch(0.68 0.18 162)"
+                  radius={[3, 3, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Activity Feed */}
+      {org?.id && <ActivityFeed orgId={org.id} />}
     </div>
   );
 }

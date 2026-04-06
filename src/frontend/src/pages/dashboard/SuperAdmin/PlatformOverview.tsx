@@ -1,4 +1,5 @@
 import type { backendInterface as FullBackend } from "@/../src/backend.d";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { PlanTierBadge } from "@/components/PlanTierBadge";
 import { RoleBadge } from "@/components/RoleBadge";
 import { StatCard } from "@/components/StatCard";
@@ -171,7 +172,7 @@ export default function PlatformOverview() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <PlanTierBadge tier={planTier} />
+                        <PlanTierBadge tier={planTier ?? "free"} />
                         {org.isActive ? (
                           <CheckCircle2 className="w-4 h-4 text-teal-400" />
                         ) : (
@@ -223,7 +224,7 @@ export default function PlatformOverview() {
                       <span className="text-sm font-medium truncate">
                         {user.displayName}
                       </span>
-                      <RoleBadge role={role} />
+                      <RoleBadge role={role ?? "end_customer"} />
                     </div>
                   );
                 })}
@@ -232,6 +233,14 @@ export default function PlatformOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Platform Activity Feed */}
+      <section data-ocid="platform.activity.section">
+        <h2 className="text-lg font-display font-semibold mb-3">
+          Platform Activity Feed
+        </h2>
+        <ActivityFeed orgId={null} />
+      </section>
     </div>
   );
 }
