@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { User } from "../backend.d";
+import { NotificationCenter } from "../components/NotificationCenter";
 import { WelcomeModal } from "../components/WelcomeModal";
 import GettingStartedPage from "./GettingStartedPage";
 
@@ -395,6 +396,9 @@ export default function DashboardLayout({
                 {activeLabel}
               </h2>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationCenter />
           </div>
         </header>
 
