@@ -785,6 +785,22 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    getAuditLog(orgId?: string | null): Promise<{
+        __kind__: "ok";
+        ok: Array<AuditEntry>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    searchOrg(orgId: string, query: string): Promise<Array<SearchResult>>;
+    searchPlatform(query: string): Promise<Array<SearchResult>>;
+    bulkUpdateTaskStatus(ids: Array<string>, status: string): Promise<{
+        __kind__: "ok";
+        ok: { updated: number; failed: number };
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
 }
 
 export interface OrgSettings {
@@ -1040,4 +1056,24 @@ export interface AgentTemplateInput {
     tags: string[];
     isPublic: boolean;
     orgId?: string;
+}
+
+export interface AuditEntry {
+    id: string;
+    action: string;
+    actorId: string;
+    actorName: string;
+    targetKind: string;
+    targetId: string;
+    description: string;
+    orgId?: string;
+    timestamp: bigint;
+}
+
+export interface SearchResult {
+    kind: "user" | "agent" | "task" | "org";
+    id: string;
+    label: string;
+    subtitle: string;
+    url: string;
 }
