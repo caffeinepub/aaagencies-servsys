@@ -5,7 +5,7 @@ import { RoleBadge } from "@/components/RoleBadge";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -15,12 +15,13 @@ import {
   Wallet,
   XCircle,
 } from "lucide-react";
+import { createActor } from "../../../backend";
 
 const TIER_KEYS = ["free", "starter", "professional", "enterprise"] as const;
 type TierKey = (typeof TIER_KEYS)[number];
 
 export default function PlatformOverview() {
-  const { actor: _actor } = useActor();
+  const { actor: _actor } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
 
   const { data: metrics, isLoading: metricsLoading } = useQuery({
@@ -67,31 +68,31 @@ export default function PlatformOverview() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard
             title="Organizations"
-            value={metrics?.totalOrgs ?? 0}
+            value={Number(metrics?.totalOrgs ?? 0)}
             icon={Building2}
             iconClassName="bg-blue-500/10"
           />
           <StatCard
             title="Total Users"
-            value={metrics?.totalUsers ?? 0}
+            value={Number(metrics?.totalUsers ?? 0)}
             icon={Users}
             iconClassName="bg-teal-500/10"
           />
           <StatCard
             title="Active Tasks"
-            value={metrics?.totalTasks ?? 0}
+            value={Number(metrics?.totalTasks ?? 0)}
             icon={BarChart3}
             iconClassName="bg-purple-500/10"
           />
           <StatCard
             title="Wallets"
-            value={metrics?.totalWallets ?? 0}
+            value={Number(metrics?.totalWallets ?? 0)}
             icon={Wallet}
             iconClassName="bg-amber-500/10"
           />
           <StatCard
             title="Active Orgs"
-            value={metrics?.activeOrgs ?? 0}
+            value={Number(metrics?.activeOrgs ?? 0)}
             icon={CheckCircle2}
             iconClassName="bg-green-500/10"
           />

@@ -29,8 +29,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
 import { exportToCSV } from "@/lib/utils";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   Bot,
   Check,
@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type {
   AgentDefinition,
   Task,
@@ -332,7 +333,7 @@ function RowSkeleton() {
 }
 
 export default function TaskManagement() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [loading, setLoading] = useState(true);

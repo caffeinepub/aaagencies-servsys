@@ -14,6 +14,112 @@ export type AccountType = { 'vendor_account' : null } |
   { 'branch_fund' : null } |
   { 'org_treasury' : null } |
   { 'member_wallet' : null };
+export interface ActivityEvent {
+  'id' : string,
+  'actorName' : string,
+  'orgId' : string,
+  'description' : string,
+  'actorId' : Principal,
+  'targetName' : [] | [string],
+  'timestamp' : bigint,
+  'targetId' : [] | [string],
+  'eventType' : ActivityEventType,
+}
+export type ActivityEventType = { 'userInvited' : null } |
+  { 'agentDeactivated' : null } |
+  { 'orgCreated' : null } |
+  { 'taskFailed' : null } |
+  { 'userJoined' : null } |
+  { 'taskCompleted' : null } |
+  { 'taskCreated' : null } |
+  { 'walletCreated' : null } |
+  { 'agentRegistered' : null };
+export interface AgentDefinition {
+  'id' : string,
+  'status' : AgentStatus,
+  'capabilities' : Array<string>,
+  'orgId' : string,
+  'name' : string,
+  'createdAt' : bigint,
+  'createdBy' : Principal,
+  'description' : string,
+  'endpointUrl' : [] | [string],
+  'supportedLanguages' : Array<string>,
+  'modelType' : string,
+}
+export interface AgentInput {
+  'status' : AgentStatus,
+  'capabilities' : Array<string>,
+  'name' : string,
+  'description' : string,
+  'endpointUrl' : [] | [string],
+  'supportedLanguages' : Array<string>,
+  'modelType' : string,
+}
+export type AgentStatus = { 'active' : null } |
+  { 'inactive' : null } |
+  { 'training' : null };
+export interface AgentTemplate {
+  'id' : string,
+  'orgId' : [] | [string],
+  'name' : string,
+  'createdAt' : bigint,
+  'createdBy' : Principal,
+  'tags' : Array<string>,
+  'description' : string,
+  'endpointUrl' : [] | [string],
+  'systemPrompt' : [] | [string],
+  'isPublic' : boolean,
+  'endpointHeaders' : [] | [string],
+}
+export interface AgentTemplateInput {
+  'orgId' : [] | [string],
+  'name' : string,
+  'tags' : Array<string>,
+  'description' : string,
+  'endpointUrl' : [] | [string],
+  'systemPrompt' : [] | [string],
+  'isPublic' : boolean,
+  'endpointHeaders' : [] | [string],
+}
+export interface AgentUpdateInput {
+  'status' : [] | [AgentStatus],
+  'capabilities' : [] | [Array<string>],
+  'name' : [] | [string],
+  'description' : [] | [string],
+  'endpointUrl' : [] | [string],
+  'supportedLanguages' : [] | [Array<string>],
+  'modelType' : [] | [string],
+}
+export interface ApiKey {
+  'id' : string,
+  'lastUsedAt' : [] | [bigint],
+  'permissions' : Array<string>,
+  'orgId' : string,
+  'keyPrefix' : string,
+  'name' : string,
+  'createdAt' : bigint,
+  'createdBy' : Principal,
+  'description' : string,
+  'isActive' : boolean,
+  'keyHash' : bigint,
+}
+export interface ApiKeyInput {
+  'permissions' : Array<string>,
+  'name' : string,
+  'description' : string,
+}
+export interface AuditEntry {
+  'id' : string,
+  'action' : string,
+  'actorName' : string,
+  'orgId' : [] | [string],
+  'description' : string,
+  'actorId' : Principal,
+  'targetKind' : string,
+  'timestamp' : bigint,
+  'targetId' : string,
+}
 export interface Branch {
   'id' : string,
   'timezone' : string,
@@ -50,12 +156,77 @@ export interface BranchUpdateInput {
   'location' : [] | [string],
   'primaryLanguage' : [] | [string],
 }
+export interface ConversationMessage {
+  'id' : string,
+  'isError' : boolean,
+  'content' : string,
+  'orgId' : string,
+  'agentId' : string,
+  'timestamp' : bigint,
+  'senderRole' : SenderRole,
+  'senderId' : Principal,
+}
 export interface CreateInviteLinkInput {
   'expiresAt' : [] | [bigint],
   'orgId' : [] | [string],
   'role' : Role,
   'maxRedemptions' : [] | [bigint],
 }
+export type FFFAssetType = { 'realEstate' : null } |
+  { 'custom' : null } |
+  { 'business' : null } |
+  { 'revenueStream' : null } |
+  { 'intellectualProperty' : null };
+export interface FractionalAsset {
+  'id' : string,
+  'orgId' : string,
+  'name' : string,
+  'createdAt' : bigint,
+  'createdBy' : Principal,
+  'valuationUsd' : bigint,
+  'description' : string,
+  'isActive' : boolean,
+  'updatedAt' : bigint,
+  'assetType' : FFFAssetType,
+  'totalShares' : bigint,
+}
+export interface FractionalAssetInput {
+  'orgId' : string,
+  'name' : string,
+  'valuationUsd' : bigint,
+  'description' : string,
+  'assetType' : FFFAssetType,
+  'totalShares' : bigint,
+}
+export interface FractionalAssetUpdateInput {
+  'name' : [] | [string],
+  'valuationUsd' : [] | [bigint],
+  'description' : [] | [string],
+  'isActive' : [] | [boolean],
+}
+export interface FractionalOwnership {
+  'id' : string,
+  'userName' : string,
+  'shares' : bigint,
+  'orgId' : string,
+  'assetId' : string,
+  'userId' : Principal,
+  'issuedAt' : bigint,
+}
+export interface FranchiseLink {
+  'id' : string,
+  'status' : FranchiseLinkStatus,
+  'royaltyPct' : bigint,
+  'createdAt' : bigint,
+  'createdBy' : Principal,
+  'franchisorOrgId' : string,
+  'franchiseeOrgId' : string,
+  'updatedAt' : bigint,
+  'termsUrl' : [] | [string],
+}
+export type FranchiseLinkStatus = { 'active' : null } |
+  { 'terminated' : null } |
+  { 'pending' : null };
 export interface InviteLink {
   'id' : string,
   'expiresAt' : [] | [bigint],
@@ -86,8 +257,35 @@ export interface LeadInput {
   'name' : string,
   'email' : string,
 }
+export interface Notification {
+  'id' : string,
+  'title' : string,
+  'orgId' : string,
+  'userId' : Principal,
+  'notificationType' : NotificationType,
+  'createdAt' : bigint,
+  'isRead' : boolean,
+  'message' : string,
+  'relatedId' : [] | [string],
+}
+export type NotificationType = { 'agentDeactivated' : null } |
+  { 'taskStatusChanged' : null } |
+  { 'orgCreated' : null } |
+  { 'systemMessage' : null } |
+  { 'inviteRedeemed' : null };
+export interface OrgSettings {
+  'timezone' : string,
+  'webhookEvents' : Array<string>,
+  'notifyOnAgentDeactivated' : boolean,
+  'notifyOnTaskComplete' : boolean,
+  'defaultLanguage' : string,
+  'notifyOnUserJoined' : boolean,
+  'webhookUrl' : [] | [string],
+}
 export interface Organization {
   'id' : string,
+  'customSubdomain' : [] | [string],
+  'customDomain' : [] | [string],
   'ownerId' : Principal,
   'stripeSubscriptionId' : [] | [string],
   'name' : string,
@@ -107,15 +305,119 @@ export interface OrganizationInput {
   'planTier' : PlanTier,
   'primaryLanguage' : string,
 }
+export interface OrgsByPlan {
+  'enterprise' : bigint,
+  'starter' : bigint,
+  'free' : bigint,
+  'professional' : bigint,
+}
+export interface PlanLimits {
+  'maxBranches' : bigint,
+  'maxUsers' : bigint,
+  'maxAgents' : bigint,
+  'maxApiKeys' : bigint,
+  'maxWallets' : bigint,
+}
 export type PlanTier = { 'enterprise' : null } |
   { 'starter' : null } |
   { 'free' : null } |
   { 'professional' : null };
+export interface PlatformMetrics {
+  'totalTasks' : bigint,
+  'totalAgents' : bigint,
+  'totalWallets' : bigint,
+  'orgsByPlan' : OrgsByPlan,
+  'totalOrgs' : bigint,
+  'totalUsers' : bigint,
+  'activeOrgs' : bigint,
+}
+export interface PlatformSettings {
+  'announcementBannerEnabled' : boolean,
+  'announcementBanner' : [] | [string],
+  'launchDate' : [] | [bigint],
+}
 export type Principal = Principal;
+export interface RevenueSplit {
+  'id' : string,
+  'status' : RevenueSplitStatus,
+  'orgId' : string,
+  'assetId' : string,
+  'createdAt' : bigint,
+  'createdBy' : Principal,
+  'distributedAt' : [] | [bigint],
+  'totalAmountUsd' : bigint,
+  'distribution' : Array<RevenueSplitEntry>,
+}
+export interface RevenueSplitEntry {
+  'userName' : string,
+  'shares' : bigint,
+  'userId' : Principal,
+  'amountUsd' : bigint,
+}
+export type RevenueSplitStatus = { 'distributed' : null } |
+  { 'cancelled' : null } |
+  { 'pending' : null };
 export type Role = { 'super_admin' : null } |
   { 'org_admin' : null } |
   { 'end_customer' : null } |
   { 'team_member' : null };
+export interface SearchResult {
+  'id' : string,
+  'url' : string,
+  'resultLabel' : string,
+  'kind' : string,
+  'subtitle' : string,
+}
+export type SenderRole = { 'agent' : null } |
+  { 'user' : null };
+export interface Task {
+  'id' : string,
+  'status' : TaskStatus,
+  'inputData' : [] | [string],
+  'title' : string,
+  'assignedTo' : [] | [Principal],
+  'orgId' : string,
+  'createdAt' : bigint,
+  'createdBy' : Principal,
+  'tags' : Array<string>,
+  'description' : string,
+  'assignedAgentId' : [] | [string],
+  'language' : string,
+  'updatedAt' : bigint,
+  'outputData' : [] | [string],
+  'priority' : TaskPriority,
+}
+export interface TaskInput {
+  'inputData' : [] | [string],
+  'title' : string,
+  'assignedTo' : [] | [Principal],
+  'tags' : Array<string>,
+  'description' : string,
+  'assignedAgentId' : [] | [string],
+  'language' : string,
+  'priority' : TaskPriority,
+}
+export type TaskPriority = { 'low' : null } |
+  { 'high' : null } |
+  { 'urgent' : null } |
+  { 'medium' : null };
+export type TaskStatus = { 'cancelled' : null } |
+  { 'pending' : null } |
+  { 'in_progress' : null } |
+  { 'completed' : null } |
+  { 'failed' : null };
+export interface TaskUpdateInput {
+  'status' : [] | [TaskStatus],
+  'inputData' : [] | [string],
+  'title' : [] | [string],
+  'assignedTo' : [] | [Principal],
+  'tags' : [] | [Array<string>],
+  'description' : [] | [string],
+  'assignedAgentId' : [] | [string],
+  'language' : [] | [string],
+  'outputData' : [] | [string],
+  'priority' : [] | [TaskPriority],
+}
 export interface Transaction {
   'id' : string,
   'status' : TransactionStatus,
@@ -130,12 +432,23 @@ export interface Transaction {
 export type TransactionStatus = { 'pending' : null } |
   { 'completed' : null } |
   { 'failed' : null };
+export interface TransformationInput {
+  'context' : Uint8Array,
+  'response' : http_request_result,
+}
+export interface TransformationOutput {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
+}
 export type TxType = { 'deposit' : null } |
   { 'fractionalize' : null } |
   { 'distribute' : null } |
   { 'withdrawal' : null } |
   { 'transfer' : null };
 export interface UpdateOrgInput {
+  'customSubdomain' : [] | [string],
+  'customDomain' : [] | [string],
   'name' : string,
   'description' : string,
   'logoUrl' : [] | [string],
@@ -186,10 +499,46 @@ export interface WalletInput {
   'accountType' : AccountType,
   'branchId' : [] | [string],
 }
+export interface http_header { 'value' : string, 'name' : string }
+export interface http_request_result {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
+}
 export interface _SERVICE {
+  'assignTaskToAgent' : ActorMethod<
+    [string, string],
+    { 'ok' : Task } |
+      { 'err' : string }
+  >,
+  'bulkUpdateTaskStatus' : ActorMethod<
+    [Array<string>, string],
+    { 'ok' : { 'updated' : bigint, 'failed' : bigint } } |
+      { 'err' : string }
+  >,
+  'cloneAgentFromTemplate' : ActorMethod<
+    [string, string, [] | [string], [] | [string]],
+    { 'ok' : AgentDefinition } |
+      { 'err' : string }
+  >,
+  'createAgentTemplate' : ActorMethod<
+    [AgentTemplateInput],
+    { 'ok' : AgentTemplate } |
+      { 'err' : string }
+  >,
   'createBranch' : ActorMethod<
     [BranchInput],
     { 'ok' : Branch } |
+      { 'err' : string }
+  >,
+  'createFractionalAsset' : ActorMethod<
+    [FractionalAssetInput],
+    { 'ok' : FractionalAsset } |
+      { 'err' : string }
+  >,
+  'createFranchiseLink' : ActorMethod<
+    [string, string, bigint, [] | [string]],
+    { 'ok' : FranchiseLink } |
       { 'err' : string }
   >,
   'createInviteLink' : ActorMethod<
@@ -202,9 +551,25 @@ export interface _SERVICE {
     { 'ok' : Organization } |
       { 'err' : string }
   >,
+  'createRevenueSplit' : ActorMethod<
+    [string, bigint, Array<RevenueSplitEntry>],
+    { 'ok' : RevenueSplit } |
+      { 'err' : string }
+  >,
+  'createSystemNotification' : ActorMethod<
+    [Principal, string, string, [] | [string]],
+    { 'ok' : Notification } |
+      { 'err' : string }
+  >,
+  'createTask' : ActorMethod<[TaskInput], { 'ok' : Task } | { 'err' : string }>,
   'createWallet' : ActorMethod<
     [WalletInput],
     { 'ok' : WalletAccount } |
+      { 'err' : string }
+  >,
+  'deactivateAgent' : ActorMethod<
+    [string],
+    { 'ok' : AgentDefinition } |
       { 'err' : string }
   >,
   'deactivateBranch' : ActorMethod<
@@ -217,9 +582,44 @@ export interface _SERVICE {
     { 'ok' : InviteLink } |
       { 'err' : string }
   >,
+  'deleteAgentTemplate' : ActorMethod<
+    [string],
+    { 'ok' : boolean } |
+      { 'err' : string }
+  >,
   'depositToWallet' : ActorMethod<
     [string, bigint, string],
     { 'ok' : Transaction } |
+      { 'err' : string }
+  >,
+  'distributeRevenueSplit' : ActorMethod<
+    [string],
+    { 'ok' : RevenueSplit } |
+      { 'err' : string }
+  >,
+  'generateApiKey' : ActorMethod<
+    [ApiKeyInput],
+    { 'ok' : { 'apiKey' : ApiKey, 'fullKey' : string } } |
+      { 'err' : string }
+  >,
+  'getActivityFeed' : ActorMethod<
+    [[] | [string]],
+    { 'ok' : Array<ActivityEvent> } |
+      { 'err' : string }
+  >,
+  'getAgentById' : ActorMethod<
+    [string],
+    { 'ok' : AgentDefinition } |
+      { 'err' : string }
+  >,
+  'getAgentTemplates' : ActorMethod<
+    [[] | [string]],
+    { 'ok' : Array<AgentTemplate> } |
+      { 'err' : string }
+  >,
+  'getAgentsByOrg' : ActorMethod<
+    [string],
+    { 'ok' : Array<AgentDefinition> } |
       { 'err' : string }
   >,
   'getAllInviteLinks' : ActorMethod<[], Array<InviteLink>>,
@@ -227,17 +627,94 @@ export interface _SERVICE {
   'getAllOrganizations' : ActorMethod<[], Array<Organization>>,
   'getAllUsers' : ActorMethod<[], Array<User>>,
   'getAllUsersByEmail' : ActorMethod<[], Array<User>>,
+  'getAuditLog' : ActorMethod<
+    [[] | [string]],
+    { 'ok' : Array<AuditEntry> } |
+      { 'err' : string }
+  >,
   'getBranchesByOrg' : ActorMethod<[string], Array<Branch>>,
+  'getConversationHistory' : ActorMethod<
+    [string],
+    { 'ok' : Array<ConversationMessage> } |
+      { 'err' : string }
+  >,
+  'getFractionalAssetById' : ActorMethod<
+    [string],
+    { 'ok' : FractionalAsset } |
+      { 'err' : string }
+  >,
+  'getFractionalAssets' : ActorMethod<
+    [string],
+    { 'ok' : Array<FractionalAsset> } |
+      { 'err' : string }
+  >,
+  'getFranchiseLinks' : ActorMethod<
+    [string],
+    { 'ok' : Array<FranchiseLink> } |
+      { 'err' : string }
+  >,
   'getInviteLinkByCode' : ActorMethod<
     [string],
     { 'ok' : InviteLink } |
       { 'err' : string }
   >,
   'getMyInviteLinks' : ActorMethod<[], Array<InviteLink>>,
+  'getMyNotifications' : ActorMethod<
+    [],
+    { 'ok' : Array<Notification> } |
+      { 'err' : string }
+  >,
   'getMyOrganization' : ActorMethod<[], [] | [Organization]>,
+  'getMyOwnership' : ActorMethod<
+    [],
+    { 'ok' : Array<FractionalOwnership> } |
+      { 'err' : string }
+  >,
   'getMyProfile' : ActorMethod<[], User>,
+  'getMyTasks' : ActorMethod<[], { 'ok' : Array<Task> } | { 'err' : string }>,
   'getMyWallets' : ActorMethod<[], Array<WalletAccount>>,
+  'getOrgSettings' : ActorMethod<
+    [string],
+    { 'ok' : OrgSettings } |
+      { 'err' : string }
+  >,
   'getOrganizationById' : ActorMethod<[string], [] | [Organization]>,
+  'getOwnershipByAsset' : ActorMethod<
+    [string],
+    { 'ok' : Array<FractionalOwnership> } |
+      { 'err' : string }
+  >,
+  'getPlanLimits' : ActorMethod<[PlanTier], PlanLimits>,
+  'getPlatformFranchiseLinks' : ActorMethod<
+    [],
+    { 'ok' : Array<FranchiseLink> } |
+      { 'err' : string }
+  >,
+  'getPlatformMetrics' : ActorMethod<
+    [],
+    { 'ok' : PlatformMetrics } |
+      { 'err' : string }
+  >,
+  'getPlatformSettings' : ActorMethod<
+    [],
+    { 'ok' : PlatformSettings } |
+      { 'err' : string }
+  >,
+  'getRevenueSplits' : ActorMethod<
+    [string],
+    { 'ok' : Array<RevenueSplit> } |
+      { 'err' : string }
+  >,
+  'getTasksByAgent' : ActorMethod<
+    [string],
+    { 'ok' : Array<Task> } |
+      { 'err' : string }
+  >,
+  'getTasksByOrg' : ActorMethod<
+    [string],
+    { 'ok' : Array<Task> } |
+      { 'err' : string }
+  >,
   'getTeamMembersByOrg' : ActorMethod<[string], Array<User>>,
   'getTransactionHistory' : ActorMethod<
     [string],
@@ -256,9 +733,34 @@ export interface _SERVICE {
       { 'err' : string }
   >,
   'isRegistered' : ActorMethod<[], boolean>,
+  'issueShares' : ActorMethod<
+    [string, Principal, bigint],
+    { 'ok' : FractionalOwnership } |
+      { 'err' : string }
+  >,
+  'listApiKeys' : ActorMethod<
+    [],
+    { 'ok' : Array<ApiKey> } |
+      { 'err' : string }
+  >,
+  'markAllNotificationsRead' : ActorMethod<
+    [],
+    { 'ok' : bigint } |
+      { 'err' : string }
+  >,
+  'markNotificationRead' : ActorMethod<
+    [string],
+    { 'ok' : Notification } |
+      { 'err' : string }
+  >,
   'redeemInviteLink' : ActorMethod<
     [string, UserInput],
     { 'ok' : User } |
+      { 'err' : string }
+  >,
+  'registerAgent' : ActorMethod<
+    [AgentInput],
+    { 'ok' : AgentDefinition } |
       { 'err' : string }
   >,
   'registerUser' : ActorMethod<
@@ -271,15 +773,61 @@ export interface _SERVICE {
     { 'ok' : User } |
       { 'err' : string }
   >,
+  'revokeApiKey' : ActorMethod<
+    [string],
+    { 'ok' : ApiKey } |
+      { 'err' : string }
+  >,
+  'searchOrg' : ActorMethod<[string, string], Array<SearchResult>>,
+  'searchPlatform' : ActorMethod<[string], Array<SearchResult>>,
+  'sendAgentMessage' : ActorMethod<
+    [string, string],
+    { 'ok' : Array<ConversationMessage> } |
+      { 'err' : string }
+  >,
+  'setOrgActive' : ActorMethod<
+    [string, boolean],
+    { 'ok' : Organization } |
+      { 'err' : string }
+  >,
+  'setOrgPlanOverride' : ActorMethod<
+    [string, PlanTier],
+    { 'ok' : Organization } |
+      { 'err' : string }
+  >,
+  'setPlanLimits' : ActorMethod<
+    [PlanTier, PlanLimits],
+    { 'ok' : PlanLimits } |
+      { 'err' : string }
+  >,
   'submitLead' : ActorMethod<[LeadInput], { 'ok' : Lead } | { 'err' : string }>,
   'transferICP' : ActorMethod<
     [string, string, bigint, string],
     { 'ok' : Transaction } |
       { 'err' : string }
   >,
+  'transformHttpResponse' : ActorMethod<
+    [TransformationInput],
+    TransformationOutput
+  >,
+  'updateAgent' : ActorMethod<
+    [string, AgentUpdateInput],
+    { 'ok' : AgentDefinition } |
+      { 'err' : string }
+  >,
   'updateBranch' : ActorMethod<
     [string, BranchUpdateInput],
     { 'ok' : Branch } |
+      { 'err' : string }
+  >,
+  'updateFractionalAsset' : ActorMethod<
+    [string, FractionalAssetUpdateInput],
+    { 'ok' : FractionalAsset } |
+      { 'err' : string }
+  >,
+  'updateFranchiseLinkStatus' : ActorMethod<
+    [string, FranchiseLinkStatus],
+    { 'ok' : FranchiseLink } |
       { 'err' : string }
   >,
   'updateLastLogin' : ActorMethod<[], undefined>,
@@ -288,9 +836,34 @@ export interface _SERVICE {
     { 'ok' : User } |
       { 'err' : string }
   >,
+  'updateOrgDomain' : ActorMethod<
+    [string, [] | [string], [] | [string]],
+    { 'ok' : Organization } |
+      { 'err' : string }
+  >,
+  'updateOrgSettings' : ActorMethod<
+    [string, OrgSettings],
+    { 'ok' : OrgSettings } |
+      { 'err' : string }
+  >,
   'updateOrganization' : ActorMethod<
     [string, UpdateOrgInput],
     { 'ok' : Organization } |
+      { 'err' : string }
+  >,
+  'updatePlatformSettings' : ActorMethod<
+    [PlatformSettings],
+    { 'ok' : PlatformSettings } |
+      { 'err' : string }
+  >,
+  'updateTask' : ActorMethod<
+    [string, TaskUpdateInput],
+    { 'ok' : Task } |
+      { 'err' : string }
+  >,
+  'updateTaskStatus' : ActorMethod<
+    [string, TaskStatus],
+    { 'ok' : Task } |
       { 'err' : string }
   >,
   'updateUserRole' : ActorMethod<

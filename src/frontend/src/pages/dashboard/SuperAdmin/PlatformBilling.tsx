@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 
 const TIER_KEYS: PlanTier[] = [
   "free",
@@ -61,7 +62,7 @@ function formatMRR(value: number) {
 }
 
 export default function PlatformBilling() {
-  const { actor: _actor } = useActor();
+  const { actor: _actor } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
 
   // ── Revenue Overview ────────────────────────────────────────────────────────
@@ -116,9 +117,9 @@ export default function PlatformBilling() {
   // Get the current display value for a tier (local edit takes precedence)
   function getLimitValue(tier: string, field: keyof PlanLimits): number {
     const local = localEdits[tier];
-    if (local !== undefined) return local[field];
+    if (local !== undefined) return Number(local[field]);
     const fetched = limitsByTier[tier];
-    if (fetched !== undefined) return fetched[field];
+    if (fetched !== undefined) return Number(fetched[field]);
     return 0;
   }
 

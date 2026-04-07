@@ -7,52 +7,53 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface WalletInput {
-    orgId: string;
-    name: string;
-    accountType: AccountType;
-    branchId?: string;
+export interface FractionalAssetUpdateInput {
+    name?: string;
+    valuationUsd?: bigint;
+    description?: string;
+    isActive?: boolean;
 }
-export interface BranchInput {
+export interface TransformationOutput {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
+export interface OrgSettings {
     timezone: string;
-    orgId: string;
-    name: string;
-    subWalletEnabled: boolean;
-    managerId?: Principal;
-    siteUrl?: string;
-    phone?: string;
-    location: string;
-    primaryLanguage: string;
+    webhookEvents: Array<string>;
+    notifyOnAgentDeactivated: boolean;
+    notifyOnTaskComplete: boolean;
+    defaultLanguage: string;
+    notifyOnUserJoined: boolean;
+    webhookUrl?: string;
 }
-export interface User {
-    principal: Principal;
-    preferredLanguage: string;
-    displayName: string;
-    orgId?: string;
-    lastLoginAt?: bigint;
-    createdAt: bigint;
-    role: Role;
-    isActive: boolean;
-    email: string;
-    stripeCustomerId?: string;
-    avatarUrl?: string;
-    branchId?: string;
+export interface TaskUpdateInput {
+    status?: TaskStatus;
+    inputData?: string;
+    title?: string;
+    assignedTo?: Principal;
+    tags?: Array<string>;
+    description?: string;
+    assignedAgentId?: string;
+    language?: string;
+    outputData?: string;
+    priority?: TaskPriority;
 }
 export interface UpdateOrgInput {
+    customSubdomain?: string;
+    customDomain?: string;
     name: string;
     description: string;
     logoUrl?: string;
     supportedLanguages: Array<string>;
     primaryLanguage: string;
-    customDomain?: string;
-    customSubdomain?: string;
 }
-export type Principal = Principal;
-export interface CreateInviteLinkInput {
-    expiresAt?: bigint;
-    orgId?: string;
-    role: Role;
-    maxRedemptions?: bigint;
+export interface PlanLimits {
+    maxBranches: bigint;
+    maxUsers: bigint;
+    maxAgents: bigint;
+    maxApiKeys: bigint;
+    maxWallets: bigint;
 }
 export interface LeadInput {
     preferredLanguage: string;
@@ -62,16 +63,37 @@ export interface LeadInput {
     name: string;
     email: string;
 }
-export interface Transaction {
+export interface CreateInviteLinkInput {
+    expiresAt?: bigint;
+    orgId?: string;
+    role: Role;
+    maxRedemptions?: bigint;
+}
+export interface PlatformSettings {
+    announcementBannerEnabled: boolean;
+    announcementBanner?: string;
+    launchDate?: bigint;
+}
+export interface AuditEntry {
     id: string;
-    status: TransactionStatus;
-    createdAt: bigint;
+    action: string;
+    actorName: string;
+    orgId?: string;
     description: string;
-    toWalletId: string;
-    fromWalletId: string;
-    txType: TxType;
-    amountE8s: bigint;
-    initiatedBy: Principal;
+    actorId: Principal;
+    targetKind: string;
+    timestamp: bigint;
+    targetId: string;
+}
+export interface TaskInput {
+    inputData?: string;
+    title: string;
+    assignedTo?: Principal;
+    tags: Array<string>;
+    description: string;
+    assignedAgentId?: string;
+    language: string;
+    priority: TaskPriority;
 }
 export interface Lead {
     id: string;
@@ -83,23 +105,144 @@ export interface Lead {
     createdAt: bigint;
     email: string;
 }
-export interface InviteLink {
+export interface ActivityEvent {
     id: string;
-    expiresAt?: bigint;
+    actorName: string;
+    orgId: string;
+    description: string;
+    actorId: Principal;
+    targetName?: string;
+    timestamp: bigint;
+    targetId?: string;
+    eventType: ActivityEventType;
+}
+export interface PlatformMetrics {
+    totalTasks: bigint;
+    totalAgents: bigint;
+    totalWallets: bigint;
+    orgsByPlan: OrgsByPlan;
+    totalOrgs: bigint;
+    totalUsers: bigint;
+    activeOrgs: bigint;
+}
+export interface AgentTemplate {
+    id: string;
     orgId?: string;
-    redemptionCount: bigint;
-    code: string;
+    name: string;
     createdAt: bigint;
     createdBy: Principal;
-    role: Role;
-    isActive: boolean;
-    maxRedemptions?: bigint;
+    tags: Array<string>;
+    description: string;
+    endpointUrl?: string;
+    systemPrompt?: string;
+    isPublic: boolean;
+    endpointHeaders?: string;
 }
-export interface UpdateProfileInput {
-    preferredLanguage: string;
-    displayName: string;
-    email: string;
-    avatarUrl?: string;
+export interface RevenueSplit {
+    id: string;
+    status: RevenueSplitStatus;
+    orgId: string;
+    assetId: string;
+    createdAt: bigint;
+    createdBy: Principal;
+    distributedAt?: bigint;
+    totalAmountUsd: bigint;
+    distribution: Array<RevenueSplitEntry>;
+}
+export interface RevenueSplitEntry {
+    userName: string;
+    shares: bigint;
+    userId: Principal;
+    amountUsd: bigint;
+}
+export interface AgentUpdateInput {
+    status?: AgentStatus;
+    capabilities?: Array<string>;
+    name?: string;
+    description?: string;
+    endpointUrl?: string;
+    supportedLanguages?: Array<string>;
+    modelType?: string;
+}
+export interface OrgsByPlan {
+    enterprise: bigint;
+    starter: bigint;
+    free: bigint;
+    professional: bigint;
+}
+export interface FractionalAsset {
+    id: string;
+    orgId: string;
+    name: string;
+    createdAt: bigint;
+    createdBy: Principal;
+    valuationUsd: bigint;
+    description: string;
+    isActive: boolean;
+    updatedAt: bigint;
+    assetType: FFFAssetType;
+    totalShares: bigint;
+}
+export interface http_header {
+    value: string;
+    name: string;
+}
+export interface http_request_result {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
+export interface ApiKeyInput {
+    permissions: Array<string>;
+    name: string;
+    description: string;
+}
+export interface AgentTemplateInput {
+    orgId?: string;
+    name: string;
+    tags: Array<string>;
+    description: string;
+    endpointUrl?: string;
+    systemPrompt?: string;
+    isPublic: boolean;
+    endpointHeaders?: string;
+}
+export interface FractionalOwnership {
+    id: string;
+    userName: string;
+    shares: bigint;
+    orgId: string;
+    assetId: string;
+    userId: Principal;
+    issuedAt: bigint;
+}
+export interface Notification {
+    id: string;
+    title: string;
+    orgId: string;
+    userId: Principal;
+    notificationType: NotificationType;
+    createdAt: bigint;
+    isRead: boolean;
+    message: string;
+    relatedId?: string;
+}
+export interface AgentInput {
+    status: AgentStatus;
+    capabilities: Array<string>;
+    name: string;
+    description: string;
+    endpointUrl?: string;
+    supportedLanguages: Array<string>;
+    modelType: string;
+}
+export interface FractionalAssetInput {
+    orgId: string;
+    name: string;
+    valuationUsd: bigint;
+    description: string;
+    assetType: FFFAssetType;
+    totalShares: bigint;
 }
 export interface Branch {
     id: string;
@@ -115,18 +258,101 @@ export interface Branch {
     location: string;
     primaryLanguage: string;
 }
+export interface Organization {
+    id: string;
+    customSubdomain?: string;
+    customDomain?: string;
+    ownerId: Principal;
+    stripeSubscriptionId?: string;
+    name: string;
+    createdAt: bigint;
+    description: string;
+    isActive: boolean;
+    logoUrl?: string;
+    stripeCustomerId?: string;
+    supportedLanguages: Array<string>;
+    planTier: PlanTier;
+    primaryLanguage: string;
+}
+export interface BranchUpdateInput {
+    timezone?: string;
+    name?: string;
+    isActive?: boolean;
+    subWalletEnabled?: boolean;
+    managerId?: Principal;
+    siteUrl?: string;
+    phone?: string;
+    location?: string;
+    primaryLanguage?: string;
+}
+export interface BranchInput {
+    timezone: string;
+    orgId: string;
+    name: string;
+    subWalletEnabled: boolean;
+    managerId?: Principal;
+    siteUrl?: string;
+    phone?: string;
+    location: string;
+    primaryLanguage: string;
+}
+export interface SearchResult {
+    id: string;
+    url: string;
+    resultLabel: string;
+    kind: string;
+    subtitle: string;
+}
+export interface Task {
+    id: string;
+    status: TaskStatus;
+    inputData?: string;
+    title: string;
+    assignedTo?: Principal;
+    orgId: string;
+    createdAt: bigint;
+    createdBy: Principal;
+    tags: Array<string>;
+    description: string;
+    assignedAgentId?: string;
+    language: string;
+    updatedAt: bigint;
+    outputData?: string;
+    priority: TaskPriority;
+}
+export interface ApiKey {
+    id: string;
+    lastUsedAt?: bigint;
+    permissions: Array<string>;
+    orgId: string;
+    keyPrefix: string;
+    name: string;
+    createdAt: bigint;
+    createdBy: Principal;
+    description: string;
+    isActive: boolean;
+    keyHash: bigint;
+}
+export interface Transaction {
+    id: string;
+    status: TransactionStatus;
+    createdAt: bigint;
+    description: string;
+    toWalletId: string;
+    fromWalletId: string;
+    txType: TxType;
+    amountE8s: bigint;
+    initiatedBy: Principal;
+}
+export interface TransformationInput {
+    context: Uint8Array;
+    response: http_request_result;
+}
 export interface UserInput {
     principal: Principal;
     preferredLanguage: string;
     displayName: string;
     email: string;
-}
-export interface OrganizationInput {
-    ownerId: Principal;
-    name: string;
-    description: string;
-    planTier: PlanTier;
-    primaryLanguage: string;
 }
 export interface WalletAccount {
     id: string;
@@ -140,32 +366,85 @@ export interface WalletAccount {
     balanceE8s: bigint;
     branchId?: string;
 }
-export interface Organization {
+export interface AgentDefinition {
     id: string;
-    ownerId: Principal;
-    stripeSubscriptionId?: string;
+    status: AgentStatus;
+    capabilities: Array<string>;
+    orgId: string;
     name: string;
     createdAt: bigint;
+    createdBy: Principal;
     description: string;
-    isActive: boolean;
-    logoUrl?: string;
-    stripeCustomerId?: string;
+    endpointUrl?: string;
     supportedLanguages: Array<string>;
+    modelType: string;
+}
+export interface WalletInput {
+    orgId: string;
+    name: string;
+    accountType: AccountType;
+    branchId?: string;
+}
+export interface User {
+    principal: Principal;
+    preferredLanguage: string;
+    displayName: string;
+    orgId?: string;
+    lastLoginAt?: bigint;
+    createdAt: bigint;
+    role: Role;
+    isActive: boolean;
+    email: string;
+    stripeCustomerId?: string;
+    avatarUrl?: string;
+    branchId?: string;
+}
+export type Principal = Principal;
+export interface InviteLink {
+    id: string;
+    expiresAt?: bigint;
+    orgId?: string;
+    redemptionCount: bigint;
+    code: string;
+    createdAt: bigint;
+    createdBy: Principal;
+    role: Role;
+    isActive: boolean;
+    maxRedemptions?: bigint;
+}
+export interface FranchiseLink {
+    id: string;
+    status: FranchiseLinkStatus;
+    royaltyPct: bigint;
+    createdAt: bigint;
+    createdBy: Principal;
+    franchisorOrgId: string;
+    franchiseeOrgId: string;
+    updatedAt: bigint;
+    termsUrl?: string;
+}
+export interface UpdateProfileInput {
+    preferredLanguage: string;
+    displayName: string;
+    email: string;
+    avatarUrl?: string;
+}
+export interface OrganizationInput {
+    ownerId: Principal;
+    name: string;
+    description: string;
     planTier: PlanTier;
     primaryLanguage: string;
-    customDomain?: string;
-    customSubdomain?: string;
 }
-export interface BranchUpdateInput {
-    timezone?: string;
-    name?: string;
-    isActive?: boolean;
-    subWalletEnabled?: boolean;
-    managerId?: Principal;
-    siteUrl?: string;
-    phone?: string;
-    location?: string;
-    primaryLanguage?: string;
+export interface ConversationMessage {
+    id: string;
+    isError: boolean;
+    content: string;
+    orgId: string;
+    agentId: string;
+    timestamp: bigint;
+    senderRole: SenderRole;
+    senderId: Principal;
 }
 export enum AccountType {
     vendor_account = "vendor_account",
@@ -173,17 +452,74 @@ export enum AccountType {
     org_treasury = "org_treasury",
     member_wallet = "member_wallet"
 }
+export enum ActivityEventType {
+    userInvited = "userInvited",
+    agentDeactivated = "agentDeactivated",
+    orgCreated = "orgCreated",
+    taskFailed = "taskFailed",
+    userJoined = "userJoined",
+    taskCompleted = "taskCompleted",
+    taskCreated = "taskCreated",
+    walletCreated = "walletCreated",
+    agentRegistered = "agentRegistered"
+}
+export enum AgentStatus {
+    active = "active",
+    inactive = "inactive",
+    training = "training"
+}
+export enum FFFAssetType {
+    realEstate = "realEstate",
+    custom = "custom",
+    business = "business",
+    revenueStream = "revenueStream",
+    intellectualProperty = "intellectualProperty"
+}
+export enum FranchiseLinkStatus {
+    active = "active",
+    terminated = "terminated",
+    pending = "pending"
+}
+export enum NotificationType {
+    agentDeactivated = "agentDeactivated",
+    taskStatusChanged = "taskStatusChanged",
+    orgCreated = "orgCreated",
+    systemMessage = "systemMessage",
+    inviteRedeemed = "inviteRedeemed"
+}
 export enum PlanTier {
     enterprise = "enterprise",
     starter = "starter",
     free = "free",
     professional = "professional"
 }
+export enum RevenueSplitStatus {
+    distributed = "distributed",
+    cancelled = "cancelled",
+    pending = "pending"
+}
 export enum Role {
     super_admin = "super_admin",
     org_admin = "org_admin",
     end_customer = "end_customer",
     team_member = "team_member"
+}
+export enum SenderRole {
+    agent = "agent",
+    user = "user"
+}
+export enum TaskPriority {
+    low = "low",
+    high = "high",
+    urgent = "urgent",
+    medium = "medium"
+}
+export enum TaskStatus {
+    cancelled = "cancelled",
+    pending = "pending",
+    in_progress = "in_progress",
+    completed = "completed",
+    failed = "failed"
 }
 export enum TransactionStatus {
     pending = "pending",
@@ -197,88 +533,55 @@ export enum TxType {
     withdrawal = "withdrawal",
     transfer = "transfer"
 }
-export interface ApiKey {
-    id: string;
-    orgId: string;
-    createdBy: Principal;
-    name: string;
-    description: string;
-    permissions: Array<string>;
-    keyPrefix: string;
-    keyHash: bigint;
-    isActive: boolean;
-    createdAt: bigint;
-    lastUsedAt?: bigint;
-}
-export interface ApiKeyInput {
-    name: string;
-    description: string;
-    permissions: Array<string>;
-}
-
-export enum AgentStatus {
-    active = "active",
-    inactive = "inactive",
-    training = "training"
-}
-export interface AgentDefinition {
-    id: string;
-    orgId: string;
-    name: string;
-    description: string;
-    capabilities: Array<string>;
-    supportedLanguages: Array<string>;
-    modelType: string;
-    status: AgentStatus;
-    endpointUrl?: string;
-    createdAt: bigint;
-    createdBy: Principal;
-}
-export interface AgentInput {
-    name: string;
-    description: string;
-    capabilities: Array<string>;
-    supportedLanguages: Array<string>;
-    modelType: string;
-    status: AgentStatus;
-    endpointUrl?: string;
-}
-export interface AgentUpdateInput {
-    name?: string;
-    description?: string;
-    capabilities?: Array<string>;
-    supportedLanguages?: Array<string>;
-    modelType?: string;
-    status?: AgentStatus;
-    endpointUrl?: string;
-}
-export type ActivityEventType =
-    | "taskCreated"
-    | "taskCompleted"
-    | "taskFailed"
-    | "agentRegistered"
-    | "agentDeactivated"
-    | "userInvited"
-    | "userJoined"
-    | "walletCreated"
-    | "orgCreated";
-
-export interface ActivityEvent {
-    id: string;
-    eventType: ActivityEventType;
-    orgId: string;
-    actorId: Principal;
-    actorName: string;
-    targetId: string | null;
-    targetName: string | null;
-    description: string;
-    timestamp: bigint;
-}
-
 export interface backendInterface {
+    assignTaskToAgent(taskId: string, agentId: string): Promise<{
+        __kind__: "ok";
+        ok: Task;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    bulkUpdateTaskStatus(ids: Array<string>, status: string): Promise<{
+        __kind__: "ok";
+        ok: {
+            updated: bigint;
+            failed: bigint;
+        };
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    cloneAgentFromTemplate(templateId: string, orgId: string, nameOverride: string | null, endpointOverride: string | null): Promise<{
+        __kind__: "ok";
+        ok: AgentDefinition;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createAgentTemplate(input: AgentTemplateInput): Promise<{
+        __kind__: "ok";
+        ok: AgentTemplate;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     createBranch(input: BranchInput): Promise<{
         __kind__: "ok";
         ok: Branch;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createFractionalAsset(input: FractionalAssetInput): Promise<{
+        __kind__: "ok";
+        ok: FractionalAsset;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createFranchiseLink(franchisorOrgId: string, franchiseeOrgId: string, royaltyPct: bigint, termsUrl: string | null): Promise<{
+        __kind__: "ok";
+        ok: FranchiseLink;
     } | {
         __kind__: "err";
         err: string;
@@ -297,9 +600,37 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    createRevenueSplit(assetId: string, totalAmountUsd: bigint, distribution: Array<RevenueSplitEntry>): Promise<{
+        __kind__: "ok";
+        ok: RevenueSplit;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createSystemNotification(userId: Principal, title: string, message: string, relatedId: string | null): Promise<{
+        __kind__: "ok";
+        ok: Notification;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    createTask(input: TaskInput): Promise<{
+        __kind__: "ok";
+        ok: Task;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     createWallet(input: WalletInput): Promise<{
         __kind__: "ok";
         ok: WalletAccount;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    deactivateAgent(id: string): Promise<{
+        __kind__: "ok";
+        ok: AgentDefinition;
     } | {
         __kind__: "err";
         err: string;
@@ -318,9 +649,61 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    deleteAgentTemplate(id: string): Promise<{
+        __kind__: "ok";
+        ok: boolean;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     depositToWallet(walletId: string, amountE8s: bigint, description: string): Promise<{
         __kind__: "ok";
         ok: Transaction;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    distributeRevenueSplit(splitId: string): Promise<{
+        __kind__: "ok";
+        ok: RevenueSplit;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    generateApiKey(input: ApiKeyInput): Promise<{
+        __kind__: "ok";
+        ok: {
+            apiKey: ApiKey;
+            fullKey: string;
+        };
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getActivityFeed(orgId: string | null): Promise<{
+        __kind__: "ok";
+        ok: Array<ActivityEvent>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getAgentById(id: string): Promise<{
+        __kind__: "ok";
+        ok: AgentDefinition;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getAgentTemplates(orgId: string | null): Promise<{
+        __kind__: "ok";
+        ok: Array<AgentTemplate>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getAgentsByOrg(orgId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<AgentDefinition>;
     } | {
         __kind__: "err";
         err: string;
@@ -336,7 +719,42 @@ export interface backendInterface {
     getAllOrganizations(): Promise<Array<Organization>>;
     getAllUsers(): Promise<Array<User>>;
     getAllUsersByEmail(): Promise<Array<User>>;
+    getAuditLog(orgId: string | null): Promise<{
+        __kind__: "ok";
+        ok: Array<AuditEntry>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getBranchesByOrg(orgId: string): Promise<Array<Branch>>;
+    getConversationHistory(agentId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<ConversationMessage>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getFractionalAssetById(id: string): Promise<{
+        __kind__: "ok";
+        ok: FractionalAsset;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getFractionalAssets(orgId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<FractionalAsset>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getFranchiseLinks(orgId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<FranchiseLink>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getInviteLinkByCode(code: string): Promise<{
         __kind__: "ok";
         ok: InviteLink;
@@ -345,10 +763,88 @@ export interface backendInterface {
         err: string;
     }>;
     getMyInviteLinks(): Promise<Array<InviteLink>>;
+    getMyNotifications(): Promise<{
+        __kind__: "ok";
+        ok: Array<Notification>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getMyOrganization(): Promise<Organization | null>;
+    getMyOwnership(): Promise<{
+        __kind__: "ok";
+        ok: Array<FractionalOwnership>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getMyProfile(): Promise<User>;
+    getMyTasks(): Promise<{
+        __kind__: "ok";
+        ok: Array<Task>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getMyWallets(): Promise<Array<WalletAccount>>;
+    getOrgSettings(orgId: string): Promise<{
+        __kind__: "ok";
+        ok: OrgSettings;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getOrganizationById(id: string): Promise<Organization | null>;
+    getOwnershipByAsset(assetId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<FractionalOwnership>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getPlanLimits(tier: PlanTier): Promise<PlanLimits>;
+    getPlatformFranchiseLinks(): Promise<{
+        __kind__: "ok";
+        ok: Array<FranchiseLink>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getPlatformMetrics(): Promise<{
+        __kind__: "ok";
+        ok: PlatformMetrics;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getPlatformSettings(): Promise<{
+        __kind__: "ok";
+        ok: PlatformSettings;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getRevenueSplits(assetId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<RevenueSplit>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getTasksByAgent(agentId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<Task>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    getTasksByOrg(orgId: string): Promise<{
+        __kind__: "ok";
+        ok: Array<Task>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getTeamMembersByOrg(orgId: string): Promise<Array<User>>;
     getTransactionHistory(walletId: string): Promise<{
         __kind__: "ok";
@@ -373,9 +869,44 @@ export interface backendInterface {
         err: string;
     }>;
     isRegistered(): Promise<boolean>;
+    issueShares(assetId: string, userId: Principal, shares: bigint): Promise<{
+        __kind__: "ok";
+        ok: FractionalOwnership;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    listApiKeys(): Promise<{
+        __kind__: "ok";
+        ok: Array<ApiKey>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    markAllNotificationsRead(): Promise<{
+        __kind__: "ok";
+        ok: bigint;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    markNotificationRead(id: string): Promise<{
+        __kind__: "ok";
+        ok: Notification;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     redeemInviteLink(code: string, input: UserInput): Promise<{
         __kind__: "ok";
         ok: User;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    registerAgent(input: AgentInput): Promise<{
+        __kind__: "ok";
+        ok: AgentDefinition;
     } | {
         __kind__: "err";
         err: string;
@@ -394,6 +925,43 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    revokeApiKey(keyId: string): Promise<{
+        __kind__: "ok";
+        ok: ApiKey;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    searchOrg(orgId: string, searchQuery: string): Promise<Array<SearchResult>>;
+    searchPlatform(searchQuery: string): Promise<Array<SearchResult>>;
+    sendAgentMessage(agentId: string, userMessage: string): Promise<{
+        __kind__: "ok";
+        ok: Array<ConversationMessage>;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    setOrgActive(orgId: string, isActive: boolean): Promise<{
+        __kind__: "ok";
+        ok: Organization;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    setOrgPlanOverride(orgId: string, tier: PlanTier): Promise<{
+        __kind__: "ok";
+        ok: Organization;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    setPlanLimits(tier: PlanTier, limits: PlanLimits): Promise<{
+        __kind__: "ok";
+        ok: PlanLimits;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     submitLead(input: LeadInput): Promise<{
         __kind__: "ok";
         ok: Lead;
@@ -408,9 +976,31 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    transformHttpResponse(input: TransformationInput): Promise<TransformationOutput>;
+    updateAgent(id: string, input: AgentUpdateInput): Promise<{
+        __kind__: "ok";
+        ok: AgentDefinition;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     updateBranch(id: string, input: BranchUpdateInput): Promise<{
         __kind__: "ok";
         ok: Branch;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    updateFractionalAsset(id: string, input: FractionalAssetUpdateInput): Promise<{
+        __kind__: "ok";
+        ok: FractionalAsset;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    updateFranchiseLinkStatus(id: string, newStatus: FranchiseLinkStatus): Promise<{
+        __kind__: "ok";
+        ok: FranchiseLink;
     } | {
         __kind__: "err";
         err: string;
@@ -423,6 +1013,20 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
+    updateOrgDomain(orgId: string, customDomain: string | null, customSubdomain: string | null): Promise<{
+        __kind__: "ok";
+        ok: Organization;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    updateOrgSettings(orgId: string, input: OrgSettings): Promise<{
+        __kind__: "ok";
+        ok: OrgSettings;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     updateOrganization(id: string, input: UpdateOrgInput): Promise<{
         __kind__: "ok";
         ok: Organization;
@@ -430,74 +1034,9 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
-    updateUserRole(targetPrincipal: Principal, newRole: Role): Promise<{
+    updatePlatformSettings(input: PlatformSettings): Promise<{
         __kind__: "ok";
-        ok: User;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    generateApiKey(input: ApiKeyInput): Promise<{
-        __kind__: "ok";
-        ok: { apiKey: ApiKey; fullKey: string };
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    listApiKeys(): Promise<{
-        __kind__: "ok";
-        ok: Array<ApiKey>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    revokeApiKey(keyId: string): Promise<{
-        __kind__: "ok";
-        ok: ApiKey;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
-
-    registerAgent(input: AgentInput): Promise<{
-        __kind__: "ok";
-        ok: AgentDefinition;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    updateAgent(id: string, input: AgentUpdateInput): Promise<{
-        __kind__: "ok";
-        ok: AgentDefinition;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    deactivateAgent(id: string): Promise<{
-        __kind__: "ok";
-        ok: AgentDefinition;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getAgentsByOrg(orgId: string): Promise<{
-        __kind__: "ok";
-        ok: Array<AgentDefinition>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getAgentById(id: string): Promise<{
-        __kind__: "ok";
-        ok: AgentDefinition;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    createTask(input: TaskInput): Promise<{
-        __kind__: "ok";
-        ok: Task;
+        ok: PlatformSettings;
     } | {
         __kind__: "err";
         err: string;
@@ -516,564 +1055,11 @@ export interface backendInterface {
         __kind__: "err";
         err: string;
     }>;
-    assignTaskToAgent(taskId: string, agentId: string): Promise<{
+    updateUserRole(targetPrincipal: Principal, newRole: Role): Promise<{
         __kind__: "ok";
-        ok: Task;
+        ok: User;
     } | {
         __kind__: "err";
         err: string;
     }>;
-    getTasksByOrg(orgId: string): Promise<{
-        __kind__: "ok";
-        ok: Array<Task>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getMyTasks(): Promise<{
-        __kind__: "ok";
-        ok: Array<Task>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getTasksByAgent(agentId: string): Promise<{
-        __kind__: "ok";
-        ok: Array<Task>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getConversationHistory(agentId: string): Promise<{
-        __kind__: "ok";
-        ok: Array<ConversationMessage>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    sendAgentMessage(agentId: string, userMessage: string): Promise<{
-        __kind__: "ok";
-        ok: Array<ConversationMessage>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getPlanLimits(tier: PlanTier): Promise<PlanLimits>;
-    setPlanLimits(tier: PlanTier, limits: PlanLimits): Promise<{
-        __kind__: "ok";
-        ok: PlanLimits;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getPlatformMetrics(): Promise<{
-        __kind__: "ok";
-        ok: PlatformMetrics;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    updateOrgDomain(orgId: string, customDomain: string | null, customSubdomain: string | null): Promise<{
-        __kind__: "ok";
-        ok: Organization;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    setOrgPlanOverride(orgId: string, tier: PlanTier): Promise<{
-        __kind__: "ok";
-        ok: Organization;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    setOrgActive(orgId: string, isActive: boolean): Promise<{
-        __kind__: "ok";
-        ok: Organization;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getActivityFeed(orgId: string | null): Promise<{
-        __kind__: "ok";
-        ok: Array<ActivityEvent>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getMyNotifications(): Promise<{
-        __kind__: "ok";
-        ok: Array<Notification>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    markNotificationRead(id: string): Promise<{
-        __kind__: "ok";
-        ok: Notification;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    markAllNotificationsRead(): Promise<{
-        __kind__: "ok";
-        ok: number;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    createSystemNotification(userId: Principal, title: string, message: string, relatedId?: string): Promise<{
-        __kind__: "ok";
-        ok: Notification;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getOrgSettings(orgId: string): Promise<{
-        __kind__: "ok";
-        ok: OrgSettings;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    updateOrgSettings(orgId: string, settings: OrgSettings): Promise<{
-        __kind__: "ok";
-        ok: OrgSettings;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getPlatformSettings(): Promise<{
-        __kind__: "ok";
-        ok: PlatformSettings;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    updatePlatformSettings(settings: PlatformSettings): Promise<{
-        __kind__: "ok";
-        ok: PlatformSettings;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    createFractionalAsset(input: FractionalAssetInput): Promise<{
-        __kind__: "ok";
-        ok: FractionalAsset;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getFractionalAssets(orgId: string): Promise<{
-        __kind__: "ok";
-        ok: Array<FractionalAsset>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getFractionalAssetById(id: string): Promise<{
-        __kind__: "ok";
-        ok: FractionalAsset;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    updateFractionalAsset(id: string, input: FractionalAssetUpdateInput): Promise<{
-        __kind__: "ok";
-        ok: FractionalAsset;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-
-    issueShares(assetId: string, userId: Principal, shares: number): Promise<{
-        __kind__: "ok";
-        ok: FractionalOwnership;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getOwnershipByAsset(assetId: string): Promise<{
-        __kind__: "ok";
-        ok: Array<FractionalOwnership>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getMyOwnership(): Promise<{
-        __kind__: "ok";
-        ok: Array<FractionalOwnership>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    createRevenueSplit(assetId: string, totalAmountUsd: number, distribution: Array<RevenueSplitEntryInput>): Promise<{
-        __kind__: "ok";
-        ok: RevenueSplit;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    distributeRevenueSplit(splitId: string): Promise<{
-        __kind__: "ok";
-        ok: RevenueSplit;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getRevenueSplits(assetId: string): Promise<{
-        __kind__: "ok";
-        ok: Array<RevenueSplit>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    createFranchiseLink(franchisorOrgId: string, franchiseeOrgId: string, royaltyPct: number, termsUrl?: string): Promise<{
-        __kind__: "ok";
-        ok: FranchiseLink;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    updateFranchiseLinkStatus(id: string, newStatus: FranchiseLinkStatus): Promise<{
-        __kind__: "ok";
-        ok: FranchiseLink;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getFranchiseLinks(orgId: string): Promise<{
-        __kind__: "ok";
-        ok: Array<FranchiseLink>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getPlatformFranchiseLinks(): Promise<{
-        __kind__: "ok";
-        ok: Array<FranchiseLink>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-
-    getAgentTemplates(orgId?: string | null): Promise<{
-        __kind__: "ok";
-        ok: Array<AgentTemplate>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    createAgentTemplate(input: AgentTemplateInput): Promise<{
-        __kind__: "ok";
-        ok: AgentTemplate;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    deleteAgentTemplate(id: string): Promise<{
-        __kind__: "ok";
-        ok: string;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    cloneAgentFromTemplate(templateId: string, orgId: string, nameOverride?: string | null, endpointUrlOverride?: string | null): Promise<{
-        __kind__: "ok";
-        ok: AgentDefinition;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    getAuditLog(orgId?: string | null): Promise<{
-        __kind__: "ok";
-        ok: Array<AuditEntry>;
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-    searchOrg(orgId: string, query: string): Promise<Array<SearchResult>>;
-    searchPlatform(query: string): Promise<Array<SearchResult>>;
-    bulkUpdateTaskStatus(ids: Array<string>, status: string): Promise<{
-        __kind__: "ok";
-        ok: { updated: number; failed: number };
-    } | {
-        __kind__: "err";
-        err: string;
-    }>;
-}
-
-export interface OrgSettings {
-    webhookUrl?: string;
-    webhookEvents: Array<string>;
-    notifyOnTaskComplete: boolean;
-    notifyOnUserJoined: boolean;
-    notifyOnAgentDeactivated: boolean;
-    defaultLanguage: string;
-    timezone: string;
-}
-
-export interface PlatformSettings {
-    announcementBanner?: string;
-    announcementBannerEnabled: boolean;
-    launchDate?: bigint;
-}
-
-export enum TaskStatus {
-    pending = "pending",
-    in_progress = "in_progress",
-    completed = "completed",
-    failed = "failed",
-    cancelled = "cancelled"
-}
-
-export enum TaskPriority {
-    low = "low",
-    medium = "medium",
-    high = "high",
-    urgent = "urgent"
-}
-
-export interface Task {
-    id: string;
-    orgId: string;
-    createdBy: Principal;
-    assignedAgentId?: string;
-    assignedTo?: Principal;
-    title: string;
-    description: string;
-    status: TaskStatus;
-    priority: TaskPriority;
-    language: string;
-    tags: Array<string>;
-    inputData?: string;
-    outputData?: string;
-    createdAt: bigint;
-    updatedAt: bigint;
-}
-
-export interface TaskInput {
-    title: string;
-    description: string;
-    priority: TaskPriority;
-    language: string;
-    tags: Array<string>;
-    assignedAgentId?: string;
-    assignedTo?: Principal;
-    inputData?: string;
-}
-
-export interface TaskUpdateInput {
-    title?: string;
-    description?: string;
-    priority?: TaskPriority;
-    language?: string;
-    tags?: Array<string>;
-    assignedAgentId?: string;
-    assignedTo?: Principal;
-    inputData?: string;
-    outputData?: string;
-    status?: TaskStatus;
-}
-
-export type SenderRole = "user" | "agent";
-
-export interface ConversationMessage {
-    id: string;
-    agentId: string;
-    orgId: string;
-    senderId: Principal;
-    senderRole: SenderRole;
-    content: string;
-    timestamp: bigint;
-    isError: boolean;
-}
-
-export interface Conversation {
-    id: string;
-    agentId: string;
-    userId: Principal;
-    orgId: string;
-    messages: Array<ConversationMessage>;
-    createdAt: bigint;
-    lastMessageAt: bigint;
-}
-
-export interface PlanLimits {
-    maxUsers: number;
-    maxBranches: number;
-    maxAgents: number;
-    maxApiKeys: number;
-    maxWallets: number;
-}
-
-export interface OrgsByPlan {
-    free: number;
-    starter: number;
-    professional: number;
-    enterprise: number;
-}
-
-export interface PlatformMetrics {
-    totalOrgs: number;
-    totalUsers: number;
-    totalAgents: number;
-    totalTasks: number;
-    totalWallets: number;
-    activeOrgs: number;
-    orgsByPlan: OrgsByPlan;
-}
-
-export type NotificationType =
-    | "taskStatusChanged"
-    | "inviteRedeemed"
-    | "agentDeactivated"
-    | "systemMessage"
-    | "orgCreated";
-
-export interface Notification {
-    id: string;
-    userId: Principal;
-    orgId: string;
-    notificationType: NotificationType;
-    title: string;
-    message: string;
-    isRead: boolean;
-    createdAt: bigint;
-    relatedId?: string;
-}
-
-export type FFFAssetType =
-    | "realEstate"
-    | "business"
-    | "intellectualProperty"
-    | "revenueStream"
-    | "custom";
-
-export interface FractionalAsset {
-    id: string;
-    orgId: string;
-    name: string;
-    description: string;
-    assetType: FFFAssetType;
-    totalShares: number;
-    valuationUsd: number;
-    isActive: boolean;
-    createdBy: Principal;
-    createdAt: bigint;
-    updatedAt: bigint;
-}
-
-export interface FractionalOwnership {
-    id: string;
-    assetId: string;
-    orgId: string;
-    userId: Principal;
-    userName: string;
-    shares: number;
-    issuedAt: bigint;
-}
-
-export type RevenueSplitStatus = "pending" | "distributed" | "cancelled";
-
-export interface RevenueSplitEntry {
-    userId: Principal;
-    userName: string;
-    shares: number;
-    amountUsd: number;
-}
-
-export interface RevenueSplit {
-    id: string;
-    assetId: string;
-    orgId: string;
-    totalAmountUsd: number;
-    distribution: Array<RevenueSplitEntry>;
-    status: RevenueSplitStatus;
-    createdBy: Principal;
-    createdAt: bigint;
-    distributedAt?: bigint;
-}
-
-export type FranchiseLinkStatus = "pending" | "active" | "terminated";
-
-export interface FranchiseLink {
-    id: string;
-    franchisorOrgId: string;
-    franchiseeOrgId: string;
-    royaltyPct: number;
-    termsUrl?: string;
-    status: FranchiseLinkStatus;
-    createdBy: Principal;
-    createdAt: bigint;
-    updatedAt: bigint;
-}
-
-export interface FractionalAssetInput {
-    orgId: string;
-    name: string;
-    description: string;
-    assetType: FFFAssetType;
-    totalShares: number;
-    valuationUsd: number;
-}
-
-export interface FractionalAssetUpdateInput {
-    name?: string;
-    description?: string;
-    valuationUsd?: number;
-    isActive?: boolean;
-}
-
-export interface RevenueSplitEntryInput {
-    userId: Principal;
-    userName: string;
-    shares: number;
-    amountUsd: number;
-}
-
-
-export interface AgentTemplate {
-    id: string;
-    name: string;
-    description: string;
-    systemPrompt?: string;
-    endpointUrl?: string;
-    endpointHeaders?: string;
-    tags: string[];
-    isPublic: boolean;
-    orgId?: string;
-    createdBy: string;
-    createdAt: bigint;
-}
-
-export interface AgentTemplateInput {
-    name: string;
-    description: string;
-    systemPrompt?: string;
-    endpointUrl?: string;
-    endpointHeaders?: string;
-    tags: string[];
-    isPublic: boolean;
-    orgId?: string;
-}
-
-export interface AuditEntry {
-    id: string;
-    action: string;
-    actorId: string;
-    actorName: string;
-    targetKind: string;
-    targetId: string;
-    description: string;
-    orgId?: string;
-    timestamp: bigint;
-}
-
-export interface SearchResult {
-    kind: "user" | "agent" | "task" | "org";
-    id: string;
-    label: string;
-    subtitle: string;
-    url: string;
 }

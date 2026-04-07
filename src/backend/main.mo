@@ -648,6 +648,7 @@ actor {
     };
     organizationsNew.add(input.name, newOrg);
     _recordActivity(#orgCreated, newOrg.id, newOrg.ownerId, ?newOrg.id, ?newOrg.name, "Organization \"" # newOrg.name # "\" was created");
+    _recordAudit("organization.created", newOrg.ownerId, switch (users.get(newOrg.ownerId)) { case (?u) { u.displayName }; case null { "System" } }, "org", newOrg.id, "Organization created: " # newOrg.name, ?newOrg.id);
     #ok(newOrg);
   };
 
@@ -1545,6 +1546,7 @@ actor {
       lastUsedAt = null;
     };
     apiKeys.add(id, apiKey);
+    _recordAudit("api_key.generated", caller, switch (users.get(caller)) { case (?u) { u.displayName }; case null { "System" } }, "apikey", apiKey.id, "API key generated: " # apiKey.name, ?orgId);
     #ok({ apiKey = apiKey; fullKey = fullKey });
   };
 
@@ -1605,6 +1607,7 @@ actor {
         };
         apiKeys.remove(keyId);
         apiKeys.add(keyId, revoked);
+        _recordAudit("api_key.revoked", caller, switch (users.get(caller)) { case (?u) { u.displayName }; case null { "System" } }, "apikey", keyId, "API key revoked: " # revoked.name, ?revoked.orgId);
         #ok(revoked);
       };
     };
@@ -1651,6 +1654,7 @@ actor {
     };
     agents.add(id, agent);
     _recordActivity(#agentRegistered, agent.orgId, caller, ?agent.id, ?agent.name, "Agent \"" # agent.name # "\" was registered");
+    _recordAudit("agent.registered", caller, switch (users.get(caller)) { case (?u) { u.displayName }; case null { "System" } }, "agent", agent.id, "Agent registered: " # agent.name, ?agent.orgId);
     #ok(agent);
   };
 
@@ -1728,6 +1732,7 @@ actor {
         agents.remove(id);
         agents.add(id, deactivated);
         _recordActivity(#agentDeactivated, deactivated.orgId, caller, ?deactivated.id, ?deactivated.name, "Agent \"" # deactivated.name # "\" was deactivated");
+        _recordAudit("agent.deactivated", caller, switch (users.get(caller)) { case (?u) { u.displayName }; case null { "System" } }, "agent", deactivated.id, "Agent deactivated: " # deactivated.name, ?deactivated.orgId);
         // Notify all org_admins in the same org (except caller)
         for ((_, u) in users.entries()) {
           if (u.role == #org_admin and u.orgId == ?deactivated.orgId and not u.principal.equal(caller)) {
@@ -1910,6 +1915,7 @@ actor {
           };
           case (_) {};
         };
+        _recordAudit("task.status_updated", caller, switch (users.get(caller)) { case (?u) { u.displayName }; case null { "System" } }, "task", id, "Task status updated to " # debug_show(newStatus), ?task.orgId);
         #ok(updated);
       };
     };
@@ -2398,6 +2404,7 @@ actor {
         };
         organizationsNew.remove(orgId);
         organizationsNew.add(updated.id, updated);
+        _recordAudit(if (isActive) { "organization.activated" } else { "organization.deactivated" }, caller, callerUser.displayName, "org", orgId, if (isActive) { "Org activated" } else { "Org deactivated" }, ?orgId);
         #ok(updated);
       };
     };
@@ -2702,6 +2709,174 @@ actor {
   };
 
 
+  // ─── Phase 7E: Agent Templates ─────────────────────────────────────────────
+
+  type AgentTemplate = {
+    id             : Text;
+    name           : Text;
+    description    : Text;
+    systemPrompt   : ?Text;
+    endpointUrl    : ?Text;
+    endpointHeaders : ?Text;  // JSON string
+    tags           : [Text];
+    isPublic       : Bool;
+    orgId          : ?Text;
+    createdBy      : Principal.Principal;
+    createdAt      : Int;
+  };
+
+  type AgentTemplateInput = {
+    name           : Text;
+    description    : Text;
+    systemPrompt   : ?Text;
+    endpointUrl    : ?Text;
+    endpointHeaders : ?Text;
+    tags           : [Text];
+    isPublic       : Bool;
+    orgId          : ?Text;
+  };
+
+  let _agentTemplates = Map.empty<Text, AgentTemplate>();
+  var _nextTemplateId : Nat = 1;
+
+  public shared ({ caller }) func createAgentTemplate(input : AgentTemplateInput) : async { #ok : AgentTemplate; #err : Text } {
+    if (not isOrgAdmin(caller) and not isSuperAdmin(caller)) {
+      return #err("Not authorized");
+    };
+    let user = switch (users.get(caller)) {
+      case (?u) u;
+      case null { return #err("Not registered") };
+    };
+    // org_admin can only create private templates for their own org
+    let templateOrgId : ?Text = if (isSuperAdmin(caller)) { input.orgId } else { user.orgId };
+    let isPublic = if (isSuperAdmin(caller)) { input.isPublic } else { false };
+    let id = "TPL" # _nextTemplateId.toText();
+    _nextTemplateId += 1;
+    let tmpl : AgentTemplate = {
+      id;
+      name           = input.name;
+      description    = input.description;
+      systemPrompt   = input.systemPrompt;
+      endpointUrl    = input.endpointUrl;
+      endpointHeaders = input.endpointHeaders;
+      tags           = input.tags;
+      isPublic;
+      orgId          = templateOrgId;
+      createdBy      = caller;
+      createdAt      = Time.now();
+    };
+    _agentTemplates.add(id, tmpl);
+    #ok(tmpl)
+  };
+
+  public query ({ caller }) func getAgentTemplates(orgId : ?Text) : async { #ok : [AgentTemplate]; #err : Text } {
+    switch (users.get(caller)) {
+      case null { return #err("Not registered") };
+      case (?_) {};
+    };
+    let all = _agentTemplates.values().toArray();
+    let results = all.filter(func(t : AgentTemplate) : Bool {
+      if (t.isPublic) { return true };
+      switch (orgId) {
+        case (?oid) {
+          switch (t.orgId) {
+            case (?tid) { tid == oid };
+            case null   { false };
+          }
+        };
+        case null { false };
+      }
+    });
+    #ok(results)
+  };
+
+  public shared ({ caller }) func deleteAgentTemplate(id : Text) : async { #ok : Bool; #err : Text } {
+    let user = switch (users.get(caller)) {
+      case (?u) u;
+      case null { return #err("Not registered") };
+    };
+    let tmpl = switch (_agentTemplates.get(id)) {
+      case (?t) t;
+      case null { return #err("Template not found") };
+    };
+    if (not isSuperAdmin(caller)) {
+      // org_admin can only delete their own org's templates
+      let sameOrg = switch (user.orgId, tmpl.orgId) {
+        case (?uid, ?tid) { uid == tid };
+        case _ { false };
+      };
+      if (not sameOrg) { return #err("Not authorized") };
+    };
+    _agentTemplates.remove(id);
+    #ok(true)
+  };
+
+  public shared ({ caller }) func cloneAgentFromTemplate(
+    templateId       : Text,
+    orgId            : Text,
+    nameOverride     : ?Text,
+    endpointOverride : ?Text,
+  ) : async { #ok : AgentDefinition; #err : Text } {
+    if (not isOrgAdmin(caller) and not isSuperAdmin(caller)) {
+      return #err("Not authorized");
+    };
+    let tmpl = switch (_agentTemplates.get(templateId)) {
+      case (?t) t;
+      case null { return #err("Template not found") };
+    };
+    // check plan agent limit
+    let agentLimits = _getOrgLimits(orgId);
+    let existingAgents = agents.values().toArray().filter(func(a : AgentDefinition) : Bool { a.orgId == orgId });
+    if (existingAgents.size() >= agentLimits.maxAgents) {
+      return #err("Plan limit reached: upgrade your plan to register more agents");
+    };
+    let agentId = "AGENT" # nextAgentId.toText();
+    nextAgentId += 1;
+    let agentName = switch (nameOverride) { case (?n) n; case null { tmpl.name } };
+    let agentEndpoint : ?Text = switch (endpointOverride) {
+      case (?e) { ?e };
+      case null { tmpl.endpointUrl };
+    };
+    let agent : AgentDefinition = {
+      id          = agentId;
+      orgId;
+      name        = agentName;
+      description = tmpl.description;
+      capabilities = [];
+      supportedLanguages = [];
+      modelType   = "custom";
+      status      = #active;
+      endpointUrl = agentEndpoint;
+      createdAt   = Time.now();
+      createdBy   = caller;
+    };
+    agents.add(agentId, agent);
+    _recordActivity(#agentRegistered, agent.orgId, caller, ?agent.id, ?agent.name, "Agent \"" # agent.name # "\" cloned from template");
+    #ok(agent)
+  };
+
+  // ─── Phase 7C: Search & Audit Types ────────────────────────────────────────
+
+  type SearchResult = {
+    kind        : Text;   // "user" | "agent" | "task" | "org"
+    id          : Text;
+    resultLabel : Text;
+    subtitle    : Text;
+    url         : Text;   // frontend route hint
+  };
+
+  type AuditEntry = {
+    id          : Text;
+    action      : Text;
+    actorId     : Principal.Principal;
+    actorName   : Text;
+    targetKind  : Text;   // "org" | "user" | "agent" | "task" | "invite" | "apikey"
+    targetId    : Text;
+    description : Text;
+    orgId       : ?Text;
+    timestamp   : Int;
+  };
+
   // ─── FinFracFran™ Types ────────────────────────────────────────────────────
 
   type FFFAssetType = {
@@ -2805,6 +2980,10 @@ actor {
   var _nextFFFOwnershipId : Nat = 1;
   var _nextFFFSplitId : Nat = 1;
   var _nextFFFLinkId : Nat = 1;
+
+  // ─── Phase 7C: Audit Storage ────────────────────────────────────────────────
+  let _auditLog    = Map.empty<Text, AuditEntry>();
+  var _nextAuditId : Nat = 1;
 
   // ─── FinFracFran™ Asset APIs ───────────────────────────────────────────────
 
@@ -3090,6 +3269,284 @@ actor {
     if (not isSuperAdmin(caller)) { return #err("Not authorized") };
     let results = _fffFranchiseLinks.values().toArray();
     #ok(results)
+  };
+
+  // ─── Phase 7C: Audit Helper ─────────────────────────────────────────────────
+
+  func _recordAudit(
+    action      : Text,
+    actorId     : Principal.Principal,
+    actorName   : Text,
+    targetKind  : Text,
+    targetId    : Text,
+    description : Text,
+    orgId       : ?Text,
+  ) : () {
+    let id    = "AUD" # _nextAuditId.toText();
+    _nextAuditId += 1;
+    let entry : AuditEntry = {
+      id          = id;
+      action      = action;
+      actorId     = actorId;
+      actorName   = actorName;
+      targetKind  = targetKind;
+      targetId    = targetId;
+      description = description;
+      orgId       = orgId;
+      timestamp   = Time.now();
+    };
+    _auditLog.add(id, entry);
+  };
+
+  // ─── Phase 7C: Search APIs ──────────────────────────────────────────────────
+
+  public query ({ caller }) func searchOrg(orgId : Text, searchQuery : Text) : async [SearchResult] {
+    switch (users.get(caller)) {
+      case null { return [] };
+      case (?user) {
+        let isAuthorized = isSuperAdmin(caller) or user.orgId == ?orgId;
+        if (not isAuthorized) { return [] };
+        let q = searchQuery.toLower();
+        var results : [SearchResult] = [];
+        // Search users in org
+        for ((_, u) in users.entries()) {
+          if (u.orgId == ?orgId) {
+            let name  = u.displayName.toLower();
+            let email = u.email.toLower();
+            if (name.contains(#text q) or email.contains(#text q)) {
+              results := results.concat([{
+                kind        = "user";
+                id          = u.principal.toText();
+                resultLabel = u.displayName;
+                subtitle    = u.email;
+                url         = "/users";
+              }]);
+            };
+          };
+        };
+        // Search agents in org
+        for ((_, a) in agents.entries()) {
+          if (a.orgId == orgId) {
+            let name = a.name.toLower();
+            let desc = a.description.toLower();
+            if (name.contains(#text q) or desc.contains(#text q)) {
+              results := results.concat([{
+                kind        = "agent";
+                id          = a.id;
+                resultLabel = a.name;
+                subtitle    = a.description;
+                url         = "/agents";
+              }]);
+            };
+          };
+        };
+        // Search tasks in org
+        for ((_, t) in tasks.entries()) {
+          if (t.orgId == orgId) {
+            let title = t.title.toLower();
+            let desc  = t.description.toLower();
+            if (title.contains(#text q) or desc.contains(#text q)) {
+              results := results.concat([{
+                kind        = "task";
+                id          = t.id;
+                resultLabel = t.title;
+                subtitle    = t.description;
+                url         = "/tasks";
+              }]);
+            };
+          };
+        };
+        // Cap at 20
+        if (results.size() > 20) { results.sliceToArray(0, 20) } else { results }
+      };
+    }
+  };
+
+  public query ({ caller }) func searchPlatform(searchQuery : Text) : async [SearchResult] {
+    if (not isSuperAdmin(caller)) { return [] };
+    let q = searchQuery.toLower();
+    var results : [SearchResult] = [];
+    // Search orgs
+    for ((_, o) in organizationsNew.entries()) {
+      let name = o.name.toLower();
+      if (name.contains(#text q)) {
+        results := results.concat([{
+          kind        = "org";
+          id          = o.id;
+          resultLabel = o.name;
+          subtitle    = debug_show(o.planTier);
+          url         = "/organizations";
+        }]);
+      };
+    };
+    // Search users
+    for ((_, u) in users.entries()) {
+      let name  = u.displayName.toLower();
+      let email = u.email.toLower();
+      if (name.contains(#text q) or email.contains(#text q)) {
+        results := results.concat([{
+          kind        = "user";
+          id          = u.principal.toText();
+          resultLabel = u.displayName;
+          subtitle    = u.email;
+          url         = "/users";
+        }]);
+      };
+    };
+    // Search agents
+    for ((_, a) in agents.entries()) {
+      let name = a.name.toLower();
+      let desc = a.description.toLower();
+      if (name.contains(#text q) or desc.contains(#text q)) {
+        results := results.concat([{
+          kind        = "agent";
+          id          = a.id;
+          resultLabel = a.name;
+          subtitle    = a.description;
+          url         = "/agents";
+        }]);
+      };
+    };
+    // Search tasks
+    for ((_, t) in tasks.entries()) {
+      let title = t.title.toLower();
+      let desc  = t.description.toLower();
+      if (title.contains(#text q) or desc.contains(#text q)) {
+        results := results.concat([{
+          kind        = "task";
+          id          = t.id;
+          resultLabel = t.title;
+          subtitle    = t.description;
+          url         = "/tasks";
+        }]);
+      };
+    };
+    // Cap at 30
+    if (results.size() > 30) { results.sliceToArray(0, 30) } else { results }
+  };
+
+  // ─── Phase 7C: Bulk Task Status Update ──────────────────────────────────────
+
+  public shared ({ caller }) func bulkUpdateTaskStatus(
+    ids    : [Text],
+    status : Text,
+  ) : async { #ok : { updated : Nat; failed : Nat }; #err : Text } {
+    switch (users.get(caller)) {
+      case null { return #err("Not registered") };
+      case (?user) {
+        if (user.role != #org_admin and user.role != #super_admin) {
+          return #err("Not authorized");
+        };
+        let newStatus : TaskStatus = switch (status) {
+          case ("open")        { #pending     };
+          case ("pending")     { #pending     };
+          case ("in_progress") { #in_progress };
+          case ("completed")   { #completed   };
+          case ("failed")      { #failed      };
+          case ("cancelled")   { #cancelled   };
+          case (_)             { return #err("Invalid status: " # status) };
+        };
+        var updated : Nat = 0;
+        var failed  : Nat = 0;
+        for (id in ids.vals()) {
+          switch (tasks.get(id)) {
+            case null { failed += 1 };
+            case (?task) {
+              let sameOrg = user.orgId == ?task.orgId;
+              if (user.role == #super_admin or sameOrg) {
+                let t2 : Task = {
+                  id             = task.id;
+                  orgId          = task.orgId;
+                  createdBy      = task.createdBy;
+                  assignedAgentId = task.assignedAgentId;
+                  assignedTo     = task.assignedTo;
+                  title          = task.title;
+                  description    = task.description;
+                  status         = newStatus;
+                  priority       = task.priority;
+                  language       = task.language;
+                  tags           = task.tags;
+                  inputData      = task.inputData;
+                  outputData     = task.outputData;
+                  createdAt      = task.createdAt;
+                  updatedAt      = Time.now();
+                };
+                tasks.remove(id);
+                tasks.add(id, t2);
+                updated += 1;
+              } else {
+                failed += 1;
+              };
+            };
+          };
+        };
+        let callerOrgId = user.orgId;
+        _recordAudit(
+          "bulk_update_task_status",
+          caller,
+          user.displayName,
+          "task",
+          updated.toText() # " of " # ids.size().toText() # " tasks",
+          "Bulk updated " # updated.toText() # " tasks to " # status,
+          callerOrgId,
+        );
+        #ok({ updated = updated; failed = failed })
+      };
+    }
+  };
+
+  // ─── Phase 7C: Audit Log API ────────────────────────────────────────────────
+
+  public shared ({ caller }) func getAuditLog(
+    orgId : ?Text,
+  ) : async { #ok : [AuditEntry]; #err : Text } {
+    switch (users.get(caller)) {
+      case null { return #err("Not registered") };
+      case (?user) {
+        if (user.role == #super_admin) {
+          // Platform-wide: last 200 entries sorted desc
+          let all = _auditLog.values().toArray();
+          let sorted = all.sort(func(a : AuditEntry, b : AuditEntry) : Order.Order {
+            Int.compare(b.timestamp, a.timestamp)
+          });
+          let cap : [AuditEntry] = if (sorted.size() > 200) {
+            sorted.sliceToArray(0, 200)
+          } else { sorted };
+          return #ok(cap);
+        } else if (user.role == #org_admin) {
+          let targetOrg : Text = switch (orgId) {
+            case (?oid) { oid };
+            case null   {
+              switch (user.orgId) {
+                case (?oid) { oid };
+                case null   { return #err("No org found") };
+              }
+            };
+          };
+          switch (user.orgId) {
+            case (?oid) { if (oid != targetOrg) { return #err("Not authorized") } };
+            case null   { return #err("Not authorized") };
+          };
+          let filtered = _auditLog.values().toArray().filter(
+            func(e : AuditEntry) : Bool {
+              switch (e.orgId) {
+                case (?eid) { eid == targetOrg };
+                case null   { false };
+              }
+            }
+          );
+          let sorted = filtered.sort(func(a : AuditEntry, b : AuditEntry) : Order.Order {
+            Int.compare(b.timestamp, a.timestamp)
+          });
+          let cap : [AuditEntry] = if (sorted.size() > 100) {
+            sorted.sliceToArray(0, 100)
+          } else { sorted };
+          return #ok(cap);
+        } else {
+          return #err("Not authorized");
+        };
+      };
+    }
   };
 
 };

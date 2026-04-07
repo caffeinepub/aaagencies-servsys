@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   ArrowDownToLine,
   ArrowRightLeft,
@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -122,7 +123,7 @@ interface CreateWalletDialogProps {
 }
 
 function CreateWalletDialog({ orgId, onCreated }: CreateWalletDialogProps) {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [accountType, setAccountType] = useState<AccountType>(
@@ -254,7 +255,7 @@ interface DepositDialogProps {
 }
 
 function DepositDialog({ wallet, onSuccess }: DepositDialogProps) {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -377,7 +378,7 @@ function TransferDialog({
   allWallets,
   onSuccess,
 }: TransferDialogProps) {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [open, setOpen] = useState(false);
   const [toWalletId, setToWalletId] = useState("");
   const [amount, setAmount] = useState("");
@@ -527,7 +528,7 @@ function TransferDialog({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function WalletsFinance() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const [wallets, setWallets] = useState<WalletAccount[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [orgId, setOrgId] = useState<string | null>(null);

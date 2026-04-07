@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { ApiKey } from "../../../backend.d";
 
 const PERMISSION_OPTIONS = [
@@ -153,7 +154,7 @@ function OneTimeKeyDialog({
 }
 
 export default function ApiKeys() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);

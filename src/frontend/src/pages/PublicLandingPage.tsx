@@ -2,8 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
 import { useTranslation } from "@/lib/i18n";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useMutation } from "@tanstack/react-query";
 import {
   Bot,
@@ -21,6 +21,7 @@ import {
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
 
 // ─────────────────────────────────────────────────────────────
@@ -45,7 +46,7 @@ interface ActorWithLead {
 // ─────────────────────────────────────────────────────────────
 
 function LeadForm() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const { t, lang } = useTranslation();
   const leadActor = actor as unknown as ActorWithLead | null;
   const [submitted, setSubmitted] = useState(false);

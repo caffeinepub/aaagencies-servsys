@@ -12,12 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, UserCheck, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 
 const LANGUAGES = [
   { code: "en", label: "\uD83C\uDDFA\uD83C\uDDF8 English" },
@@ -54,7 +54,7 @@ export default function InviteRedeemPage({
   onSuccess,
 }: InviteRedeemPageProps) {
   const { identity } = useInternetIdentity();
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const [manualCode, setManualCode] = useState("");
   const [activeCode, setActiveCode] = useState(code);
   const [formData, setFormData] = useState({

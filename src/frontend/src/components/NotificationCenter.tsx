@@ -12,8 +12,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
 import { cn } from "@/lib/utils";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   Bell,
   BotOff,
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createActor } from "../backend";
 
 type IconConfig = {
   icon: LucideIcon;
@@ -133,7 +134,7 @@ function NotificationRow({ notification, onRead }: NotificationRowProps) {
 }
 
 export function NotificationCenter() {
-  const { actor: _actor, isFetching } = useActor();
+  const { actor: _actor, isFetching } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
 
   const [open, setOpen] = useState(false);

@@ -48,7 +48,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import type { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -76,15 +76,17 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type {
   FFFAssetType,
   FractionalAsset,
   FractionalOwnership,
   FranchiseLink,
   RevenueSplit,
-  RevenueSplitEntryInput,
+  RevenueSplitEntry,
   User,
 } from "../../../backend.d";
+import { FFFAssetType as FFFAssetTypeEnum } from "../../../backend.d";
 
 interface FinFracFranPageProps {
   user: User;
@@ -147,7 +149,7 @@ function formatDate(ts: bigint) {
 // ─── Assets Tab ─────────────────────────────────────────────────────────────
 
 function AssetsTab({ user }: { user: User }) {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
   const orgId = typeof user.orgId === "string" ? user.orgId : undefined;
 
@@ -159,7 +161,9 @@ function AssetsTab({ user }: { user: User }) {
   // Create form state
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [newType, setNewType] = useState<FFFAssetType>("business");
+  const [newType, setNewType] = useState<FFFAssetType>(
+    FFFAssetTypeEnum.business,
+  );
   const [newShares, setNewShares] = useState("");
   const [newValuation, setNewValuation] = useState("");
 
@@ -200,7 +204,7 @@ function AssetsTab({ user }: { user: User }) {
       setCreateOpen(false);
       setNewName("");
       setNewDesc("");
-      setNewType("business");
+      setNewType(FFFAssetTypeEnum.business);
       setNewShares("");
       setNewValuation("");
     },
@@ -422,7 +426,7 @@ function AssetsTab({ user }: { user: User }) {
                             ·
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {formatUsd(asset.valuationUsd)}
+                            {formatUsd(Number(asset.valuationUsd))}
                           </span>
                         </div>
                       </div>
@@ -551,7 +555,7 @@ function AssetsTab({ user }: { user: User }) {
 // ─── Ownership Tab ───────────────────────────────────────────────────────────
 
 function OwnershipTab({ user }: { user: User }) {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
   const orgId = typeof user.orgId === "string" ? user.orgId : undefined;
 
@@ -816,7 +820,10 @@ function OwnershipTab({ user }: { user: User }) {
                       </TableCell>
                       <TableCell className="text-right text-sm">
                         {totalShares > 0
-                          ? ((o.shares / totalShares) * 100).toFixed(1)
+                          ? (
+                              (Number(o.shares) / Number(totalShares)) *
+                              100
+                            ).toFixed(1)
                           : 0}
                         %
                       </TableCell>
@@ -838,7 +845,7 @@ function OwnershipTab({ user }: { user: User }) {
 // ─── Revenue Splits Tab ──────────────────────────────────────────────────────
 
 function RevenueSplitsTab({ user }: { user: User }) {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
   const orgId = typeof user.orgId === "string" ? user.orgId : undefined;
 
@@ -874,13 +881,13 @@ function RevenueSplitsTab({ user }: { user: User }) {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!actor || !selectedAssetId) throw new Error("Select an asset");
-      const distribution: RevenueSplitEntryInput[] = rows
+      const distribution: RevenueSplitEntry[] = rows
         .filter((r) => r.userId && r.userName)
         .map((r) => ({
           userId: r.userId as unknown as Principal,
           userName: r.userName,
-          shares: Number(r.shares) || 0,
-          amountUsd: Number(r.amountUsd) || 0,
+          shares: BigInt(Number(r.shares) || 0),
+          amountUsd: BigInt(Number(r.amountUsd) || 0),
         }));
       const res = await (actor as any).createRevenueSplit(
         selectedAssetId,
@@ -1129,7 +1136,7 @@ function RevenueSplitsTab({ user }: { user: User }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       {statusBadge(split.status)}
                       <span className="font-semibold text-sm">
-                        {formatUsd(split.totalAmountUsd)}
+                        {formatUsd(Number(split.totalAmountUsd))}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         · {split.distribution.length} recipients
@@ -1161,7 +1168,7 @@ function RevenueSplitsTab({ user }: { user: User }) {
                           </AlertDialogTitle>
                           <AlertDialogDescription>
                             This will distribute{" "}
-                            {formatUsd(split.totalAmountUsd)} to{" "}
+                            {formatUsd(Number(split.totalAmountUsd))} to{" "}
                             {split.distribution.length} recipients. This action
                             cannot be undone.
                           </AlertDialogDescription>
@@ -1195,7 +1202,7 @@ function RevenueSplitsTab({ user }: { user: User }) {
                           <span className="text-foreground">{d.userName}</span>
                           <span className="text-muted-foreground">
                             {d.shares.toLocaleString()} shares ·{" "}
-                            {formatUsd(d.amountUsd)}
+                            {formatUsd(Number(d.amountUsd))}
                           </span>
                         </div>
                       ))}
@@ -1214,7 +1221,7 @@ function RevenueSplitsTab({ user }: { user: User }) {
 // ─── Franchise Links Tab ─────────────────────────────────────────────────────
 
 function FranchiseLinksTab({ user }: { user: User }) {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
   const orgId = typeof user.orgId === "string" ? user.orgId : undefined;
 

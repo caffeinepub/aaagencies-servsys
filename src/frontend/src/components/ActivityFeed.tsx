@@ -5,7 +5,7 @@ import type {
 } from "@/../src/backend.d";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
@@ -20,6 +20,7 @@ import {
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { createActor } from "../backend";
 
 interface ActivityFeedProps {
   orgId: string | null;
@@ -90,7 +91,7 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
 }
 
 export function ActivityFeed({ orgId, maxItems = 20 }: ActivityFeedProps) {
-  const { actor: _actor } = useActor();
+  const { actor: _actor } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
 
   const { data: feedResult, isLoading } = useQuery({

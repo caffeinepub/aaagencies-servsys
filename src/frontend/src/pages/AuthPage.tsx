@@ -10,8 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useActor } from "@/hooks/useActor";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useMutation } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 
 const LANGUAGES = [
   { code: "en", label: "🇺🇸 English" },
@@ -41,7 +41,7 @@ interface AuthPageProps {
 export default function AuthPage({ onRegistered }: AuthPageProps) {
   const { identity, login, isLoggingIn, isInitializing } =
     useInternetIdentity();
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [formData, setFormData] = useState({
     displayName: "",

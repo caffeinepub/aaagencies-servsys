@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -21,6 +21,7 @@ import {
   Search,
 } from "lucide-react";
 import { useState } from "react";
+import { createActor } from "../../../backend";
 import type { Lead } from "../../../backend.d";
 
 type SortKey = "name" | "createdAt" | "interest" | "source";
@@ -96,7 +97,7 @@ function SortableHead({
 }
 
 export default function LeadAdmin() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");

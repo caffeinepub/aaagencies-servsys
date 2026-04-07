@@ -11,23 +11,23 @@ export function exportToCSV(
   filename: string,
   columns: { key: string; label: string }[],
 ): void {
+  if (!data.length) return;
   const header = columns.map((c) => `"${c.label}"`).join(",");
   const rows = data.map((row) =>
     columns
       .map((c) => {
-        const val = row[c.key] ?? "";
-        return `"${String(val).replace(/"/g, '""')}"`;
+        const val = row[c.key];
+        const str = val == null ? "" : String(val);
+        return `"${str.replace(/"/g, '""')}"`;
       })
       .join(","),
   );
   const csv = [header, ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${filename}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename.endsWith(".csv") ? filename : `${filename}.csv`;
+  a.click();
   URL.revokeObjectURL(url);
 }

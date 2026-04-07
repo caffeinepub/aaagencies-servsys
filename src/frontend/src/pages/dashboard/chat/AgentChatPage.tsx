@@ -7,16 +7,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { Bot } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { AgentDefinition } from "../../../backend.d";
 import { AgentStatus } from "../../../backend.d";
 import { AgentChatInterface } from "../../../components/AgentChatInterface";
 
 export default function AgentChatPage() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

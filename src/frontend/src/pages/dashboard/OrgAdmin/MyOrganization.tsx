@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Globe, Languages, Loader2, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { Organization } from "../../../backend.d";
 
 type DisplayOrg = {
@@ -60,7 +61,7 @@ type EditForm = {
 };
 
 export default function MyOrganization() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

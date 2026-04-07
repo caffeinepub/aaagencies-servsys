@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { ArrowLeft, Bot, Building2, Loader2, ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect } from "react";

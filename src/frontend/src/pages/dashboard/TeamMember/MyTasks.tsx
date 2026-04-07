@@ -29,10 +29,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { ChevronDown, ChevronUp, ClipboardList, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { AgentDefinition, Task, TaskInput } from "../../../backend.d";
 import { TaskPriority, TaskStatus } from "../../../backend.d";
 
@@ -272,7 +273,7 @@ function RowSkeleton() {
 }
 
 export default function MyTasks() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [loading, setLoading] = useState(true);

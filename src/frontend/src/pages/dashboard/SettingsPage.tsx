@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarClock,
@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../backend";
 import type {
   AuditEntry,
   OrgSettings,
@@ -76,7 +77,7 @@ interface SettingsPageProps {
 // ─── Account Tab ────────────────────────────────────────────────────────────
 
 function AccountTab({ user }: { user: UserType }) {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [displayName, setDisplayName] = useState(user.displayName);
   const [preferredLanguage, setPreferredLanguage] = useState(
     user.preferredLanguage || "en",
@@ -206,7 +207,7 @@ function AccountTab({ user }: { user: UserType }) {
 // ─── Organization Tab ────────────────────────────────────────────────────────
 
 function OrgTab() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [loading, setLoading] = useState(true);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [settings, setSettings] = useState<OrgSettings>({
@@ -667,7 +668,7 @@ function RecentActivitySection({
 // ─── Platform Tab ────────────────────────────────────────────────────────────
 
 function PlatformTab() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<PlatformSettings>({
     announcementBanner: "",

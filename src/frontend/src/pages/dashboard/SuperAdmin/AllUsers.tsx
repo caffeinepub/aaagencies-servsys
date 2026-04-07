@@ -11,12 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
 import { MOCK_USERS } from "@/lib/mockData";
 import { exportToCSV } from "@/lib/utils";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Users } from "lucide-react";
 import { useState } from "react";
+import { createActor } from "../../../backend";
 import type { User } from "../../../backend.d";
 
 type DisplayUser = {
@@ -53,7 +54,7 @@ function toDisplayUsers(users: User[] | undefined): DisplayUser[] {
 }
 
 export default function AllUsers() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [roleFilter, setRoleFilter] = useState("all");
 
   const { data: users, isLoading } = useQuery({

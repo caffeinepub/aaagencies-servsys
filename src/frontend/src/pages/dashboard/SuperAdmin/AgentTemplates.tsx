@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   Globe,
   Hash,
@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { AgentTemplate, AgentTemplateInput } from "../../../backend.d";
 
 interface CreateFormState {
@@ -94,7 +95,7 @@ function TemplateSkeleton() {
 }
 
 export default function AgentTemplates() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [templates, setTemplates] = useState<AgentTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);

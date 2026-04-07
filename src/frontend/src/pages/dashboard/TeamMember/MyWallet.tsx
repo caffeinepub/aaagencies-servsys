@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   ArrowDownToLine,
   ArrowRightLeft,
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ interface TransferDialogProps {
 }
 
 function TransferDialog({ wallet, onSuccess }: TransferDialogProps) {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [open, setOpen] = useState(false);
   const [toWalletId, setToWalletId] = useState("");
   const [amount, setAmount] = useState("");
@@ -191,7 +192,7 @@ function TransferDialog({ wallet, onSuccess }: TransferDialogProps) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function MyWallet() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
   const [wallets, setWallets] = useState<WalletAccount[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);

@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
 import { cn } from "@/lib/utils";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   Bot,
   Building2,
@@ -14,11 +14,12 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createActor } from "../backend";
 
 export interface SearchResult {
   kind: "user" | "agent" | "task" | "org";
   id: string;
-  label: string;
+  resultLabel: string;
   subtitle: string;
   url: string;
 }
@@ -84,7 +85,7 @@ const isMac =
   typeof navigator !== "undefined" && /mac/i.test(navigator.platform || "");
 
 export function GlobalSearch({ role, orgId, onNavigate }: GlobalSearchProps) {
-  const { actor: _actor, isFetching } = useActor();
+  const { actor: _actor, isFetching } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
 
   const [open, setOpen] = useState(false);
@@ -323,7 +324,7 @@ export function GlobalSearch({ role, orgId, onNavigate }: GlobalSearchProps) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">
-                              {result.label}
+                              {result.resultLabel}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
                               {result.subtitle}

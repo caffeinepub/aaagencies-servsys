@@ -1,0 +1,488 @@
+// Version: 1.0.0
+type AccountType__448164167 =
+  {#branch_fund; #member_wallet; #org_treasury; #vendor_account};
+type ActivityEventType__582107075 =
+  {
+    #agentDeactivated;
+    #agentRegistered;
+    #orgCreated;
+    #taskCompleted;
+    #taskCreated;
+    #taskFailed;
+    #userInvited;
+    #userJoined;
+    #walletCreated
+  };
+type ActivityEvent__822525019 =
+  {
+    actorId : Principal__390546707;
+    actorName : Text;
+    description : Text;
+    eventType : ActivityEventType__582107075;
+    id : Text;
+    orgId : Text;
+    targetId : ?Text;
+    targetName : ?Text;
+    timestamp : Int
+  };
+type AgentDefinition__1047468382 =
+  {
+    capabilities : [Text];
+    createdAt : Int;
+    createdBy : Principal__390546707;
+    description : Text;
+    endpointUrl : ?Text;
+    id : Text;
+    modelType : Text;
+    name : Text;
+    orgId : Text;
+    status : AgentStatus__112150463;
+    supportedLanguages : [Text]
+  };
+type AgentStatus__112150463 = {#active; #inactive; #training};
+type AgentTemplate__592848765 =
+  {
+    createdAt : Int;
+    createdBy : Principal__390546707;
+    description : Text;
+    endpointHeaders : ?Text;
+    endpointUrl : ?Text;
+    id : Text;
+    isPublic : Bool;
+    name : Text;
+    orgId : ?Text;
+    systemPrompt : ?Text;
+    tags : [Text]
+  };
+type ApiKey__892471706 =
+  {
+    createdAt : Int;
+    createdBy : Principal__390546707;
+    description : Text;
+    id : Text;
+    isActive : Bool;
+    keyHash : Nat;
+    keyPrefix : Text;
+    lastUsedAt : ?Int;
+    name : Text;
+    orgId : Text;
+    permissions : [Text]
+  };
+type AuditEntry__849002978 =
+  {
+    action : Text;
+    actorId : Principal__390546707;
+    actorName : Text;
+    description : Text;
+    id : Text;
+    orgId : ?Text;
+    targetId : Text;
+    targetKind : Text;
+    timestamp : Int
+  };
+type Branch__778560928 =
+  {
+    createdAt : Int;
+    id : Text;
+    isActive : Bool;
+    location : Text;
+    managerId : ?Principal__390546707;
+    name : Text;
+    orgId : Text;
+    phone : ?Text;
+    primaryLanguage : Text;
+    siteUrl : ?Text;
+    subWalletEnabled : Bool;
+    timezone : Text
+  };
+type ConversationMessage__474317737 =
+  {
+    agentId : Text;
+    content : Text;
+    id : Text;
+    isError : Bool;
+    orgId : Text;
+    senderId : Principal__390546707;
+    senderRole : SenderRole__620012953;
+    timestamp : Int
+  };
+type Conversation__183739819 =
+  {
+    agentId : Text;
+    createdAt : Int;
+    id : Text;
+    lastMessageAt : Int;
+    messages : [ConversationMessage__474317737];
+    orgId : Text;
+    userId : Principal__390546707
+  };
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type FFFAssetType__959970635 =
+  {#business; #custom; #intellectualProperty; #realEstate; #revenueStream};
+type FractionalAsset__615072342 =
+  {
+    assetType : FFFAssetType__959970635;
+    createdAt : Int;
+    createdBy : Principal__390546707;
+    description : Text;
+    id : Text;
+    isActive : Bool;
+    name : Text;
+    orgId : Text;
+    totalShares : Nat;
+    updatedAt : Int;
+    valuationUsd : Nat
+  };
+type FractionalOwnership__182661238 =
+  {
+    assetId : Text;
+    id : Text;
+    issuedAt : Int;
+    orgId : Text;
+    shares : Nat;
+    userId : Principal__390546707;
+    userName : Text
+  };
+type FranchiseLinkStatus__5782319 = {#active; #pending; #terminated};
+type FranchiseLink__761536197 =
+  {
+    createdAt : Int;
+    createdBy : Principal__390546707;
+    franchiseeOrgId : Text;
+    franchisorOrgId : Text;
+    id : Text;
+    royaltyPct : Nat;
+    status : FranchiseLinkStatus__5782319;
+    termsUrl : ?Text;
+    updatedAt : Int
+  };
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type InviteLink__647203442 =
+  {
+    code : Text;
+    createdAt : Int;
+    createdBy : Principal__390546707;
+    expiresAt : ?Int;
+    id : Text;
+    isActive : Bool;
+    maxRedemptions : ?Nat;
+    orgId : ?Text;
+    redemptionCount : Nat;
+    role : Role__931309261
+  };
+type Lead__21276013 =
+  {
+    createdAt : Int;
+    email : Text;
+    id : Text;
+    interest : Text;
+    name : Text;
+    orgName : ?Text;
+    preferredLanguage : Text;
+    source : Text
+  };
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type NotificationType__754463539 =
+  {
+    #agentDeactivated;
+    #inviteRedeemed;
+    #orgCreated;
+    #systemMessage;
+    #taskStatusChanged
+  };
+type Notification__879889657 =
+  {
+    createdAt : Int;
+    id : Text;
+    isRead : Bool;
+    message : Text;
+    notificationType : NotificationType__754463539;
+    orgId : Text;
+    relatedId : ?Text;
+    title : Text;
+    userId : Principal__390546707
+  };
+type OrgSettings__525122704 =
+  {
+    defaultLanguage : Text;
+    notifyOnAgentDeactivated : Bool;
+    notifyOnTaskComplete : Bool;
+    notifyOnUserJoined : Bool;
+    timezone : Text;
+    webhookEvents : [Text];
+    webhookUrl : ?Text
+  };
+type OrganizationLegacy__929380131 =
+  {
+    createdAt : Int;
+    description : Text;
+    id : Text;
+    isActive : Bool;
+    logoUrl : ?Text;
+    name : Text;
+    ownerId : Principal__390546707;
+    planTier : PlanTier__58388779;
+    primaryLanguage : Text;
+    stripeCustomerId : ?Text;
+    stripeSubscriptionId : ?Text;
+    supportedLanguages : [Text]
+  };
+type Organization__103960640 =
+  {
+    createdAt : Int;
+    customDomain : ?Text;
+    customSubdomain : ?Text;
+    description : Text;
+    id : Text;
+    isActive : Bool;
+    logoUrl : ?Text;
+    name : Text;
+    ownerId : Principal__390546707;
+    planTier : PlanTier__58388779;
+    primaryLanguage : Text;
+    stripeCustomerId : ?Text;
+    stripeSubscriptionId : ?Text;
+    supportedLanguages : [Text]
+  };
+type PlanLimits__404885345 =
+  {
+    maxAgents : Nat;
+    maxApiKeys : Nat;
+    maxBranches : Nat;
+    maxUsers : Nat;
+    maxWallets : Nat
+  };
+type PlanTier__58388779 = {#enterprise; #free; #professional; #starter};
+type Principal__224692764 = Principal;
+type Principal__390546707 = Principal__224692764;
+type RevenueSplitEntry__147653570 =
+  {
+    amountUsd : Nat;
+    shares : Nat;
+    userId : Principal__390546707;
+    userName : Text
+  };
+type RevenueSplitStatus__548536910 = {#cancelled; #distributed; #pending};
+type RevenueSplit__411074686 =
+  {
+    assetId : Text;
+    createdAt : Int;
+    createdBy : Principal__390546707;
+    distributedAt : ?Int;
+    distribution : [RevenueSplitEntry__147653570];
+    id : Text;
+    orgId : Text;
+    status : RevenueSplitStatus__548536910;
+    totalAmountUsd : Nat
+  };
+type Role__931309261 =
+  {#end_customer; #org_admin; #super_admin; #team_member};
+type SenderRole__620012953 = {#agent; #user};
+type TaskPriority__752799833 = {#high; #low; #medium; #urgent};
+type TaskStatus__324548698 =
+  {#cancelled; #completed; #failed; #in_progress; #pending};
+type Task__972485619 =
+  {
+    assignedAgentId : ?Text;
+    assignedTo : ?Principal__390546707;
+    createdAt : Int;
+    createdBy : Principal__390546707;
+    description : Text;
+    id : Text;
+    inputData : ?Text;
+    language : Text;
+    orgId : Text;
+    outputData : ?Text;
+    priority : TaskPriority__752799833;
+    status : TaskStatus__324548698;
+    tags : [Text];
+    title : Text;
+    updatedAt : Int
+  };
+type TransactionStatus__426104033 = {#completed; #failed; #pending};
+type Transaction__865268250 =
+  {
+    amountE8s : Nat;
+    createdAt : Int;
+    description : Text;
+    fromWalletId : Text;
+    id : Text;
+    initiatedBy : Principal__390546707;
+    status : TransactionStatus__426104033;
+    toWalletId : Text;
+    txType : TxType__343382301
+  };
+type TxType__343382301 =
+  {#deposit; #distribute; #fractionalize; #transfer; #withdrawal};
+type User__831686142 =
+  {
+    avatarUrl : ?Text;
+    branchId : ?Text;
+    createdAt : Int;
+    displayName : Text;
+    email : Text;
+    isActive : Bool;
+    lastLoginAt : ?Int;
+    orgId : ?Text;
+    preferredLanguage : Text;
+    principal : Principal__390546707;
+    role : Role__931309261;
+    stripeCustomerId : ?Text
+  };
+type WalletAccount__27722389 =
+  {
+    accountType : AccountType__448164167;
+    balanceE8s : Nat;
+    branchId : ?Text;
+    createdAt : Int;
+    currency : Text;
+    id : Text;
+    isActive : Bool;
+    name : Text;
+    orgId : Text;
+    ownerId : Principal__390546707
+  };
+actor {
+  stable _agentTemplates :
+    {
+      var root : Node__46230540<Text, AgentTemplate__592848765>;
+      var size : Nat__490723111
+    };
+  stable _auditLog :
+    {
+      var root : Node__46230540<Text, AuditEntry__849002978>;
+      var size : Nat__490723111
+    };
+  stable _fffFranchiseLinks :
+    {
+      var root : Node__46230540<Text, FranchiseLink__761536197>;
+      var size : Nat__490723111
+    };
+  stable _fffOwnerships :
+    {
+      var root : Node__46230540<Text, FractionalOwnership__182661238>;
+      var size : Nat__490723111
+    };
+  stable _fffRevenueSplits :
+    {
+      var root : Node__46230540<Text, RevenueSplit__411074686>;
+      var size : Nat__490723111
+    };
+  stable var _nextActivityId : Nat;
+  stable var _nextAuditId : Nat;
+  stable var _nextFFFAssetId : Nat;
+  stable var _nextFFFLinkId : Nat;
+  stable var _nextFFFOwnershipId : Nat;
+  stable var _nextFFFSplitId : Nat;
+  stable var _nextMessageId : Nat;
+  stable var _nextNotificationId : Nat;
+  stable var _nextTemplateId : Nat;
+  stable activityEvents :
+    {
+      var root : Node__46230540<Text, ActivityEvent__822525019>;
+      var size : Nat__490723111
+    };
+  stable agents :
+    {
+      var root : Node__46230540<Text, AgentDefinition__1047468382>;
+      var size : Nat__490723111
+    };
+  stable apiKeys :
+    {
+      var root : Node__46230540<Text, ApiKey__892471706>;
+      var size : Nat__490723111
+    };
+  stable branches :
+    {
+      var root : Node__46230540<Text, Branch__778560928>;
+      var size : Nat__490723111
+    };
+  stable conversations :
+    {
+      var root : Node__46230540<Text, Conversation__183739819>;
+      var size : Nat__490723111
+    };
+  stable fffAssets :
+    {
+      var root : Node__46230540<Text, FractionalAsset__615072342>;
+      var size : Nat__490723111
+    };
+  stable inviteLinks :
+    {
+      var root : Node__46230540<Text, InviteLink__647203442>;
+      var size : Nat__490723111
+    };
+  stable inviteLinksByCode :
+    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
+  stable leads :
+    {
+      var root : Node__46230540<Text, Lead__21276013>;
+      var size : Nat__490723111
+    };
+  stable var nextAgentId : Nat;
+  stable var nextApiKeyId : Nat;
+  stable var nextBranchId : Nat;
+  stable var nextConversationId : Nat;
+  stable var nextInviteId : Nat;
+  stable var nextLeadId : Nat;
+  stable var nextTaskId : Nat;
+  stable var nextTxId : Nat;
+  stable var nextWalletId : Nat;
+  stable notifications :
+    {
+      var root : Node__46230540<Text, Notification__879889657>;
+      var size : Nat__490723111
+    };
+  stable orgSettingsMap :
+    {
+      var root : Node__46230540<Text, OrgSettings__525122704>;
+      var size : Nat__490723111
+    };
+  stable organizations :
+    {
+      var root : Node__46230540<Text, OrganizationLegacy__929380131>;
+      var size : Nat__490723111
+    };
+  stable organizationsNew :
+    {
+      var root : Node__46230540<Text, Organization__103960640>;
+      var size : Nat__490723111
+    };
+  stable planLimitsMap :
+    {
+      var root : Node__46230540<Text, PlanLimits__404885345>;
+      var size : Nat__490723111
+    };
+  stable var platformSettings :
+    {
+      announcementBanner : ?Text;
+      announcementBannerEnabled : Bool;
+      launchDate : ?Int
+    };
+  stable tasks :
+    {
+      var root : Node__46230540<Text, Task__972485619>;
+      var size : Nat__490723111
+    };
+  stable transactions :
+    {
+      var root : Node__46230540<Text, Transaction__865268250>;
+      var size : Nat__490723111
+    };
+  stable users :
+    {
+      var root : Node__46230540<Principal__390546707, User__831686142>;
+      var size : Nat__490723111
+    };
+  stable wallets :
+    {
+      var root : Node__46230540<Text, WalletAccount__27722389>;
+      var size : Nat__490723111
+    }
+};

@@ -30,9 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { exportToCSV } from "@/lib/utils";
+import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
 import {
   useMutation,
   useQueries,
@@ -51,6 +50,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 
 const PLAN_TIERS = ["free", "starter", "professional", "enterprise"] as const;
 type PlanTierKey = (typeof PLAN_TIERS)[number];
@@ -221,7 +221,7 @@ function ResourceCount({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Organizations() {
-  const { actor: _actor } = useActor();
+  const { actor: _actor } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
   const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();

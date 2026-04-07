@@ -816,6 +816,101 @@ const API_SECTIONS: ApiSection[] = [
       },
     ],
   },
+  {
+    title: "Search",
+    description:
+      "Platform-wide and org-scoped search across users, agents, tasks, and organizations.",
+    endpoints: [
+      {
+        method: "GET",
+        path: "searchOrg(orgId, query)",
+        description:
+          "Search across users, agents, and tasks within a specific organization. Returns up to 20 matched results. Org admin and team members restricted to their own org; super admin can search any org.",
+        requiredRole: "org_admin, team_member, super_admin",
+        example: '{ "orgId": "org_1", "query": "analytics" }',
+      },
+      {
+        method: "GET",
+        path: "searchPlatform(query)",
+        description:
+          "Platform-wide search across all organizations, users, agents, and tasks. Super admin only. Returns up to 30 matched results.",
+        requiredRole: "super_admin",
+        example: '{ "query": "john" }',
+      },
+    ],
+  },
+  {
+    title: "Bulk Actions",
+    description:
+      "Perform batch operations on platform entities for efficient management.",
+    endpoints: [
+      {
+        method: "POST",
+        path: "bulkUpdateTaskStatus(ids, status)",
+        description:
+          "Update the status of multiple tasks at once. Returns counts of updated and failed tasks. Org admin can bulk-update tasks within their org; super admin can update any tasks.",
+        requiredRole: "org_admin, super_admin",
+        example:
+          '{ "ids": ["task_1", "task_2", "task_3"], "status": "completed" }',
+      },
+    ],
+  },
+  {
+    title: "Audit Log",
+    description:
+      "Retrieve platform and organization audit trail entries for compliance and monitoring.",
+    endpoints: [
+      {
+        method: "GET",
+        path: "getAuditLog(orgId?)",
+        description:
+          "Retrieve audit log entries. Org admin: returns last 100 entries for their organization. Super admin: pass null to retrieve platform-wide last 200 entries, or pass an orgId to filter by organization.",
+        requiredRole: "org_admin, super_admin",
+        example: '{ "orgId": null }',
+      },
+    ],
+  },
+  {
+    title: "Agent Templates",
+    description:
+      "Manage reusable agent templates. Super admins create platform-wide public templates; org admins create private templates for their organization.",
+    endpoints: [
+      {
+        method: "POST",
+        path: "createAgentTemplate(input)",
+        description:
+          "Create a new agent template. Org admin creates a private template for their org. Super admin can create public platform-wide templates by setting isPublic: true.",
+        requiredRole: "org_admin, super_admin",
+        example:
+          '{ "name": "Customer Support Bot", "description": "Handles tier-1 support inquiries", "systemPrompt": "You are a helpful support agent.", "endpointUrl": "https://api.openai.com/v1/chat/completions", "tags": ["support", "customer"], "isPublic": true }',
+      },
+      {
+        method: "GET",
+        path: "getAgentTemplates(orgId?)",
+        description:
+          "Retrieve agent templates. Returns org-private templates for the given org plus all public platform-wide templates. Pass null to retrieve public templates only.",
+        requiredRole: "org_admin, team_member, super_admin",
+        example: '{ "orgId": "org_1" }',
+      },
+      {
+        method: "DELETE",
+        path: "deleteAgentTemplate(id)",
+        description:
+          "Delete an agent template. Org admin can delete their org's private templates. Super admin can delete any template.",
+        requiredRole: "org_admin, super_admin",
+        example: '{ "id": "tmpl_1" }',
+      },
+      {
+        method: "POST",
+        path: "cloneAgentFromTemplate(templateId, orgId, nameOverride?, endpointUrlOverride?)",
+        description:
+          "Create a new agent definition from an existing template, with optional field overrides for name and endpoint URL. Checks the org's agent plan limit before creating.",
+        requiredRole: "org_admin, super_admin",
+        example:
+          '{ "templateId": "tmpl_1", "orgId": "org_1", "nameOverride": "My Support Agent", "endpointUrlOverride": "https://my-api.example.com/v1/chat" }',
+      },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<string, string> = {
@@ -912,6 +1007,10 @@ const PHASE_LABELS: Record<string, string> = {
   "FFF Ownership": "7B",
   "Revenue Splits": "7B",
   "Franchise Links": "7B",
+  Search: "7C",
+  "Bulk Actions": "7C",
+  "Audit Log": "7C",
+  "Agent Templates": "7E",
 };
 
 export default function ApiDocumentation() {
@@ -923,7 +1022,7 @@ export default function ApiDocumentation() {
             API Documentation
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            AAAgencies SerVSys REST API reference — Phases 1–7 · 23 sections
+            AAAgencies SerVSys REST API reference — Phases 1–7 · 27 sections
           </p>
         </div>
       </div>

@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
 import { exportToCSV } from "@/lib/utils";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, Download, Filter, Search, X } from "lucide-react";
 import { useState } from "react";
+import { createActor } from "../../../backend";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ function TargetKindBadge({ kind }: { kind: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AuditLog() {
-  const { actor: _actor } = useActor();
+  const { actor: _actor } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
 
   const [searchQuery, setSearchQuery] = useState("");

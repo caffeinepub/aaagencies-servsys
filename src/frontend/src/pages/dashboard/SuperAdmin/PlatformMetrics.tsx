@@ -6,7 +6,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { Bot, Building2, ClipboardList, Users, Wallet } from "lucide-react";
 import {
@@ -19,6 +19,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { createActor } from "../../../backend";
 
 function getDayLabel(date: Date): string {
   return date.toLocaleDateString("en-US", { weekday: "short" });
@@ -54,7 +55,7 @@ function buildEventTrend(
 }
 
 export default function PlatformMetrics() {
-  const { actor: _actor } = useActor();
+  const { actor: _actor } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
 
   const { data: metrics, isLoading: metricsLoading } = useQuery({
@@ -101,31 +102,31 @@ export default function PlatformMetrics() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard
             title="Organizations"
-            value={metrics?.totalOrgs ?? 0}
+            value={Number(metrics?.totalOrgs ?? 0)}
             icon={Building2}
             iconClassName="bg-blue-500/10"
           />
           <StatCard
             title="Users"
-            value={metrics?.totalUsers ?? 0}
+            value={Number(metrics?.totalUsers ?? 0)}
             icon={Users}
             iconClassName="bg-teal-500/10"
           />
           <StatCard
             title="Tasks"
-            value={metrics?.totalTasks ?? 0}
+            value={Number(metrics?.totalTasks ?? 0)}
             icon={ClipboardList}
             iconClassName="bg-purple-500/10"
           />
           <StatCard
             title="Wallets"
-            value={metrics?.totalWallets ?? 0}
+            value={Number(metrics?.totalWallets ?? 0)}
             icon={Wallet}
             iconClassName="bg-amber-500/10"
           />
           <StatCard
             title="Agents"
-            value={metrics?.totalAgents ?? 0}
+            value={Number(metrics?.totalAgents ?? 0)}
             icon={Bot}
             iconClassName="bg-pink-500/10"
           />

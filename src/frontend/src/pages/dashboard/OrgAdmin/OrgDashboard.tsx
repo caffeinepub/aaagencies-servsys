@@ -6,7 +6,7 @@ import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { Bot, Building2, ClipboardList, Users } from "lucide-react";
 import {
@@ -18,6 +18,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { createActor } from "../../../backend";
 
 type DisplayOrg = { name: string; description: string; planTier: string };
 
@@ -64,7 +65,7 @@ function buildTaskTrend(tasks: Task[]): { day: string; tasks: number }[] {
 }
 
 export default function OrgDashboard() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching } = useActor(createActor);
 
   const { data: org, isLoading } = useQuery({
     queryKey: ["my-org"],

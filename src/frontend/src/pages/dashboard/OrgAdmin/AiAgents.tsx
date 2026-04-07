@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   Activity,
   Bot,
@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { AgentDefinition, AgentTemplate } from "../../../backend.d";
 import { AgentStatus } from "../../../backend.d";
 import { AgentChatDrawer } from "../../../components/AgentChatDrawer";
@@ -314,7 +315,7 @@ function CloneDialog({
   onCloneSuccess,
   onClose,
 }: CloneDialogProps) {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [cloneName, setCloneName] = useState(template.name);
   const [cloneEndpoint, setCloneEndpoint] = useState(
     template.endpointUrl ?? "",
@@ -423,7 +424,7 @@ function CloneDialog({
 }
 
 export default function AiAgents() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [registerOpen, setRegisterOpen] = useState(false);

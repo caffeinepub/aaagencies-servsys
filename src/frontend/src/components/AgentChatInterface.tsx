@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { AlertTriangle, Bot, Send } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 import type { backendInterface as FullBackend } from "../backend.d";
 import type { AgentDefinition, ConversationMessage } from "../backend.d";
 import { AgentStatus } from "../backend.d";
@@ -113,7 +114,7 @@ interface AgentChatInterfaceProps {
 }
 
 export function AgentChatInterface({ agent }: AgentChatInterfaceProps) {
-  const { actor: rawActor } = useActor();
+  const { actor: rawActor } = useActor(createActor);
   // Cast to the full interface from backend.d.ts which includes conversation methods
   const actor = rawActor as FullBackend | null;
   const [messages, setMessages] = useState<ConversationMessage[]>([]);

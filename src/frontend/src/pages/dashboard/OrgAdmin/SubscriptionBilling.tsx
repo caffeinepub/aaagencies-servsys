@@ -32,7 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -57,6 +57,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -168,11 +169,11 @@ function formatLimitValue(val: number): string {
 
 function buildPlanFeatures(limits: PlanLimits, planId: PlanId): PlanFeature[] {
   const base: PlanFeature[] = [
-    { text: `${formatLimitValue(limits.maxUsers)} team members` },
-    { text: `${formatLimitValue(limits.maxBranches)} branches` },
-    { text: `${formatLimitValue(limits.maxAgents)} AI agents` },
-    { text: `${formatLimitValue(limits.maxApiKeys)} API keys` },
-    { text: `${formatLimitValue(limits.maxWallets)} wallets` },
+    { text: `${formatLimitValue(Number(limits.maxUsers))} team members` },
+    { text: `${formatLimitValue(Number(limits.maxBranches))} branches` },
+    { text: `${formatLimitValue(Number(limits.maxAgents))} AI agents` },
+    { text: `${formatLimitValue(Number(limits.maxApiKeys))} API keys` },
+    { text: `${formatLimitValue(Number(limits.maxWallets))} wallets` },
   ];
   const extras: Record<PlanId, PlanFeature[]> = {
     free: [{ text: "Community support" }],
@@ -398,11 +399,11 @@ function ResourceUsageCard({
   const [usersQ, branchesQ, agentsQ, apiKeysQ, walletsQ] = resourceQueries;
 
   const defaultLimits: PlanLimits = {
-    maxUsers: 5,
-    maxBranches: 2,
-    maxAgents: 1,
-    maxApiKeys: 2,
-    maxWallets: 2,
+    maxUsers: 5n,
+    maxBranches: 2n,
+    maxAgents: 1n,
+    maxApiKeys: 2n,
+    maxWallets: 2n,
   };
   const limits = planLimits ?? defaultLimits;
   const anyLoading = limitsLoading || resourceQueries.some((q) => q.isLoading);
@@ -412,35 +413,35 @@ function ResourceUsageCard({
       icon: Users,
       label: "Team Members",
       current: usersQ.data ?? null,
-      max: limits.maxUsers,
+      max: Number(limits.maxUsers),
       isLoading: usersQ.isLoading || limitsLoading,
     },
     {
       icon: GitBranch,
       label: "Branches",
       current: branchesQ.data ?? null,
-      max: limits.maxBranches,
+      max: Number(limits.maxBranches),
       isLoading: branchesQ.isLoading || limitsLoading,
     },
     {
       icon: Bot,
       label: "AI Agents",
       current: agentsQ.data ?? null,
-      max: limits.maxAgents,
+      max: Number(limits.maxAgents),
       isLoading: agentsQ.isLoading || limitsLoading,
     },
     {
       icon: KeyRound,
       label: "API Keys (Active)",
       current: apiKeysQ.data ?? null,
-      max: limits.maxApiKeys,
+      max: Number(limits.maxApiKeys),
       isLoading: apiKeysQ.isLoading || limitsLoading,
     },
     {
       icon: Wallet,
       label: "Wallets",
       current: walletsQ.data ?? null,
-      max: limits.maxWallets,
+      max: Number(limits.maxWallets),
       isLoading: walletsQ.isLoading || limitsLoading,
     },
   ];
@@ -915,7 +916,7 @@ function CancelSubscriptionCard({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function SubscriptionBilling() {
-  const { actor: _actor, isFetching } = useActor();
+  const { actor: _actor, isFetching } = useActor(createActor);
   const actor = _actor as unknown as FullBackend | null;
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [cancelling, setCancelling] = useState(false);

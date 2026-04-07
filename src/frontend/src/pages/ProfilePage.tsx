@@ -13,8 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
+import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -29,6 +28,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 
 const LANGUAGES = [
   { code: "en", label: "🇺🇸 English" },
@@ -81,7 +81,7 @@ function truncatePrincipal(principal: string): string {
 }
 
 export default function ProfilePage() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);

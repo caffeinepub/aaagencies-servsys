@@ -8,7 +8,78 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const TaskStatus = IDL.Variant({
+  'cancelled' : IDL.Null,
+  'pending' : IDL.Null,
+  'in_progress' : IDL.Null,
+  'completed' : IDL.Null,
+  'failed' : IDL.Null,
+});
 export const Principal = IDL.Principal;
+export const TaskPriority = IDL.Variant({
+  'low' : IDL.Null,
+  'high' : IDL.Null,
+  'urgent' : IDL.Null,
+  'medium' : IDL.Null,
+});
+export const Task = IDL.Record({
+  'id' : IDL.Text,
+  'status' : TaskStatus,
+  'inputData' : IDL.Opt(IDL.Text),
+  'title' : IDL.Text,
+  'assignedTo' : IDL.Opt(Principal),
+  'orgId' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'createdBy' : Principal,
+  'tags' : IDL.Vec(IDL.Text),
+  'description' : IDL.Text,
+  'assignedAgentId' : IDL.Opt(IDL.Text),
+  'language' : IDL.Text,
+  'updatedAt' : IDL.Int,
+  'outputData' : IDL.Opt(IDL.Text),
+  'priority' : TaskPriority,
+});
+export const AgentStatus = IDL.Variant({
+  'active' : IDL.Null,
+  'inactive' : IDL.Null,
+  'training' : IDL.Null,
+});
+export const AgentDefinition = IDL.Record({
+  'id' : IDL.Text,
+  'status' : AgentStatus,
+  'capabilities' : IDL.Vec(IDL.Text),
+  'orgId' : IDL.Text,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'createdBy' : Principal,
+  'description' : IDL.Text,
+  'endpointUrl' : IDL.Opt(IDL.Text),
+  'supportedLanguages' : IDL.Vec(IDL.Text),
+  'modelType' : IDL.Text,
+});
+export const AgentTemplateInput = IDL.Record({
+  'orgId' : IDL.Opt(IDL.Text),
+  'name' : IDL.Text,
+  'tags' : IDL.Vec(IDL.Text),
+  'description' : IDL.Text,
+  'endpointUrl' : IDL.Opt(IDL.Text),
+  'systemPrompt' : IDL.Opt(IDL.Text),
+  'isPublic' : IDL.Bool,
+  'endpointHeaders' : IDL.Opt(IDL.Text),
+});
+export const AgentTemplate = IDL.Record({
+  'id' : IDL.Text,
+  'orgId' : IDL.Opt(IDL.Text),
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'createdBy' : Principal,
+  'tags' : IDL.Vec(IDL.Text),
+  'description' : IDL.Text,
+  'endpointUrl' : IDL.Opt(IDL.Text),
+  'systemPrompt' : IDL.Opt(IDL.Text),
+  'isPublic' : IDL.Bool,
+  'endpointHeaders' : IDL.Opt(IDL.Text),
+});
 export const BranchInput = IDL.Record({
   'timezone' : IDL.Text,
   'orgId' : IDL.Text,
@@ -33,6 +104,50 @@ export const Branch = IDL.Record({
   'phone' : IDL.Opt(IDL.Text),
   'location' : IDL.Text,
   'primaryLanguage' : IDL.Text,
+});
+export const FFFAssetType = IDL.Variant({
+  'realEstate' : IDL.Null,
+  'custom' : IDL.Null,
+  'business' : IDL.Null,
+  'revenueStream' : IDL.Null,
+  'intellectualProperty' : IDL.Null,
+});
+export const FractionalAssetInput = IDL.Record({
+  'orgId' : IDL.Text,
+  'name' : IDL.Text,
+  'valuationUsd' : IDL.Nat,
+  'description' : IDL.Text,
+  'assetType' : FFFAssetType,
+  'totalShares' : IDL.Nat,
+});
+export const FractionalAsset = IDL.Record({
+  'id' : IDL.Text,
+  'orgId' : IDL.Text,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'createdBy' : Principal,
+  'valuationUsd' : IDL.Nat,
+  'description' : IDL.Text,
+  'isActive' : IDL.Bool,
+  'updatedAt' : IDL.Int,
+  'assetType' : FFFAssetType,
+  'totalShares' : IDL.Nat,
+});
+export const FranchiseLinkStatus = IDL.Variant({
+  'active' : IDL.Null,
+  'terminated' : IDL.Null,
+  'pending' : IDL.Null,
+});
+export const FranchiseLink = IDL.Record({
+  'id' : IDL.Text,
+  'status' : FranchiseLinkStatus,
+  'royaltyPct' : IDL.Nat,
+  'createdAt' : IDL.Int,
+  'createdBy' : Principal,
+  'franchisorOrgId' : IDL.Text,
+  'franchiseeOrgId' : IDL.Text,
+  'updatedAt' : IDL.Int,
+  'termsUrl' : IDL.Opt(IDL.Text),
 });
 export const Role = IDL.Variant({
   'super_admin' : IDL.Null,
@@ -73,6 +188,8 @@ export const OrganizationInput = IDL.Record({
 });
 export const Organization = IDL.Record({
   'id' : IDL.Text,
+  'customSubdomain' : IDL.Opt(IDL.Text),
+  'customDomain' : IDL.Opt(IDL.Text),
   'ownerId' : Principal,
   'stripeSubscriptionId' : IDL.Opt(IDL.Text),
   'name' : IDL.Text,
@@ -84,6 +201,56 @@ export const Organization = IDL.Record({
   'supportedLanguages' : IDL.Vec(IDL.Text),
   'planTier' : PlanTier,
   'primaryLanguage' : IDL.Text,
+});
+export const RevenueSplitEntry = IDL.Record({
+  'userName' : IDL.Text,
+  'shares' : IDL.Nat,
+  'userId' : Principal,
+  'amountUsd' : IDL.Nat,
+});
+export const RevenueSplitStatus = IDL.Variant({
+  'distributed' : IDL.Null,
+  'cancelled' : IDL.Null,
+  'pending' : IDL.Null,
+});
+export const RevenueSplit = IDL.Record({
+  'id' : IDL.Text,
+  'status' : RevenueSplitStatus,
+  'orgId' : IDL.Text,
+  'assetId' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'createdBy' : Principal,
+  'distributedAt' : IDL.Opt(IDL.Int),
+  'totalAmountUsd' : IDL.Nat,
+  'distribution' : IDL.Vec(RevenueSplitEntry),
+});
+export const NotificationType = IDL.Variant({
+  'agentDeactivated' : IDL.Null,
+  'taskStatusChanged' : IDL.Null,
+  'orgCreated' : IDL.Null,
+  'systemMessage' : IDL.Null,
+  'inviteRedeemed' : IDL.Null,
+});
+export const Notification = IDL.Record({
+  'id' : IDL.Text,
+  'title' : IDL.Text,
+  'orgId' : IDL.Text,
+  'userId' : Principal,
+  'notificationType' : NotificationType,
+  'createdAt' : IDL.Int,
+  'isRead' : IDL.Bool,
+  'message' : IDL.Text,
+  'relatedId' : IDL.Opt(IDL.Text),
+});
+export const TaskInput = IDL.Record({
+  'inputData' : IDL.Opt(IDL.Text),
+  'title' : IDL.Text,
+  'assignedTo' : IDL.Opt(Principal),
+  'tags' : IDL.Vec(IDL.Text),
+  'description' : IDL.Text,
+  'assignedAgentId' : IDL.Opt(IDL.Text),
+  'language' : IDL.Text,
+  'priority' : TaskPriority,
 });
 export const AccountType = IDL.Variant({
   'vendor_account' : IDL.Null,
@@ -132,6 +299,46 @@ export const Transaction = IDL.Record({
   'amountE8s' : IDL.Nat,
   'initiatedBy' : Principal,
 });
+export const ApiKeyInput = IDL.Record({
+  'permissions' : IDL.Vec(IDL.Text),
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+});
+export const ApiKey = IDL.Record({
+  'id' : IDL.Text,
+  'lastUsedAt' : IDL.Opt(IDL.Int),
+  'permissions' : IDL.Vec(IDL.Text),
+  'orgId' : IDL.Text,
+  'keyPrefix' : IDL.Text,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'createdBy' : Principal,
+  'description' : IDL.Text,
+  'isActive' : IDL.Bool,
+  'keyHash' : IDL.Nat,
+});
+export const ActivityEventType = IDL.Variant({
+  'userInvited' : IDL.Null,
+  'agentDeactivated' : IDL.Null,
+  'orgCreated' : IDL.Null,
+  'taskFailed' : IDL.Null,
+  'userJoined' : IDL.Null,
+  'taskCompleted' : IDL.Null,
+  'taskCreated' : IDL.Null,
+  'walletCreated' : IDL.Null,
+  'agentRegistered' : IDL.Null,
+});
+export const ActivityEvent = IDL.Record({
+  'id' : IDL.Text,
+  'actorName' : IDL.Text,
+  'orgId' : IDL.Text,
+  'description' : IDL.Text,
+  'actorId' : Principal,
+  'targetName' : IDL.Opt(IDL.Text),
+  'timestamp' : IDL.Int,
+  'targetId' : IDL.Opt(IDL.Text),
+  'eventType' : ActivityEventType,
+});
 export const Lead = IDL.Record({
   'id' : IDL.Text,
   'preferredLanguage' : IDL.Text,
@@ -156,11 +363,97 @@ export const User = IDL.Record({
   'avatarUrl' : IDL.Opt(IDL.Text),
   'branchId' : IDL.Opt(IDL.Text),
 });
+export const AuditEntry = IDL.Record({
+  'id' : IDL.Text,
+  'action' : IDL.Text,
+  'actorName' : IDL.Text,
+  'orgId' : IDL.Opt(IDL.Text),
+  'description' : IDL.Text,
+  'actorId' : Principal,
+  'targetKind' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'targetId' : IDL.Text,
+});
+export const SenderRole = IDL.Variant({
+  'agent' : IDL.Null,
+  'user' : IDL.Null,
+});
+export const ConversationMessage = IDL.Record({
+  'id' : IDL.Text,
+  'isError' : IDL.Bool,
+  'content' : IDL.Text,
+  'orgId' : IDL.Text,
+  'agentId' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'senderRole' : SenderRole,
+  'senderId' : Principal,
+});
+export const FractionalOwnership = IDL.Record({
+  'id' : IDL.Text,
+  'userName' : IDL.Text,
+  'shares' : IDL.Nat,
+  'orgId' : IDL.Text,
+  'assetId' : IDL.Text,
+  'userId' : Principal,
+  'issuedAt' : IDL.Int,
+});
+export const OrgSettings = IDL.Record({
+  'timezone' : IDL.Text,
+  'webhookEvents' : IDL.Vec(IDL.Text),
+  'notifyOnAgentDeactivated' : IDL.Bool,
+  'notifyOnTaskComplete' : IDL.Bool,
+  'defaultLanguage' : IDL.Text,
+  'notifyOnUserJoined' : IDL.Bool,
+  'webhookUrl' : IDL.Opt(IDL.Text),
+});
+export const PlanLimits = IDL.Record({
+  'maxBranches' : IDL.Nat,
+  'maxUsers' : IDL.Nat,
+  'maxAgents' : IDL.Nat,
+  'maxApiKeys' : IDL.Nat,
+  'maxWallets' : IDL.Nat,
+});
+export const OrgsByPlan = IDL.Record({
+  'enterprise' : IDL.Nat,
+  'starter' : IDL.Nat,
+  'free' : IDL.Nat,
+  'professional' : IDL.Nat,
+});
+export const PlatformMetrics = IDL.Record({
+  'totalTasks' : IDL.Nat,
+  'totalAgents' : IDL.Nat,
+  'totalWallets' : IDL.Nat,
+  'orgsByPlan' : OrgsByPlan,
+  'totalOrgs' : IDL.Nat,
+  'totalUsers' : IDL.Nat,
+  'activeOrgs' : IDL.Nat,
+});
+export const PlatformSettings = IDL.Record({
+  'announcementBannerEnabled' : IDL.Bool,
+  'announcementBanner' : IDL.Opt(IDL.Text),
+  'launchDate' : IDL.Opt(IDL.Int),
+});
 export const UserInput = IDL.Record({
   'principal' : Principal,
   'preferredLanguage' : IDL.Text,
   'displayName' : IDL.Text,
   'email' : IDL.Text,
+});
+export const AgentInput = IDL.Record({
+  'status' : AgentStatus,
+  'capabilities' : IDL.Vec(IDL.Text),
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+  'endpointUrl' : IDL.Opt(IDL.Text),
+  'supportedLanguages' : IDL.Vec(IDL.Text),
+  'modelType' : IDL.Text,
+});
+export const SearchResult = IDL.Record({
+  'id' : IDL.Text,
+  'url' : IDL.Text,
+  'resultLabel' : IDL.Text,
+  'kind' : IDL.Text,
+  'subtitle' : IDL.Text,
 });
 export const LeadInput = IDL.Record({
   'preferredLanguage' : IDL.Text,
@@ -169,6 +462,33 @@ export const LeadInput = IDL.Record({
   'source' : IDL.Text,
   'name' : IDL.Text,
   'email' : IDL.Text,
+});
+export const http_header = IDL.Record({
+  'value' : IDL.Text,
+  'name' : IDL.Text,
+});
+export const http_request_result = IDL.Record({
+  'status' : IDL.Nat,
+  'body' : IDL.Vec(IDL.Nat8),
+  'headers' : IDL.Vec(http_header),
+});
+export const TransformationInput = IDL.Record({
+  'context' : IDL.Vec(IDL.Nat8),
+  'response' : http_request_result,
+});
+export const TransformationOutput = IDL.Record({
+  'status' : IDL.Nat,
+  'body' : IDL.Vec(IDL.Nat8),
+  'headers' : IDL.Vec(http_header),
+});
+export const AgentUpdateInput = IDL.Record({
+  'status' : IDL.Opt(AgentStatus),
+  'capabilities' : IDL.Opt(IDL.Vec(IDL.Text)),
+  'name' : IDL.Opt(IDL.Text),
+  'description' : IDL.Opt(IDL.Text),
+  'endpointUrl' : IDL.Opt(IDL.Text),
+  'supportedLanguages' : IDL.Opt(IDL.Vec(IDL.Text)),
+  'modelType' : IDL.Opt(IDL.Text),
 });
 export const BranchUpdateInput = IDL.Record({
   'timezone' : IDL.Opt(IDL.Text),
@@ -181,6 +501,12 @@ export const BranchUpdateInput = IDL.Record({
   'location' : IDL.Opt(IDL.Text),
   'primaryLanguage' : IDL.Opt(IDL.Text),
 });
+export const FractionalAssetUpdateInput = IDL.Record({
+  'name' : IDL.Opt(IDL.Text),
+  'valuationUsd' : IDL.Opt(IDL.Nat),
+  'description' : IDL.Opt(IDL.Text),
+  'isActive' : IDL.Opt(IDL.Bool),
+});
 export const UpdateProfileInput = IDL.Record({
   'preferredLanguage' : IDL.Text,
   'displayName' : IDL.Text,
@@ -188,17 +514,66 @@ export const UpdateProfileInput = IDL.Record({
   'avatarUrl' : IDL.Opt(IDL.Text),
 });
 export const UpdateOrgInput = IDL.Record({
+  'customSubdomain' : IDL.Opt(IDL.Text),
+  'customDomain' : IDL.Opt(IDL.Text),
   'name' : IDL.Text,
   'description' : IDL.Text,
   'logoUrl' : IDL.Opt(IDL.Text),
   'supportedLanguages' : IDL.Vec(IDL.Text),
   'primaryLanguage' : IDL.Text,
 });
+export const TaskUpdateInput = IDL.Record({
+  'status' : IDL.Opt(TaskStatus),
+  'inputData' : IDL.Opt(IDL.Text),
+  'title' : IDL.Opt(IDL.Text),
+  'assignedTo' : IDL.Opt(Principal),
+  'tags' : IDL.Opt(IDL.Vec(IDL.Text)),
+  'description' : IDL.Opt(IDL.Text),
+  'assignedAgentId' : IDL.Opt(IDL.Text),
+  'language' : IDL.Opt(IDL.Text),
+  'outputData' : IDL.Opt(IDL.Text),
+  'priority' : IDL.Opt(TaskPriority),
+});
 
 export const idlService = IDL.Service({
+  'assignTaskToAgent' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : Task, 'err' : IDL.Text })],
+      [],
+    ),
+  'bulkUpdateTaskStatus' : IDL.Func(
+      [IDL.Vec(IDL.Text), IDL.Text],
+      [
+        IDL.Variant({
+          'ok' : IDL.Record({ 'updated' : IDL.Nat, 'failed' : IDL.Nat }),
+          'err' : IDL.Text,
+        }),
+      ],
+      [],
+    ),
+  'cloneAgentFromTemplate' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+      [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
+      [],
+    ),
+  'createAgentTemplate' : IDL.Func(
+      [AgentTemplateInput],
+      [IDL.Variant({ 'ok' : AgentTemplate, 'err' : IDL.Text })],
+      [],
+    ),
   'createBranch' : IDL.Func(
       [BranchInput],
       [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
+      [],
+    ),
+  'createFractionalAsset' : IDL.Func(
+      [FractionalAssetInput],
+      [IDL.Variant({ 'ok' : FractionalAsset, 'err' : IDL.Text })],
+      [],
+    ),
+  'createFranchiseLink' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Opt(IDL.Text)],
+      [IDL.Variant({ 'ok' : FranchiseLink, 'err' : IDL.Text })],
       [],
     ),
   'createInviteLink' : IDL.Func(
@@ -211,9 +586,29 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
       [],
     ),
+  'createRevenueSplit' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Vec(RevenueSplitEntry)],
+      [IDL.Variant({ 'ok' : RevenueSplit, 'err' : IDL.Text })],
+      [],
+    ),
+  'createSystemNotification' : IDL.Func(
+      [Principal, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
+      [IDL.Variant({ 'ok' : Notification, 'err' : IDL.Text })],
+      [],
+    ),
+  'createTask' : IDL.Func(
+      [TaskInput],
+      [IDL.Variant({ 'ok' : Task, 'err' : IDL.Text })],
+      [],
+    ),
   'createWallet' : IDL.Func(
       [WalletInput],
       [IDL.Variant({ 'ok' : WalletAccount, 'err' : IDL.Text })],
+      [],
+    ),
+  'deactivateAgent' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
       [],
     ),
   'deactivateBranch' : IDL.Func(
@@ -226,9 +621,49 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
       [],
     ),
+  'deleteAgentTemplate' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text })],
+      [],
+    ),
   'depositToWallet' : IDL.Func(
       [IDL.Text, IDL.Nat, IDL.Text],
       [IDL.Variant({ 'ok' : Transaction, 'err' : IDL.Text })],
+      [],
+    ),
+  'distributeRevenueSplit' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : RevenueSplit, 'err' : IDL.Text })],
+      [],
+    ),
+  'generateApiKey' : IDL.Func(
+      [ApiKeyInput],
+      [
+        IDL.Variant({
+          'ok' : IDL.Record({ 'apiKey' : ApiKey, 'fullKey' : IDL.Text }),
+          'err' : IDL.Text,
+        }),
+      ],
+      [],
+    ),
+  'getActivityFeed' : IDL.Func(
+      [IDL.Opt(IDL.Text)],
+      [IDL.Variant({ 'ok' : IDL.Vec(ActivityEvent), 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getAgentById' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
+      [],
+    ),
+  'getAgentTemplates' : IDL.Func(
+      [IDL.Opt(IDL.Text)],
+      [IDL.Variant({ 'ok' : IDL.Vec(AgentTemplate), 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getAgentsByOrg' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(AgentDefinition), 'err' : IDL.Text })],
       [],
     ),
   'getAllInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
@@ -240,17 +675,98 @@ export const idlService = IDL.Service({
   'getAllOrganizations' : IDL.Func([], [IDL.Vec(Organization)], []),
   'getAllUsers' : IDL.Func([], [IDL.Vec(User)], ['query']),
   'getAllUsersByEmail' : IDL.Func([], [IDL.Vec(User)], ['query']),
+  'getAuditLog' : IDL.Func(
+      [IDL.Opt(IDL.Text)],
+      [IDL.Variant({ 'ok' : IDL.Vec(AuditEntry), 'err' : IDL.Text })],
+      [],
+    ),
   'getBranchesByOrg' : IDL.Func([IDL.Text], [IDL.Vec(Branch)], []),
+  'getConversationHistory' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(ConversationMessage), 'err' : IDL.Text })],
+      [],
+    ),
+  'getFractionalAssetById' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : FractionalAsset, 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getFractionalAssets' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(FractionalAsset), 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getFranchiseLinks' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(FranchiseLink), 'err' : IDL.Text })],
+      ['query'],
+    ),
   'getInviteLinkByCode' : IDL.Func(
       [IDL.Text],
       [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
       ['query'],
     ),
   'getMyInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
+  'getMyNotifications' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Vec(Notification), 'err' : IDL.Text })],
+      ['query'],
+    ),
   'getMyOrganization' : IDL.Func([], [IDL.Opt(Organization)], []),
+  'getMyOwnership' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Vec(FractionalOwnership), 'err' : IDL.Text })],
+      ['query'],
+    ),
   'getMyProfile' : IDL.Func([], [User], []),
+  'getMyTasks' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Vec(Task), 'err' : IDL.Text })],
+      [],
+    ),
   'getMyWallets' : IDL.Func([], [IDL.Vec(WalletAccount)], ['query']),
+  'getOrgSettings' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : OrgSettings, 'err' : IDL.Text })],
+      ['query'],
+    ),
   'getOrganizationById' : IDL.Func([IDL.Text], [IDL.Opt(Organization)], []),
+  'getOwnershipByAsset' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(FractionalOwnership), 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getPlanLimits' : IDL.Func([PlanTier], [PlanLimits], ['query']),
+  'getPlatformFranchiseLinks' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Vec(FranchiseLink), 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getPlatformMetrics' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : PlatformMetrics, 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getPlatformSettings' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : PlatformSettings, 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getRevenueSplits' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(RevenueSplit), 'err' : IDL.Text })],
+      ['query'],
+    ),
+  'getTasksByAgent' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(Task), 'err' : IDL.Text })],
+      [],
+    ),
+  'getTasksByOrg' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(Task), 'err' : IDL.Text })],
+      [],
+    ),
   'getTeamMembersByOrg' : IDL.Func([IDL.Text], [IDL.Vec(User)], []),
   'getTransactionHistory' : IDL.Func(
       [IDL.Text],
@@ -269,9 +785,34 @@ export const idlService = IDL.Service({
       [],
     ),
   'isRegistered' : IDL.Func([], [IDL.Bool], ['query']),
+  'issueShares' : IDL.Func(
+      [IDL.Text, IDL.Principal, IDL.Nat],
+      [IDL.Variant({ 'ok' : FractionalOwnership, 'err' : IDL.Text })],
+      [],
+    ),
+  'listApiKeys' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Vec(ApiKey), 'err' : IDL.Text })],
+      [],
+    ),
+  'markAllNotificationsRead' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text })],
+      [],
+    ),
+  'markNotificationRead' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : Notification, 'err' : IDL.Text })],
+      [],
+    ),
   'redeemInviteLink' : IDL.Func(
       [IDL.Text, UserInput],
       [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+      [],
+    ),
+  'registerAgent' : IDL.Func(
+      [AgentInput],
+      [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
       [],
     ),
   'registerUser' : IDL.Func(
@@ -284,6 +825,37 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
       [],
     ),
+  'revokeApiKey' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : ApiKey, 'err' : IDL.Text })],
+      [],
+    ),
+  'searchOrg' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(SearchResult)],
+      ['query'],
+    ),
+  'searchPlatform' : IDL.Func([IDL.Text], [IDL.Vec(SearchResult)], ['query']),
+  'sendAgentMessage' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Vec(ConversationMessage), 'err' : IDL.Text })],
+      [],
+    ),
+  'setOrgActive' : IDL.Func(
+      [IDL.Text, IDL.Bool],
+      [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+      [],
+    ),
+  'setOrgPlanOverride' : IDL.Func(
+      [IDL.Text, PlanTier],
+      [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+      [],
+    ),
+  'setPlanLimits' : IDL.Func(
+      [PlanTier, PlanLimits],
+      [IDL.Variant({ 'ok' : PlanLimits, 'err' : IDL.Text })],
+      [],
+    ),
   'submitLead' : IDL.Func(
       [LeadInput],
       [IDL.Variant({ 'ok' : Lead, 'err' : IDL.Text })],
@@ -294,9 +866,29 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : Transaction, 'err' : IDL.Text })],
       [],
     ),
+  'transformHttpResponse' : IDL.Func(
+      [TransformationInput],
+      [TransformationOutput],
+      ['query'],
+    ),
+  'updateAgent' : IDL.Func(
+      [IDL.Text, AgentUpdateInput],
+      [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
+      [],
+    ),
   'updateBranch' : IDL.Func(
       [IDL.Text, BranchUpdateInput],
       [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateFractionalAsset' : IDL.Func(
+      [IDL.Text, FractionalAssetUpdateInput],
+      [IDL.Variant({ 'ok' : FractionalAsset, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateFranchiseLinkStatus' : IDL.Func(
+      [IDL.Text, FranchiseLinkStatus],
+      [IDL.Variant({ 'ok' : FranchiseLink, 'err' : IDL.Text })],
       [],
     ),
   'updateLastLogin' : IDL.Func([], [], []),
@@ -305,9 +897,34 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
       [],
     ),
+  'updateOrgDomain' : IDL.Func(
+      [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+      [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateOrgSettings' : IDL.Func(
+      [IDL.Text, OrgSettings],
+      [IDL.Variant({ 'ok' : OrgSettings, 'err' : IDL.Text })],
+      [],
+    ),
   'updateOrganization' : IDL.Func(
       [IDL.Text, UpdateOrgInput],
       [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+      [],
+    ),
+  'updatePlatformSettings' : IDL.Func(
+      [PlatformSettings],
+      [IDL.Variant({ 'ok' : PlatformSettings, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateTask' : IDL.Func(
+      [IDL.Text, TaskUpdateInput],
+      [IDL.Variant({ 'ok' : Task, 'err' : IDL.Text })],
+      [],
+    ),
+  'updateTaskStatus' : IDL.Func(
+      [IDL.Text, TaskStatus],
+      [IDL.Variant({ 'ok' : Task, 'err' : IDL.Text })],
       [],
     ),
   'updateUserRole' : IDL.Func(
@@ -320,7 +937,78 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const TaskStatus = IDL.Variant({
+    'cancelled' : IDL.Null,
+    'pending' : IDL.Null,
+    'in_progress' : IDL.Null,
+    'completed' : IDL.Null,
+    'failed' : IDL.Null,
+  });
   const Principal = IDL.Principal;
+  const TaskPriority = IDL.Variant({
+    'low' : IDL.Null,
+    'high' : IDL.Null,
+    'urgent' : IDL.Null,
+    'medium' : IDL.Null,
+  });
+  const Task = IDL.Record({
+    'id' : IDL.Text,
+    'status' : TaskStatus,
+    'inputData' : IDL.Opt(IDL.Text),
+    'title' : IDL.Text,
+    'assignedTo' : IDL.Opt(Principal),
+    'orgId' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'createdBy' : Principal,
+    'tags' : IDL.Vec(IDL.Text),
+    'description' : IDL.Text,
+    'assignedAgentId' : IDL.Opt(IDL.Text),
+    'language' : IDL.Text,
+    'updatedAt' : IDL.Int,
+    'outputData' : IDL.Opt(IDL.Text),
+    'priority' : TaskPriority,
+  });
+  const AgentStatus = IDL.Variant({
+    'active' : IDL.Null,
+    'inactive' : IDL.Null,
+    'training' : IDL.Null,
+  });
+  const AgentDefinition = IDL.Record({
+    'id' : IDL.Text,
+    'status' : AgentStatus,
+    'capabilities' : IDL.Vec(IDL.Text),
+    'orgId' : IDL.Text,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'createdBy' : Principal,
+    'description' : IDL.Text,
+    'endpointUrl' : IDL.Opt(IDL.Text),
+    'supportedLanguages' : IDL.Vec(IDL.Text),
+    'modelType' : IDL.Text,
+  });
+  const AgentTemplateInput = IDL.Record({
+    'orgId' : IDL.Opt(IDL.Text),
+    'name' : IDL.Text,
+    'tags' : IDL.Vec(IDL.Text),
+    'description' : IDL.Text,
+    'endpointUrl' : IDL.Opt(IDL.Text),
+    'systemPrompt' : IDL.Opt(IDL.Text),
+    'isPublic' : IDL.Bool,
+    'endpointHeaders' : IDL.Opt(IDL.Text),
+  });
+  const AgentTemplate = IDL.Record({
+    'id' : IDL.Text,
+    'orgId' : IDL.Opt(IDL.Text),
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'createdBy' : Principal,
+    'tags' : IDL.Vec(IDL.Text),
+    'description' : IDL.Text,
+    'endpointUrl' : IDL.Opt(IDL.Text),
+    'systemPrompt' : IDL.Opt(IDL.Text),
+    'isPublic' : IDL.Bool,
+    'endpointHeaders' : IDL.Opt(IDL.Text),
+  });
   const BranchInput = IDL.Record({
     'timezone' : IDL.Text,
     'orgId' : IDL.Text,
@@ -345,6 +1033,50 @@ export const idlFactory = ({ IDL }) => {
     'phone' : IDL.Opt(IDL.Text),
     'location' : IDL.Text,
     'primaryLanguage' : IDL.Text,
+  });
+  const FFFAssetType = IDL.Variant({
+    'realEstate' : IDL.Null,
+    'custom' : IDL.Null,
+    'business' : IDL.Null,
+    'revenueStream' : IDL.Null,
+    'intellectualProperty' : IDL.Null,
+  });
+  const FractionalAssetInput = IDL.Record({
+    'orgId' : IDL.Text,
+    'name' : IDL.Text,
+    'valuationUsd' : IDL.Nat,
+    'description' : IDL.Text,
+    'assetType' : FFFAssetType,
+    'totalShares' : IDL.Nat,
+  });
+  const FractionalAsset = IDL.Record({
+    'id' : IDL.Text,
+    'orgId' : IDL.Text,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'createdBy' : Principal,
+    'valuationUsd' : IDL.Nat,
+    'description' : IDL.Text,
+    'isActive' : IDL.Bool,
+    'updatedAt' : IDL.Int,
+    'assetType' : FFFAssetType,
+    'totalShares' : IDL.Nat,
+  });
+  const FranchiseLinkStatus = IDL.Variant({
+    'active' : IDL.Null,
+    'terminated' : IDL.Null,
+    'pending' : IDL.Null,
+  });
+  const FranchiseLink = IDL.Record({
+    'id' : IDL.Text,
+    'status' : FranchiseLinkStatus,
+    'royaltyPct' : IDL.Nat,
+    'createdAt' : IDL.Int,
+    'createdBy' : Principal,
+    'franchisorOrgId' : IDL.Text,
+    'franchiseeOrgId' : IDL.Text,
+    'updatedAt' : IDL.Int,
+    'termsUrl' : IDL.Opt(IDL.Text),
   });
   const Role = IDL.Variant({
     'super_admin' : IDL.Null,
@@ -385,6 +1117,8 @@ export const idlFactory = ({ IDL }) => {
   });
   const Organization = IDL.Record({
     'id' : IDL.Text,
+    'customSubdomain' : IDL.Opt(IDL.Text),
+    'customDomain' : IDL.Opt(IDL.Text),
     'ownerId' : Principal,
     'stripeSubscriptionId' : IDL.Opt(IDL.Text),
     'name' : IDL.Text,
@@ -396,6 +1130,56 @@ export const idlFactory = ({ IDL }) => {
     'supportedLanguages' : IDL.Vec(IDL.Text),
     'planTier' : PlanTier,
     'primaryLanguage' : IDL.Text,
+  });
+  const RevenueSplitEntry = IDL.Record({
+    'userName' : IDL.Text,
+    'shares' : IDL.Nat,
+    'userId' : Principal,
+    'amountUsd' : IDL.Nat,
+  });
+  const RevenueSplitStatus = IDL.Variant({
+    'distributed' : IDL.Null,
+    'cancelled' : IDL.Null,
+    'pending' : IDL.Null,
+  });
+  const RevenueSplit = IDL.Record({
+    'id' : IDL.Text,
+    'status' : RevenueSplitStatus,
+    'orgId' : IDL.Text,
+    'assetId' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'createdBy' : Principal,
+    'distributedAt' : IDL.Opt(IDL.Int),
+    'totalAmountUsd' : IDL.Nat,
+    'distribution' : IDL.Vec(RevenueSplitEntry),
+  });
+  const NotificationType = IDL.Variant({
+    'agentDeactivated' : IDL.Null,
+    'taskStatusChanged' : IDL.Null,
+    'orgCreated' : IDL.Null,
+    'systemMessage' : IDL.Null,
+    'inviteRedeemed' : IDL.Null,
+  });
+  const Notification = IDL.Record({
+    'id' : IDL.Text,
+    'title' : IDL.Text,
+    'orgId' : IDL.Text,
+    'userId' : Principal,
+    'notificationType' : NotificationType,
+    'createdAt' : IDL.Int,
+    'isRead' : IDL.Bool,
+    'message' : IDL.Text,
+    'relatedId' : IDL.Opt(IDL.Text),
+  });
+  const TaskInput = IDL.Record({
+    'inputData' : IDL.Opt(IDL.Text),
+    'title' : IDL.Text,
+    'assignedTo' : IDL.Opt(Principal),
+    'tags' : IDL.Vec(IDL.Text),
+    'description' : IDL.Text,
+    'assignedAgentId' : IDL.Opt(IDL.Text),
+    'language' : IDL.Text,
+    'priority' : TaskPriority,
   });
   const AccountType = IDL.Variant({
     'vendor_account' : IDL.Null,
@@ -444,6 +1228,46 @@ export const idlFactory = ({ IDL }) => {
     'amountE8s' : IDL.Nat,
     'initiatedBy' : Principal,
   });
+  const ApiKeyInput = IDL.Record({
+    'permissions' : IDL.Vec(IDL.Text),
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+  });
+  const ApiKey = IDL.Record({
+    'id' : IDL.Text,
+    'lastUsedAt' : IDL.Opt(IDL.Int),
+    'permissions' : IDL.Vec(IDL.Text),
+    'orgId' : IDL.Text,
+    'keyPrefix' : IDL.Text,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'createdBy' : Principal,
+    'description' : IDL.Text,
+    'isActive' : IDL.Bool,
+    'keyHash' : IDL.Nat,
+  });
+  const ActivityEventType = IDL.Variant({
+    'userInvited' : IDL.Null,
+    'agentDeactivated' : IDL.Null,
+    'orgCreated' : IDL.Null,
+    'taskFailed' : IDL.Null,
+    'userJoined' : IDL.Null,
+    'taskCompleted' : IDL.Null,
+    'taskCreated' : IDL.Null,
+    'walletCreated' : IDL.Null,
+    'agentRegistered' : IDL.Null,
+  });
+  const ActivityEvent = IDL.Record({
+    'id' : IDL.Text,
+    'actorName' : IDL.Text,
+    'orgId' : IDL.Text,
+    'description' : IDL.Text,
+    'actorId' : Principal,
+    'targetName' : IDL.Opt(IDL.Text),
+    'timestamp' : IDL.Int,
+    'targetId' : IDL.Opt(IDL.Text),
+    'eventType' : ActivityEventType,
+  });
   const Lead = IDL.Record({
     'id' : IDL.Text,
     'preferredLanguage' : IDL.Text,
@@ -468,11 +1292,94 @@ export const idlFactory = ({ IDL }) => {
     'avatarUrl' : IDL.Opt(IDL.Text),
     'branchId' : IDL.Opt(IDL.Text),
   });
+  const AuditEntry = IDL.Record({
+    'id' : IDL.Text,
+    'action' : IDL.Text,
+    'actorName' : IDL.Text,
+    'orgId' : IDL.Opt(IDL.Text),
+    'description' : IDL.Text,
+    'actorId' : Principal,
+    'targetKind' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'targetId' : IDL.Text,
+  });
+  const SenderRole = IDL.Variant({ 'agent' : IDL.Null, 'user' : IDL.Null });
+  const ConversationMessage = IDL.Record({
+    'id' : IDL.Text,
+    'isError' : IDL.Bool,
+    'content' : IDL.Text,
+    'orgId' : IDL.Text,
+    'agentId' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'senderRole' : SenderRole,
+    'senderId' : Principal,
+  });
+  const FractionalOwnership = IDL.Record({
+    'id' : IDL.Text,
+    'userName' : IDL.Text,
+    'shares' : IDL.Nat,
+    'orgId' : IDL.Text,
+    'assetId' : IDL.Text,
+    'userId' : Principal,
+    'issuedAt' : IDL.Int,
+  });
+  const OrgSettings = IDL.Record({
+    'timezone' : IDL.Text,
+    'webhookEvents' : IDL.Vec(IDL.Text),
+    'notifyOnAgentDeactivated' : IDL.Bool,
+    'notifyOnTaskComplete' : IDL.Bool,
+    'defaultLanguage' : IDL.Text,
+    'notifyOnUserJoined' : IDL.Bool,
+    'webhookUrl' : IDL.Opt(IDL.Text),
+  });
+  const PlanLimits = IDL.Record({
+    'maxBranches' : IDL.Nat,
+    'maxUsers' : IDL.Nat,
+    'maxAgents' : IDL.Nat,
+    'maxApiKeys' : IDL.Nat,
+    'maxWallets' : IDL.Nat,
+  });
+  const OrgsByPlan = IDL.Record({
+    'enterprise' : IDL.Nat,
+    'starter' : IDL.Nat,
+    'free' : IDL.Nat,
+    'professional' : IDL.Nat,
+  });
+  const PlatformMetrics = IDL.Record({
+    'totalTasks' : IDL.Nat,
+    'totalAgents' : IDL.Nat,
+    'totalWallets' : IDL.Nat,
+    'orgsByPlan' : OrgsByPlan,
+    'totalOrgs' : IDL.Nat,
+    'totalUsers' : IDL.Nat,
+    'activeOrgs' : IDL.Nat,
+  });
+  const PlatformSettings = IDL.Record({
+    'announcementBannerEnabled' : IDL.Bool,
+    'announcementBanner' : IDL.Opt(IDL.Text),
+    'launchDate' : IDL.Opt(IDL.Int),
+  });
   const UserInput = IDL.Record({
     'principal' : Principal,
     'preferredLanguage' : IDL.Text,
     'displayName' : IDL.Text,
     'email' : IDL.Text,
+  });
+  const AgentInput = IDL.Record({
+    'status' : AgentStatus,
+    'capabilities' : IDL.Vec(IDL.Text),
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+    'endpointUrl' : IDL.Opt(IDL.Text),
+    'supportedLanguages' : IDL.Vec(IDL.Text),
+    'modelType' : IDL.Text,
+  });
+  const SearchResult = IDL.Record({
+    'id' : IDL.Text,
+    'url' : IDL.Text,
+    'resultLabel' : IDL.Text,
+    'kind' : IDL.Text,
+    'subtitle' : IDL.Text,
   });
   const LeadInput = IDL.Record({
     'preferredLanguage' : IDL.Text,
@@ -481,6 +1388,30 @@ export const idlFactory = ({ IDL }) => {
     'source' : IDL.Text,
     'name' : IDL.Text,
     'email' : IDL.Text,
+  });
+  const http_header = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
+  const http_request_result = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
+  });
+  const TransformationInput = IDL.Record({
+    'context' : IDL.Vec(IDL.Nat8),
+    'response' : http_request_result,
+  });
+  const TransformationOutput = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
+  });
+  const AgentUpdateInput = IDL.Record({
+    'status' : IDL.Opt(AgentStatus),
+    'capabilities' : IDL.Opt(IDL.Vec(IDL.Text)),
+    'name' : IDL.Opt(IDL.Text),
+    'description' : IDL.Opt(IDL.Text),
+    'endpointUrl' : IDL.Opt(IDL.Text),
+    'supportedLanguages' : IDL.Opt(IDL.Vec(IDL.Text)),
+    'modelType' : IDL.Opt(IDL.Text),
   });
   const BranchUpdateInput = IDL.Record({
     'timezone' : IDL.Opt(IDL.Text),
@@ -493,6 +1424,12 @@ export const idlFactory = ({ IDL }) => {
     'location' : IDL.Opt(IDL.Text),
     'primaryLanguage' : IDL.Opt(IDL.Text),
   });
+  const FractionalAssetUpdateInput = IDL.Record({
+    'name' : IDL.Opt(IDL.Text),
+    'valuationUsd' : IDL.Opt(IDL.Nat),
+    'description' : IDL.Opt(IDL.Text),
+    'isActive' : IDL.Opt(IDL.Bool),
+  });
   const UpdateProfileInput = IDL.Record({
     'preferredLanguage' : IDL.Text,
     'displayName' : IDL.Text,
@@ -500,17 +1437,66 @@ export const idlFactory = ({ IDL }) => {
     'avatarUrl' : IDL.Opt(IDL.Text),
   });
   const UpdateOrgInput = IDL.Record({
+    'customSubdomain' : IDL.Opt(IDL.Text),
+    'customDomain' : IDL.Opt(IDL.Text),
     'name' : IDL.Text,
     'description' : IDL.Text,
     'logoUrl' : IDL.Opt(IDL.Text),
     'supportedLanguages' : IDL.Vec(IDL.Text),
     'primaryLanguage' : IDL.Text,
   });
+  const TaskUpdateInput = IDL.Record({
+    'status' : IDL.Opt(TaskStatus),
+    'inputData' : IDL.Opt(IDL.Text),
+    'title' : IDL.Opt(IDL.Text),
+    'assignedTo' : IDL.Opt(Principal),
+    'tags' : IDL.Opt(IDL.Vec(IDL.Text)),
+    'description' : IDL.Opt(IDL.Text),
+    'assignedAgentId' : IDL.Opt(IDL.Text),
+    'language' : IDL.Opt(IDL.Text),
+    'outputData' : IDL.Opt(IDL.Text),
+    'priority' : IDL.Opt(TaskPriority),
+  });
   
   return IDL.Service({
+    'assignTaskToAgent' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : Task, 'err' : IDL.Text })],
+        [],
+      ),
+    'bulkUpdateTaskStatus' : IDL.Func(
+        [IDL.Vec(IDL.Text), IDL.Text],
+        [
+          IDL.Variant({
+            'ok' : IDL.Record({ 'updated' : IDL.Nat, 'failed' : IDL.Nat }),
+            'err' : IDL.Text,
+          }),
+        ],
+        [],
+      ),
+    'cloneAgentFromTemplate' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+        [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
+        [],
+      ),
+    'createAgentTemplate' : IDL.Func(
+        [AgentTemplateInput],
+        [IDL.Variant({ 'ok' : AgentTemplate, 'err' : IDL.Text })],
+        [],
+      ),
     'createBranch' : IDL.Func(
         [BranchInput],
         [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
+        [],
+      ),
+    'createFractionalAsset' : IDL.Func(
+        [FractionalAssetInput],
+        [IDL.Variant({ 'ok' : FractionalAsset, 'err' : IDL.Text })],
+        [],
+      ),
+    'createFranchiseLink' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Nat, IDL.Opt(IDL.Text)],
+        [IDL.Variant({ 'ok' : FranchiseLink, 'err' : IDL.Text })],
         [],
       ),
     'createInviteLink' : IDL.Func(
@@ -523,9 +1509,29 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
         [],
       ),
+    'createRevenueSplit' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Vec(RevenueSplitEntry)],
+        [IDL.Variant({ 'ok' : RevenueSplit, 'err' : IDL.Text })],
+        [],
+      ),
+    'createSystemNotification' : IDL.Func(
+        [Principal, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
+        [IDL.Variant({ 'ok' : Notification, 'err' : IDL.Text })],
+        [],
+      ),
+    'createTask' : IDL.Func(
+        [TaskInput],
+        [IDL.Variant({ 'ok' : Task, 'err' : IDL.Text })],
+        [],
+      ),
     'createWallet' : IDL.Func(
         [WalletInput],
         [IDL.Variant({ 'ok' : WalletAccount, 'err' : IDL.Text })],
+        [],
+      ),
+    'deactivateAgent' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
         [],
       ),
     'deactivateBranch' : IDL.Func(
@@ -538,9 +1544,49 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
         [],
       ),
+    'deleteAgentTemplate' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text })],
+        [],
+      ),
     'depositToWallet' : IDL.Func(
         [IDL.Text, IDL.Nat, IDL.Text],
         [IDL.Variant({ 'ok' : Transaction, 'err' : IDL.Text })],
+        [],
+      ),
+    'distributeRevenueSplit' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : RevenueSplit, 'err' : IDL.Text })],
+        [],
+      ),
+    'generateApiKey' : IDL.Func(
+        [ApiKeyInput],
+        [
+          IDL.Variant({
+            'ok' : IDL.Record({ 'apiKey' : ApiKey, 'fullKey' : IDL.Text }),
+            'err' : IDL.Text,
+          }),
+        ],
+        [],
+      ),
+    'getActivityFeed' : IDL.Func(
+        [IDL.Opt(IDL.Text)],
+        [IDL.Variant({ 'ok' : IDL.Vec(ActivityEvent), 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getAgentById' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
+        [],
+      ),
+    'getAgentTemplates' : IDL.Func(
+        [IDL.Opt(IDL.Text)],
+        [IDL.Variant({ 'ok' : IDL.Vec(AgentTemplate), 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getAgentsByOrg' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(AgentDefinition), 'err' : IDL.Text })],
         [],
       ),
     'getAllInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
@@ -552,17 +1598,113 @@ export const idlFactory = ({ IDL }) => {
     'getAllOrganizations' : IDL.Func([], [IDL.Vec(Organization)], []),
     'getAllUsers' : IDL.Func([], [IDL.Vec(User)], ['query']),
     'getAllUsersByEmail' : IDL.Func([], [IDL.Vec(User)], ['query']),
+    'getAuditLog' : IDL.Func(
+        [IDL.Opt(IDL.Text)],
+        [IDL.Variant({ 'ok' : IDL.Vec(AuditEntry), 'err' : IDL.Text })],
+        [],
+      ),
     'getBranchesByOrg' : IDL.Func([IDL.Text], [IDL.Vec(Branch)], []),
+    'getConversationHistory' : IDL.Func(
+        [IDL.Text],
+        [
+          IDL.Variant({
+            'ok' : IDL.Vec(ConversationMessage),
+            'err' : IDL.Text,
+          }),
+        ],
+        [],
+      ),
+    'getFractionalAssetById' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : FractionalAsset, 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getFractionalAssets' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(FractionalAsset), 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getFranchiseLinks' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(FranchiseLink), 'err' : IDL.Text })],
+        ['query'],
+      ),
     'getInviteLinkByCode' : IDL.Func(
         [IDL.Text],
         [IDL.Variant({ 'ok' : InviteLink, 'err' : IDL.Text })],
         ['query'],
       ),
     'getMyInviteLinks' : IDL.Func([], [IDL.Vec(InviteLink)], ['query']),
+    'getMyNotifications' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Vec(Notification), 'err' : IDL.Text })],
+        ['query'],
+      ),
     'getMyOrganization' : IDL.Func([], [IDL.Opt(Organization)], []),
+    'getMyOwnership' : IDL.Func(
+        [],
+        [
+          IDL.Variant({
+            'ok' : IDL.Vec(FractionalOwnership),
+            'err' : IDL.Text,
+          }),
+        ],
+        ['query'],
+      ),
     'getMyProfile' : IDL.Func([], [User], []),
+    'getMyTasks' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Vec(Task), 'err' : IDL.Text })],
+        [],
+      ),
     'getMyWallets' : IDL.Func([], [IDL.Vec(WalletAccount)], ['query']),
+    'getOrgSettings' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : OrgSettings, 'err' : IDL.Text })],
+        ['query'],
+      ),
     'getOrganizationById' : IDL.Func([IDL.Text], [IDL.Opt(Organization)], []),
+    'getOwnershipByAsset' : IDL.Func(
+        [IDL.Text],
+        [
+          IDL.Variant({
+            'ok' : IDL.Vec(FractionalOwnership),
+            'err' : IDL.Text,
+          }),
+        ],
+        ['query'],
+      ),
+    'getPlanLimits' : IDL.Func([PlanTier], [PlanLimits], ['query']),
+    'getPlatformFranchiseLinks' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Vec(FranchiseLink), 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getPlatformMetrics' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : PlatformMetrics, 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getPlatformSettings' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : PlatformSettings, 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getRevenueSplits' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(RevenueSplit), 'err' : IDL.Text })],
+        ['query'],
+      ),
+    'getTasksByAgent' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(Task), 'err' : IDL.Text })],
+        [],
+      ),
+    'getTasksByOrg' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Vec(Task), 'err' : IDL.Text })],
+        [],
+      ),
     'getTeamMembersByOrg' : IDL.Func([IDL.Text], [IDL.Vec(User)], []),
     'getTransactionHistory' : IDL.Func(
         [IDL.Text],
@@ -581,9 +1723,34 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'isRegistered' : IDL.Func([], [IDL.Bool], ['query']),
+    'issueShares' : IDL.Func(
+        [IDL.Text, IDL.Principal, IDL.Nat],
+        [IDL.Variant({ 'ok' : FractionalOwnership, 'err' : IDL.Text })],
+        [],
+      ),
+    'listApiKeys' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Vec(ApiKey), 'err' : IDL.Text })],
+        [],
+      ),
+    'markAllNotificationsRead' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text })],
+        [],
+      ),
+    'markNotificationRead' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : Notification, 'err' : IDL.Text })],
+        [],
+      ),
     'redeemInviteLink' : IDL.Func(
         [IDL.Text, UserInput],
         [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
+        [],
+      ),
+    'registerAgent' : IDL.Func(
+        [AgentInput],
+        [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
         [],
       ),
     'registerUser' : IDL.Func(
@@ -596,6 +1763,42 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
         [],
       ),
+    'revokeApiKey' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : ApiKey, 'err' : IDL.Text })],
+        [],
+      ),
+    'searchOrg' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(SearchResult)],
+        ['query'],
+      ),
+    'searchPlatform' : IDL.Func([IDL.Text], [IDL.Vec(SearchResult)], ['query']),
+    'sendAgentMessage' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [
+          IDL.Variant({
+            'ok' : IDL.Vec(ConversationMessage),
+            'err' : IDL.Text,
+          }),
+        ],
+        [],
+      ),
+    'setOrgActive' : IDL.Func(
+        [IDL.Text, IDL.Bool],
+        [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+        [],
+      ),
+    'setOrgPlanOverride' : IDL.Func(
+        [IDL.Text, PlanTier],
+        [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+        [],
+      ),
+    'setPlanLimits' : IDL.Func(
+        [PlanTier, PlanLimits],
+        [IDL.Variant({ 'ok' : PlanLimits, 'err' : IDL.Text })],
+        [],
+      ),
     'submitLead' : IDL.Func(
         [LeadInput],
         [IDL.Variant({ 'ok' : Lead, 'err' : IDL.Text })],
@@ -606,9 +1809,29 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : Transaction, 'err' : IDL.Text })],
         [],
       ),
+    'transformHttpResponse' : IDL.Func(
+        [TransformationInput],
+        [TransformationOutput],
+        ['query'],
+      ),
+    'updateAgent' : IDL.Func(
+        [IDL.Text, AgentUpdateInput],
+        [IDL.Variant({ 'ok' : AgentDefinition, 'err' : IDL.Text })],
+        [],
+      ),
     'updateBranch' : IDL.Func(
         [IDL.Text, BranchUpdateInput],
         [IDL.Variant({ 'ok' : Branch, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateFractionalAsset' : IDL.Func(
+        [IDL.Text, FractionalAssetUpdateInput],
+        [IDL.Variant({ 'ok' : FractionalAsset, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateFranchiseLinkStatus' : IDL.Func(
+        [IDL.Text, FranchiseLinkStatus],
+        [IDL.Variant({ 'ok' : FranchiseLink, 'err' : IDL.Text })],
         [],
       ),
     'updateLastLogin' : IDL.Func([], [], []),
@@ -617,9 +1840,34 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : User, 'err' : IDL.Text })],
         [],
       ),
+    'updateOrgDomain' : IDL.Func(
+        [IDL.Text, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+        [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateOrgSettings' : IDL.Func(
+        [IDL.Text, OrgSettings],
+        [IDL.Variant({ 'ok' : OrgSettings, 'err' : IDL.Text })],
+        [],
+      ),
     'updateOrganization' : IDL.Func(
         [IDL.Text, UpdateOrgInput],
         [IDL.Variant({ 'ok' : Organization, 'err' : IDL.Text })],
+        [],
+      ),
+    'updatePlatformSettings' : IDL.Func(
+        [PlatformSettings],
+        [IDL.Variant({ 'ok' : PlatformSettings, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateTask' : IDL.Func(
+        [IDL.Text, TaskUpdateInput],
+        [IDL.Variant({ 'ok' : Task, 'err' : IDL.Text })],
+        [],
+      ),
+    'updateTaskStatus' : IDL.Func(
+        [IDL.Text, TaskStatus],
+        [IDL.Variant({ 'ok' : Task, 'err' : IDL.Text })],
         [],
       ),
     'updateUserRole' : IDL.Func(

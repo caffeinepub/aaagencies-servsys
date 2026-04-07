@@ -1,0 +1,956 @@
+type http_request_result = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type http_header = 
+ record {
+   name: text;
+   value: text;
+ };
+type WalletInput = 
+ record {
+   accountType: AccountType;
+   branchId: opt text;
+   name: text;
+   orgId: text;
+ };
+type WalletAccount = 
+ record {
+   accountType: AccountType;
+   balanceE8s: nat;
+   branchId: opt text;
+   createdAt: int;
+   currency: text;
+   id: text;
+   isActive: bool;
+   name: text;
+   orgId: text;
+   ownerId: Principal;
+ };
+type UserInput = 
+ record {
+   displayName: text;
+   email: text;
+   preferredLanguage: text;
+   "principal": Principal;
+ };
+type User = 
+ record {
+   avatarUrl: opt text;
+   branchId: opt text;
+   createdAt: int;
+   displayName: text;
+   email: text;
+   isActive: bool;
+   lastLoginAt: opt int;
+   orgId: opt text;
+   preferredLanguage: text;
+   "principal": Principal;
+   role: Role;
+   stripeCustomerId: opt text;
+ };
+type UpdateProfileInput = 
+ record {
+   avatarUrl: opt text;
+   displayName: text;
+   email: text;
+   preferredLanguage: text;
+ };
+type UpdateOrgInput = 
+ record {
+   customDomain: opt text;
+   customSubdomain: opt text;
+   description: text;
+   logoUrl: opt text;
+   name: text;
+   primaryLanguage: text;
+   supportedLanguages: vec text;
+ };
+type TxType = 
+ variant {
+   deposit;
+   distribute;
+   fractionalize;
+   transfer;
+   withdrawal;
+ };
+type TransformationOutput = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type TransformationInput = 
+ record {
+   context: blob;
+   response: http_request_result;
+ };
+type TransactionStatus = 
+ variant {
+   completed;
+   failed;
+   pending;
+ };
+type Transaction = 
+ record {
+   amountE8s: nat;
+   createdAt: int;
+   description: text;
+   fromWalletId: text;
+   id: text;
+   initiatedBy: Principal;
+   status: TransactionStatus;
+   toWalletId: text;
+   txType: TxType;
+ };
+type TaskUpdateInput = 
+ record {
+   assignedAgentId: opt text;
+   assignedTo: opt Principal;
+   description: opt text;
+   inputData: opt text;
+   language: opt text;
+   outputData: opt text;
+   priority: opt TaskPriority;
+   status: opt TaskStatus;
+   tags: opt vec text;
+   title: opt text;
+ };
+type TaskStatus = 
+ variant {
+   cancelled;
+   completed;
+   failed;
+   in_progress;
+   pending;
+ };
+type TaskPriority = 
+ variant {
+   high;
+   low;
+   medium;
+   urgent;
+ };
+type TaskInput = 
+ record {
+   assignedAgentId: opt text;
+   assignedTo: opt Principal;
+   description: text;
+   inputData: opt text;
+   language: text;
+   priority: TaskPriority;
+   tags: vec text;
+   title: text;
+ };
+type Task = 
+ record {
+   assignedAgentId: opt text;
+   assignedTo: opt Principal;
+   createdAt: int;
+   createdBy: Principal;
+   description: text;
+   id: text;
+   inputData: opt text;
+   language: text;
+   orgId: text;
+   outputData: opt text;
+   priority: TaskPriority;
+   status: TaskStatus;
+   tags: vec text;
+   title: text;
+   updatedAt: int;
+ };
+type SenderRole = 
+ variant {
+   agent;
+   user;
+ };
+type SearchResult = 
+ record {
+   id: text;
+   kind: text;
+   resultLabel: text;
+   subtitle: text;
+   url: text;
+ };
+type Role = 
+ variant {
+   end_customer;
+   org_admin;
+   super_admin;
+   team_member;
+ };
+type RevenueSplitStatus = 
+ variant {
+   cancelled;
+   distributed;
+   pending;
+ };
+type RevenueSplitEntry = 
+ record {
+   amountUsd: nat;
+   shares: nat;
+   userId: Principal;
+   userName: text;
+ };
+type RevenueSplit = 
+ record {
+   assetId: text;
+   createdAt: int;
+   createdBy: Principal;
+   distributedAt: opt int;
+   distribution: vec RevenueSplitEntry;
+   id: text;
+   orgId: text;
+   status: RevenueSplitStatus;
+   totalAmountUsd: nat;
+ };
+type Principal = principal;
+type PlatformSettings = 
+ record {
+   announcementBanner: opt text;
+   announcementBannerEnabled: bool;
+   launchDate: opt int;
+ };
+type PlatformMetrics = 
+ record {
+   activeOrgs: nat;
+   orgsByPlan: OrgsByPlan;
+   totalAgents: nat;
+   totalOrgs: nat;
+   totalTasks: nat;
+   totalUsers: nat;
+   totalWallets: nat;
+ };
+type PlanTier = 
+ variant {
+   enterprise;
+   free;
+   professional;
+   starter;
+ };
+type PlanLimits = 
+ record {
+   maxAgents: nat;
+   maxApiKeys: nat;
+   maxBranches: nat;
+   maxUsers: nat;
+   maxWallets: nat;
+ };
+type OrgsByPlan = 
+ record {
+   enterprise: nat;
+   free: nat;
+   professional: nat;
+   starter: nat;
+ };
+type OrganizationInput = 
+ record {
+   description: text;
+   name: text;
+   ownerId: Principal;
+   planTier: PlanTier;
+   primaryLanguage: text;
+ };
+type Organization = 
+ record {
+   createdAt: int;
+   customDomain: opt text;
+   customSubdomain: opt text;
+   description: text;
+   id: text;
+   isActive: bool;
+   logoUrl: opt text;
+   name: text;
+   ownerId: Principal;
+   planTier: PlanTier;
+   primaryLanguage: text;
+   stripeCustomerId: opt text;
+   stripeSubscriptionId: opt text;
+   supportedLanguages: vec text;
+ };
+type OrgSettings = 
+ record {
+   defaultLanguage: text;
+   notifyOnAgentDeactivated: bool;
+   notifyOnTaskComplete: bool;
+   notifyOnUserJoined: bool;
+   timezone: text;
+   webhookEvents: vec text;
+   webhookUrl: opt text;
+ };
+type NotificationType = 
+ variant {
+   agentDeactivated;
+   inviteRedeemed;
+   orgCreated;
+   systemMessage;
+   taskStatusChanged;
+ };
+type Notification = 
+ record {
+   createdAt: int;
+   id: text;
+   isRead: bool;
+   message: text;
+   notificationType: NotificationType;
+   orgId: text;
+   relatedId: opt text;
+   title: text;
+   userId: Principal;
+ };
+type LeadInput = 
+ record {
+   email: text;
+   interest: text;
+   name: text;
+   orgName: opt text;
+   preferredLanguage: text;
+   source: text;
+ };
+type Lead = 
+ record {
+   createdAt: int;
+   email: text;
+   id: text;
+   interest: text;
+   name: text;
+   orgName: opt text;
+   preferredLanguage: text;
+   source: text;
+ };
+type InviteLink = 
+ record {
+   code: text;
+   createdAt: int;
+   createdBy: Principal;
+   expiresAt: opt int;
+   id: text;
+   isActive: bool;
+   maxRedemptions: opt nat;
+   orgId: opt text;
+   redemptionCount: nat;
+   role: Role;
+ };
+type FranchiseLinkStatus = 
+ variant {
+   active;
+   pending;
+   terminated;
+ };
+type FranchiseLink = 
+ record {
+   createdAt: int;
+   createdBy: Principal;
+   franchiseeOrgId: text;
+   franchisorOrgId: text;
+   id: text;
+   royaltyPct: nat;
+   status: FranchiseLinkStatus;
+   termsUrl: opt text;
+   updatedAt: int;
+ };
+type FractionalOwnership = 
+ record {
+   assetId: text;
+   id: text;
+   issuedAt: int;
+   orgId: text;
+   shares: nat;
+   userId: Principal;
+   userName: text;
+ };
+type FractionalAssetUpdateInput = 
+ record {
+   description: opt text;
+   isActive: opt bool;
+   name: opt text;
+   valuationUsd: opt nat;
+ };
+type FractionalAssetInput = 
+ record {
+   assetType: FFFAssetType;
+   description: text;
+   name: text;
+   orgId: text;
+   totalShares: nat;
+   valuationUsd: nat;
+ };
+type FractionalAsset = 
+ record {
+   assetType: FFFAssetType;
+   createdAt: int;
+   createdBy: Principal;
+   description: text;
+   id: text;
+   isActive: bool;
+   name: text;
+   orgId: text;
+   totalShares: nat;
+   updatedAt: int;
+   valuationUsd: nat;
+ };
+type FFFAssetType = 
+ variant {
+   business;
+   custom;
+   intellectualProperty;
+   realEstate;
+   revenueStream;
+ };
+type CreateInviteLinkInput = 
+ record {
+   expiresAt: opt int;
+   maxRedemptions: opt nat;
+   orgId: opt text;
+   role: Role;
+ };
+type ConversationMessage = 
+ record {
+   agentId: text;
+   content: text;
+   id: text;
+   isError: bool;
+   orgId: text;
+   senderId: Principal;
+   senderRole: SenderRole;
+   timestamp: int;
+ };
+type BranchUpdateInput = 
+ record {
+   isActive: opt bool;
+   location: opt text;
+   managerId: opt Principal;
+   name: opt text;
+   phone: opt text;
+   primaryLanguage: opt text;
+   siteUrl: opt text;
+   subWalletEnabled: opt bool;
+   timezone: opt text;
+ };
+type BranchInput = 
+ record {
+   location: text;
+   managerId: opt Principal;
+   name: text;
+   orgId: text;
+   phone: opt text;
+   primaryLanguage: text;
+   siteUrl: opt text;
+   subWalletEnabled: bool;
+   timezone: text;
+ };
+type Branch = 
+ record {
+   createdAt: int;
+   id: text;
+   isActive: bool;
+   location: text;
+   managerId: opt Principal;
+   name: text;
+   orgId: text;
+   phone: opt text;
+   primaryLanguage: text;
+   siteUrl: opt text;
+   subWalletEnabled: bool;
+   timezone: text;
+ };
+type AuditEntry = 
+ record {
+   action: text;
+   actorId: Principal;
+   actorName: text;
+   description: text;
+   id: text;
+   orgId: opt text;
+   targetId: text;
+   targetKind: text;
+   timestamp: int;
+ };
+type ApiKeyInput = 
+ record {
+   description: text;
+   name: text;
+   permissions: vec text;
+ };
+type ApiKey = 
+ record {
+   createdAt: int;
+   createdBy: Principal;
+   description: text;
+   id: text;
+   isActive: bool;
+   keyHash: nat;
+   keyPrefix: text;
+   lastUsedAt: opt int;
+   name: text;
+   orgId: text;
+   permissions: vec text;
+ };
+type AgentUpdateInput = 
+ record {
+   capabilities: opt vec text;
+   description: opt text;
+   endpointUrl: opt text;
+   modelType: opt text;
+   name: opt text;
+   status: opt AgentStatus;
+   supportedLanguages: opt vec text;
+ };
+type AgentTemplateInput = 
+ record {
+   description: text;
+   endpointHeaders: opt text;
+   endpointUrl: opt text;
+   isPublic: bool;
+   name: text;
+   orgId: opt text;
+   systemPrompt: opt text;
+   tags: vec text;
+ };
+type AgentTemplate = 
+ record {
+   createdAt: int;
+   createdBy: Principal;
+   description: text;
+   endpointHeaders: opt text;
+   endpointUrl: opt text;
+   id: text;
+   isPublic: bool;
+   name: text;
+   orgId: opt text;
+   systemPrompt: opt text;
+   tags: vec text;
+ };
+type AgentStatus = 
+ variant {
+   active;
+   inactive;
+   training;
+ };
+type AgentInput = 
+ record {
+   capabilities: vec text;
+   description: text;
+   endpointUrl: opt text;
+   modelType: text;
+   name: text;
+   status: AgentStatus;
+   supportedLanguages: vec text;
+ };
+type AgentDefinition = 
+ record {
+   capabilities: vec text;
+   createdAt: int;
+   createdBy: Principal;
+   description: text;
+   endpointUrl: opt text;
+   id: text;
+   modelType: text;
+   name: text;
+   orgId: text;
+   status: AgentStatus;
+   supportedLanguages: vec text;
+ };
+type ActivityEventType = 
+ variant {
+   agentDeactivated;
+   agentRegistered;
+   orgCreated;
+   taskCompleted;
+   taskCreated;
+   taskFailed;
+   userInvited;
+   userJoined;
+   walletCreated;
+ };
+type ActivityEvent = 
+ record {
+   actorId: Principal;
+   actorName: text;
+   description: text;
+   eventType: ActivityEventType;
+   id: text;
+   orgId: text;
+   targetId: opt text;
+   targetName: opt text;
+   timestamp: int;
+ };
+type AccountType = 
+ variant {
+   branch_fund;
+   member_wallet;
+   org_treasury;
+   vendor_account;
+ };
+service : {
+  assignTaskToAgent: (taskId: text, agentId: text) ->
+   (variant {
+      err: text;
+      ok: Task;
+    });
+  bulkUpdateTaskStatus: (ids: vec text, status: text) ->
+   (variant {
+      err: text;
+      ok: record {
+            failed: nat;
+            updated: nat;
+          };
+    });
+  cloneAgentFromTemplate: (templateId: text, orgId: text, nameOverride:
+   opt text, endpointOverride: opt text) ->
+   (variant {
+      err: text;
+      ok: AgentDefinition;
+    });
+  createAgentTemplate: (input: AgentTemplateInput) ->
+   (variant {
+      err: text;
+      ok: AgentTemplate;
+    });
+  createBranch: (input: BranchInput) -> (variant {
+                                           err: text;
+                                           ok: Branch;
+                                         });
+  createFractionalAsset: (input: FractionalAssetInput) ->
+   (variant {
+      err: text;
+      ok: FractionalAsset;
+    });
+  createFranchiseLink: (franchisorOrgId: text, franchiseeOrgId: text,
+   royaltyPct: nat, termsUrl: opt text) ->
+   (variant {
+      err: text;
+      ok: FranchiseLink;
+    });
+  createInviteLink: (input: CreateInviteLinkInput) ->
+   (variant {
+      err: text;
+      ok: InviteLink;
+    });
+  createOrganization: (input: OrganizationInput) ->
+   (variant {
+      err: text;
+      ok: Organization;
+    });
+  createRevenueSplit: (assetId: text, totalAmountUsd: nat, distribution:
+   vec RevenueSplitEntry) -> (variant {
+                                err: text;
+                                ok: RevenueSplit;
+                              });
+  createSystemNotification: (userId: Principal, title: text, message: 
+   text, relatedId: opt text) -> (variant {
+                                    err: text;
+                                    ok: Notification;
+                                  });
+  createTask: (input: TaskInput) -> (variant {
+                                       err: text;
+                                       ok: Task;
+                                     });
+  createWallet: (input: WalletInput) ->
+   (variant {
+      err: text;
+      ok: WalletAccount;
+    });
+  deactivateAgent: (id: text) -> (variant {
+                                    err: text;
+                                    ok: AgentDefinition;
+                                  });
+  deactivateBranch: (id: text) -> (variant {
+                                     err: text;
+                                     ok: Branch;
+                                   });
+  deactivateInviteLink: (id: text) -> (variant {
+                                         err: text;
+                                         ok: InviteLink;
+                                       });
+  deleteAgentTemplate: (id: text) -> (variant {
+                                        err: text;
+                                        ok: bool;
+                                      });
+  depositToWallet: (walletId: text, amountE8s: nat, description: text) ->
+   (variant {
+      err: text;
+      ok: Transaction;
+    });
+  distributeRevenueSplit: (splitId: text) ->
+   (variant {
+      err: text;
+      ok: RevenueSplit;
+    });
+  generateApiKey: (input: ApiKeyInput) ->
+   (variant {
+      err: text;
+      ok: record {
+            apiKey: ApiKey;
+            fullKey: text;
+          };
+    });
+  getActivityFeed: (orgId: opt text) ->
+   (variant {
+      err: text;
+      ok: vec ActivityEvent;
+    }) query;
+  getAgentById: (id: text) -> (variant {
+                                 err: text;
+                                 ok: AgentDefinition;
+                               });
+  getAgentTemplates: (orgId: opt text) ->
+   (variant {
+      err: text;
+      ok: vec AgentTemplate;
+    }) query;
+  getAgentsByOrg: (orgId: text) ->
+   (variant {
+      err: text;
+      ok: vec AgentDefinition;
+    });
+  getAllInviteLinks: () -> (vec InviteLink) query;
+  getAllLeads: () -> (variant {
+                        err: text;
+                        ok: vec Lead;
+                      });
+  getAllOrganizations: () -> (vec Organization);
+  getAllUsers: () -> (vec User) query;
+  getAllUsersByEmail: () -> (vec User) query;
+  getAuditLog: (orgId: opt text) -> (variant {
+                                       err: text;
+                                       ok: vec AuditEntry;
+                                     });
+  getBranchesByOrg: (orgId: text) -> (vec Branch);
+  getConversationHistory: (agentId: text) ->
+   (variant {
+      err: text;
+      ok: vec ConversationMessage;
+    });
+  getFractionalAssetById: (id: text) ->
+   (variant {
+      err: text;
+      ok: FractionalAsset;
+    }) query;
+  getFractionalAssets: (orgId: text) ->
+   (variant {
+      err: text;
+      ok: vec FractionalAsset;
+    }) query;
+  getFranchiseLinks: (orgId: text) ->
+   (variant {
+      err: text;
+      ok: vec FranchiseLink;
+    }) query;
+  getInviteLinkByCode: (code: text) ->
+   (variant {
+      err: text;
+      ok: InviteLink;
+    }) query;
+  getMyInviteLinks: () -> (vec InviteLink) query;
+  getMyNotifications: () -> (variant {
+                               err: text;
+                               ok: vec Notification;
+                             }) query;
+  getMyOrganization: () -> (opt Organization);
+  getMyOwnership: () ->
+   (variant {
+      err: text;
+      ok: vec FractionalOwnership;
+    }) query;
+  getMyProfile: () -> (User);
+  getMyTasks: () -> (variant {
+                       err: text;
+                       ok: vec Task;
+                     });
+  getMyWallets: () -> (vec WalletAccount) query;
+  getOrgSettings: (orgId: text) ->
+   (variant {
+      err: text;
+      ok: OrgSettings;
+    }) query;
+  getOrganizationById: (id: text) -> (opt Organization);
+  getOwnershipByAsset: (assetId: text) ->
+   (variant {
+      err: text;
+      ok: vec FractionalOwnership;
+    }) query;
+  getPlanLimits: (tier: PlanTier) -> (PlanLimits) query;
+  getPlatformFranchiseLinks: () ->
+   (variant {
+      err: text;
+      ok: vec FranchiseLink;
+    }) query;
+  getPlatformMetrics: () -> (variant {
+                               err: text;
+                               ok: PlatformMetrics;
+                             }) query;
+  getPlatformSettings: () ->
+   (variant {
+      err: text;
+      ok: PlatformSettings;
+    }) query;
+  getRevenueSplits: (assetId: text) ->
+   (variant {
+      err: text;
+      ok: vec RevenueSplit;
+    }) query;
+  getTasksByAgent: (agentId: text) -> (variant {
+                                         err: text;
+                                         ok: vec Task;
+                                       });
+  getTasksByOrg: (orgId: text) -> (variant {
+                                     err: text;
+                                     ok: vec Task;
+                                   });
+  getTeamMembersByOrg: (orgId: text) -> (vec User);
+  getTransactionHistory: (walletId: text) ->
+   (variant {
+      err: text;
+      ok: vec Transaction;
+    });
+  getTransactionHistoryByOrg: (orgId: text) ->
+   (variant {
+      err: text;
+      ok: vec Transaction;
+    });
+  getUserById: ("principal": Principal) -> (User);
+  getWalletsByOrg: (orgId: text) ->
+   (variant {
+      err: text;
+      ok: vec WalletAccount;
+    });
+  isRegistered: () -> (bool) query;
+  issueShares: (assetId: text, userId: principal, shares: nat) ->
+   (variant {
+      err: text;
+      ok: FractionalOwnership;
+    });
+  listApiKeys: () -> (variant {
+                        err: text;
+                        ok: vec ApiKey;
+                      });
+  markAllNotificationsRead: () -> (variant {
+                                     err: text;
+                                     ok: nat;
+                                   });
+  markNotificationRead: (id: text) -> (variant {
+                                         err: text;
+                                         ok: Notification;
+                                       });
+  redeemInviteLink: (code: text, input: UserInput) ->
+   (variant {
+      err: text;
+      ok: User;
+    });
+  registerAgent: (input: AgentInput) ->
+   (variant {
+      err: text;
+      ok: AgentDefinition;
+    });
+  registerUser: (input: UserInput) -> (variant {
+                                         err: text;
+                                         ok: User;
+                                       });
+  removeUserFromOrg: (targetPrincipal: Principal) ->
+   (variant {
+      err: text;
+      ok: User;
+    });
+  revokeApiKey: (keyId: text) -> (variant {
+                                    err: text;
+                                    ok: ApiKey;
+                                  });
+  searchOrg: (orgId: text, searchQuery: text) -> (vec SearchResult) query;
+  searchPlatform: (searchQuery: text) -> (vec SearchResult) query;
+  sendAgentMessage: (agentId: text, userMessage: text) ->
+   (variant {
+      err: text;
+      ok: vec ConversationMessage;
+    });
+  setOrgActive: (orgId: text, isActive: bool) ->
+   (variant {
+      err: text;
+      ok: Organization;
+    });
+  setOrgPlanOverride: (orgId: text, tier: PlanTier) ->
+   (variant {
+      err: text;
+      ok: Organization;
+    });
+  setPlanLimits: (tier: PlanTier, limits: PlanLimits) ->
+   (variant {
+      err: text;
+      ok: PlanLimits;
+    });
+  submitLead: (input: LeadInput) -> (variant {
+                                       err: text;
+                                       ok: Lead;
+                                     });
+  transferICP: (fromWalletId: text, toWalletId: text, amountE8s: nat,
+   description: text) -> (variant {
+                            err: text;
+                            ok: Transaction;
+                          });
+  transformHttpResponse: (input: TransformationInput) ->
+   (TransformationOutput) query;
+  updateAgent: (id: text, input: AgentUpdateInput) ->
+   (variant {
+      err: text;
+      ok: AgentDefinition;
+    });
+  updateBranch: (id: text, input: BranchUpdateInput) ->
+   (variant {
+      err: text;
+      ok: Branch;
+    });
+  updateFractionalAsset: (id: text, input: FractionalAssetUpdateInput) ->
+   (variant {
+      err: text;
+      ok: FractionalAsset;
+    });
+  updateFranchiseLinkStatus: (id: text, newStatus: FranchiseLinkStatus) ->
+   (variant {
+      err: text;
+      ok: FranchiseLink;
+    });
+  updateLastLogin: () -> ();
+  updateMyProfile: (input: UpdateProfileInput) ->
+   (variant {
+      err: text;
+      ok: User;
+    });
+  updateOrgDomain: (orgId: text, customDomain: opt text, customSubdomain:
+   opt text) -> (variant {
+                   err: text;
+                   ok: Organization;
+                 });
+  updateOrgSettings: (orgId: text, input: OrgSettings) ->
+   (variant {
+      err: text;
+      ok: OrgSettings;
+    });
+  updateOrganization: (id: text, input: UpdateOrgInput) ->
+   (variant {
+      err: text;
+      ok: Organization;
+    });
+  updatePlatformSettings: (input: PlatformSettings) ->
+   (variant {
+      err: text;
+      ok: PlatformSettings;
+    });
+  updateTask: (id: text, input: TaskUpdateInput) ->
+   (variant {
+      err: text;
+      ok: Task;
+    });
+  updateTaskStatus: (id: text, newStatus: TaskStatus) ->
+   (variant {
+      err: text;
+      ok: Task;
+    });
+  updateUserRole: (targetPrincipal: Principal, newRole: Role) ->
+   (variant {
+      err: text;
+      ok: User;
+    });
+}

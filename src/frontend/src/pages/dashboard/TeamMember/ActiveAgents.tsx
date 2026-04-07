@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { Bot, Cpu, MessageSquare } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { AgentDefinition } from "../../../backend.d";
 import { AgentStatus } from "../../../backend.d";
 import { AgentChatDrawer } from "../../../components/AgentChatDrawer";
@@ -42,7 +43,7 @@ function AgentCardSkeleton() {
 }
 
 export default function ActiveAgents() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatTarget, setChatTarget] = useState<AgentDefinition | null>(null);

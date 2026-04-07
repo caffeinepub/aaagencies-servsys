@@ -3,9 +3,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useActor } from "@/hooks/useActor";
-import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { cn } from "@/lib/utils";
+import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
 import {
   BarChart3,
   Bot,
@@ -33,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createActor } from "../backend";
 import type { User } from "../backend.d";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { NotificationCenter } from "../components/NotificationCenter";
@@ -170,7 +170,7 @@ export default function DashboardLayout({
   onOnboardingComplete,
 }: DashboardLayoutProps) {
   const { clear } = useInternetIdentity();
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const role =
     typeof user.role === "object"
       ? Object.keys(user.role as object)[0]

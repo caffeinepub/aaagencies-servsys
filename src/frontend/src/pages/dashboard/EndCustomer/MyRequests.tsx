@@ -18,10 +18,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { ClipboardList, Plus, SendHorizonal } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { Task, TaskInput } from "../../../backend.d";
 import { TaskPriority, type TaskStatus } from "../../../backend.d";
 
@@ -118,7 +119,7 @@ function CardSkeleton() {
 }
 
 export default function MyRequests() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");

@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { Bot, Headphones, History, Plus, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../../../backend";
 import type { AgentDefinition, Task } from "../../../backend.d";
 import { AgentStatus } from "../../../backend.d";
 import { AgentChatDrawer } from "../../../components/AgentChatDrawer";
@@ -28,7 +29,7 @@ function formatTaskDate(ts: bigint): string {
 }
 
 export default function ServicePortal() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [firstActiveAgent, setFirstActiveAgent] =

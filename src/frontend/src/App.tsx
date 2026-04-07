@@ -1,11 +1,11 @@
 import { Toaster } from "@/components/ui/sonner";
 import { I18nProvider } from "@/lib/i18n";
+import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createActor } from "./backend";
 import type { User } from "./backend.d";
-import { useActor } from "./hooks/useActor";
-import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import AuthPage from "./pages/AuthPage";
 import DashboardLayout from "./pages/DashboardLayout";
 import LaunchPage from "./pages/LaunchPage";
@@ -39,7 +39,7 @@ function usePathname() {
 
 function AppContent() {
   const { identity, isInitializing } = useInternetIdentity();
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const isAuthenticated = !!identity;
   const lastLoginFiredRef = useRef(false);
   const [isNewUser, setIsNewUser] = useState(false);

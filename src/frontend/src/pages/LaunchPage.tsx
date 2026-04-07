@@ -1,4 +1,4 @@
-import { useActor } from "@/hooks/useActor";
+import { useActor } from "@caffeineai/core-infrastructure";
 import {
   Bot,
   Copy,
@@ -11,6 +11,7 @@ import {
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { createActor } from "../backend";
 
 // ─────────────────────────────────────────────────────────────
 // Actor interface for LaunchPage
@@ -187,7 +188,7 @@ const ROLES = [
 ];
 
 function EarlyAccessForm() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const typedActor = actor as unknown as ActorWithLaunch | null;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -615,7 +616,7 @@ function SocialShare() {
 // ─────────────────────────────────────────────────────────────
 
 export default function LaunchPage() {
-  const { actor } = useActor();
+  const { actor } = useActor(createActor);
   const typedActor = actor as unknown as ActorWithLaunch | null;
   const [launchDateMs, setLaunchDateMs] = useState<number | null>(null);
   const fetchedRef = useRef(false);
